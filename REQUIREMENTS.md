@@ -1,2 +1,3 @@
 # Chrome Driver installation
-Needs to be an env. variable as well
+Place chromedriver in lib/chromedriver
+Needs to be an env. variable as well.
