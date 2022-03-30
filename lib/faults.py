@@ -20,11 +20,12 @@ class ResmiTatilFault(Fault):
     def __str__(self):
         return f"ResmiTatilFault: EKAP girilen tarihin resmi tatil oldugunu soyluyor."
 class DiskCacheFault(Fault):
-    def __init__(self, data_type):
+    def __init__(self, data_type, filePath):
         self.data_type = data_type
+        self.filePath = filePath
         pass
     def __str__(self):
-        return f"CacheFault: data type {self.data_type} could not be found on disk"
+        return f"CacheFault: {self.filePath} of type {self.data_type} could not be found on disk"
 
 class DocumentFault(Fault):
     def __init__(self, field, documentName):

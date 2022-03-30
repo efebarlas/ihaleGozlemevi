@@ -1,11 +1,13 @@
 from dataclasses import dataclass
-from lib.ekap_client import EKAPClient
-from lib.pdf_parser import Bulten
+from ihaleGozlemevi.lib.ekap_client import EKAPClient
+from ihaleGozlemevi.lib.pdf_parser import Bulten
 from datetime import datetime as dt
 from datetime import timedelta, date
-from lib.faults import *
-from lib import utils
+from ihaleGozlemevi.lib.faults import *
+from ihaleGozlemevi.lib import utils
 from functools import reduce
+import logging
+log = logging.getLogger(__name__)
 
 @dataclass
 class LabeledBulten:

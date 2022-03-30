@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from datetime import timedelta, date
-from faults import *
+from ihaleGozlemevi.lib.faults import *
 def date_validate(date):
     try:
         dt_obj = dt.strptime(date, "%d.%m.%Y")

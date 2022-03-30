@@ -1,10 +1,10 @@
 from pdfminer.high_level import extract_pages as pdf_extract_pages
 from pdfminer.layout import LTTextContainer
 from more_itertools import seekable
-import utils
+from ihaleGozlemevi.lib import utils
 from dataclasses import dataclass
 import re
-from faults import *
+from ihaleGozlemevi.lib.faults import *
 from datetime import datetime as dt
 from pathlib import Path
 
@@ -67,7 +67,7 @@ class Bulten():
                 dateStr = utils.asciify(i.get_text().lower())
                 break
                         
-        regex = re.compile('(\d{,2}) (ocak|subat|mart|nisan|mayıs|mayis|haziran|temmuz|agustos|eylul|ekim|kasım|kasim|aralık|aralik) (\d{4})')
+        regex = re.compile('(\\d{,2}) (ocak|subat|mart|nisan|mayıs|mayis|haziran|temmuz|agustos|eylul|ekim|kasım|kasim|aralık|aralik) (\\d{4})')
         try:
             day, month, year = regex.search(dateStr).groups()
         except:
@@ -78,8 +78,10 @@ class Bulten():
         self._date = date
         return date
     def getYear(self):
-        date = self.getDate().year
-        return date
+        date = self.getDate()
+        if isinstance(date, Fault):
+            return date
+        return date.year
 def isWithinBBox(capturingBBox, capturedBBox):
     # you were here, to help with parsing of date & year!!!
     # you can test this using testGetRandomAnnuals
@@ -88,14 +90,23 @@ def isWithinBBox(capturingBBox, capturedBBox):
     b = capturedBBox
 
     return (a.x0 <= b.x0 and a.x1 >= b.x1 and a.y0 <=b.y0 and a.y1 >= b.y1)
-        
+def findKeyBBoxes():
+    # returns a partitioning of the document space to capture value bboxes into keys
+    # NOTE: must be aware of page breaks!!
+    pass
+def findValueBBoxes():
+    # returns all bboxes that are likely to be values
+    pass
+def BBoxToDict():
+    # given the key partitioning and value bboxes, will return a dictionary of key-value pairs
+    pass
         
         
 
-if __name__ == "__main__":
-    #testIndexFault()
-    bulten = Bulten("./BULTEN_28032022_MAL_SONUC.pdf")
-    #bulten.getIhaleTipi()
-    #print('h')
-    bulten.printBultenText()
+# if __name__ == "__main__":
+#     #testIndexFault()
+#     bulten = Bulten("./BULTEN_28032022_MAL_SONUC.pdf")
+#     #bulten.getIhaleTipi()
+#     #print('h')
+#     bulten.printBultenText()
 

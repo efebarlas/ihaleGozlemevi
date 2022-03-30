@@ -14,9 +14,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import UnexpectedAlertPresentException
 import os
 
-from lib.pdf_parser import Bulten
-from lib.faults import *
-from lib import utils
+from ihaleGozlemevi.lib.pdf_parser import Bulten
+from ihaleGozlemevi.lib.faults import *
+from ihaleGozlemevi.lib import utils
 
 
 
@@ -120,7 +120,7 @@ class EKAPClient():
 
         # not on disk: fetch from ekap (pun not intended)
         if noDownload:
-            return DiskCacheFault("Bulten PDF")
+            return DiskCacheFault("Bulten PDF", bultenFilePath)
 
         r = self.downloadBulten(date, type)
         if r != True:
