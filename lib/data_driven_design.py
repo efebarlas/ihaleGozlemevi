@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from ekap_client import EKAPClient
-from pdf_parser import Bulten
+from lib.ekap_client import EKAPClient
+from lib.pdf_parser import Bulten
 from datetime import datetime as dt
 from datetime import timedelta, date
-from faults import *
-import utils
+from lib.faults import *
+from lib import utils
 from functools import reduce
 
 @dataclass
@@ -17,11 +17,12 @@ class LabeledBulten:
     
 
 
-def getRandomAnnuals(k=1):
+def getRandomAnnuals(k=1, **kwargs):
     # returns: list of bulten objects (k per year)
     e = EKAPClient()
     year_now = date.today().year
     bultenler = []
+    # TODO: implement getting sonuc bultenleri from this fn too
     for y in range(2010, int(year_now) + 1):
         offset = y - 2010
         while len(bultenler) < (offset + 1) * k:
@@ -38,23 +39,5 @@ def getRandomAnnuals(k=1):
     e.close()
     return bultenler
 
-def testGetRandomAnnuals(k=1):
-    def tallyReduceFn(tally, year):
-        tally[year] = 1 if year not in tally else tally[year] + 1
-        return tally
-
-    bultenler = getRandomAnnuals(k)
-    cur_year = date.today().year
-    assert len(bultenler) == k * (cur_year - 2010 + 1)
-
-    years = list(map(lambda bulten: bulten.getYear(), bultenler))
-    yearTally = reduce(tallyReduceFn, years, dict())
-    
-    expectedYears = [i//k for i in range(2010*k, cur_year*k + 1)]
-    expectedTally = reduce(tallyReduceFn, expectedYears, dict())
-
-    assert yearTally == expectedTally
-if __name__ == "__main__":
-    testGetRandomAnnuals()
 #def getRandomLabeledAnnuals(k=1):
     # returns: list of labeled bulten objects (k per year)

@@ -1,4 +1,3 @@
-from turtle import down
 from selenium import webdriver
 from selenium.webdriver.support import ui
 from datetime import datetime as dt
@@ -12,28 +11,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import UnexpectedAlertPresentException
 import os
 
-from pdf_parser import Bulten
+from lib.pdf_parser import Bulten
+from lib.faults import *
+from lib import utils
 
-class DeprecationFault():
-    def __init__(self):
-        pass
-    def __str__(self):
-        return "The EKAP client may be deprecated. Please update the EKAP client to compatibilize with the current EKAP UI"
-class ValidationFault():
-    def __init__(self, validatedObj, schemaType):
-        self.validatedObject = validatedObj
-        self.schemaType = schemaType
-    def __str__(self):
-        return f"ValidationFault: object '{self.validatedObject}' could not be validated against the '{self.schemaType}' schema"
 
-def date_validate(date):
-    try:
-        dt_obj = dt.strptime(date, "%d.%m.%Y")
-    except ValueError:
-        return ValidationFault(date, "dateFormat")
-    return True
 
 class EKAPClient():
     def __init__(self, bultenlerPath=None):
@@ -52,8 +37,12 @@ class EKAPClient():
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         self.driver = webdriver.Chrome(options=options)
+
+        # self-clean bultenler directory
+        self.unzipAllBultenler()
+
     def downloadBulten(self, date, type):
-        r = date_validate(date)
+        r = utils.date_validate(date)
 
         if r != True:
             return r
@@ -94,25 +83,31 @@ class EKAPClient():
             time.sleep(5)
             wait_downloads_done(self.bultenlerPath)
             #driver.quit()
-        except BaseException as e:
-            print(e)
+        except UnexpectedAlertPresentException as e:
+            return ResmiTatilFault()
+        except:
             return DeprecationFault()
         return True
     def unzipAllBultenler(self):
         for filename in os.listdir(self.bultenlerPath):
             if ".zip" in filename:
-                with zipfile.ZipFile(filename,"r") as zip_ref:
+                filePath = os.path.abspath(os.path.join(self.bultenlerPath, filename))
+                print(filePath)
+                with zipfile.ZipFile(filePath,"r") as zip_ref:
                     zip_ref.extractall(self.bultenlerPath)
-                os.remove(filename)
+                os.remove(filePath)
     def unzipBulten(self, date, type):
         zipPath = self.getBultenZipPath(date, type)
 
         with zipfile.ZipFile(zipPath,"r") as zip_ref:
             zip_ref.extractall(self.bultenlerPath)
         os.remove(zipPath)
-    def getBulten(self, date, type, sonuc=False):
-        r = date_validate(date)
-
+    def getBulten(self, date, type, **kwargs):
+        r = utils.date_validate(date)
+        
+        sonuc = kwargs["sonuc"] if "sonuc" in kwargs else None
+        noDownload = kwargs["noDownload"] if "noDownload" in kwargs else False
+        
         if r != True:
             return r
 
@@ -124,17 +119,20 @@ class EKAPClient():
             return Bulten(bultenFilePath)
 
         # not on disk: fetch from ekap (pun not intended)
+        if noDownload:
+            return DiskCacheFault("Bulten PDF")
+
         r = self.downloadBulten(date, type)
         if r != True:
             return r
 
-        filePath = self.unzipBulten(date, type)
-
-        bulten = Bulten(filePath)
+        self.unzipBulten(date, type)
+        bultenFilePath = self.getBultenFilePath(date, type,sonuc)
+        bulten = Bulten(bultenFilePath)
         return bulten
 
     def getBultenZipPath(self, date: dt, type):
-        r = date_validate(date)
+        r = utils.date_validate(date)
 
         if r != True:
             return r
@@ -146,7 +144,7 @@ class EKAPClient():
         filename = f"BULTEN_{dateStr}_{type.upper()}.zip"
         return os.path.abspath(os.path.join(self.bultenlerPath, filename))
     def getBultenFilePath(self, date: dt, type, sonuc=False):
-        r = date_validate(date)
+        r = utils.date_validate(date)
 
         if r != True:
             return r
@@ -169,35 +167,44 @@ def wait_downloads_done(downloadDir):
                 downloading = True
                 time.sleep(0.5)
 
-def randomDate():
-    from random import randrange
+# def randomDate():
+#     from random import randrange
 
-    d1=dt.strptime('01/09/2010', '%d/%m/%Y') # kamu ihale bultenlerinin yayinlanmaya baslandigi gun
-    d2=dt.combine(date.today(), dt.min.time())
+#     d1=dt.strptime('01/09/2010', '%d/%m/%Y') # kamu ihale bultenlerinin yayinlanmaya baslandigi gun
+#     d2=dt.combine(date.today(), dt.min.time())
     
-    delta = d2 - d1
-    int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
-    random_second = randrange(int_delta)
-    new_date = d1 + timedelta(seconds=random_second)
-    #new_date = dt.combine(new_date, dt.min.time())
-    return new_date
+#     delta = d2 - d1
+#     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
+#     random_second = randrange(int_delta)
+#     new_date = d1 + timedelta(seconds=random_second)
+#     #new_date = dt.combine(new_date, dt.min.time())
+#     return new_date
+
 def testBultenPreparation():
     
     e = EKAPClient()
     for _ in range(100):
         try:
-            d = randomDate()
+            d = utils.randomDate()
             while d.weekday() >= 5:
-                d = randomDate()
+                d = utils.randomDate()
             d = dt.combine(d, dt.min.time())
             dateStr = dt.strftime(d, "%d.%m.%Y")
             b = e.getBulten(dateStr, "mal") # read-through cache
+            if isinstance(b, Fault):
+                continue
             print(b.getIhaleTipi())
-        except Exception as ccc:
+        except BaseException as ccc:
             print(ccc)
             continue
+    e.close()
+def testBultenParsing():
+    e = EKAPClient()
+    b = e.getBulten("30.03.2011", "mal")
+    print(b.getIhaleTipi())
     e.close()
 if __name__ == "__main__":
     #e = EKAPClient()
     #print(e.downloadBulten("05.08.2021", "mal"))
+    testBultenParsing()
     testBultenPreparation()

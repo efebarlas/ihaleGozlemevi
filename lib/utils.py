@@ -38,8 +38,14 @@ def randomDate(year=None): # year picks specific year of date
 
     d1=dt.strptime(f'01/09/2010', '%d/%m/%Y') # kamu ihale bultenlerinin yayinlanmaya baslandigi gunden itibaren sayiyoruz ki 01/01/2010 gibi tarihler olmasin
     d2=dt.combine(date.today(), dt.min.time())
-    if d1 >= d2:
-        d1 = dt.strptime(f'01/01/{year}', '%d/%m/%Y') # su anki yilin eylul ayina daha girmediysek degistiriyoruz
+    if year != None and int(year) > 2010:
+        d2=dt.strptime(f'01/01/{int(year) + 1}', '%d/%m/%Y')
+        d1=dt.strptime(f'01/01/{year}', '%d/%m/%Y')
+    else:
+        d2=dt.strptime(f'01/01/2011', '%d/%m/%Y')
+        d1=dt.strptime(f'01/09/2010', '%d/%m/%Y')
+    #if d1 >= d2:
+    #    d1 = dt.strptime(f'01/01/{year}', '%d/%m/%Y') # su anki yilin eylul ayina daha girmediysek degistiriyoruz
 
     delta = d2 - d1
 
