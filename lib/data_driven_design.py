@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 from ihaleGozlemevi.lib.ekap_client import EKAPClient
 from ihaleGozlemevi.lib.pdf_parser import Bulten
 from datetime import datetime as dt
@@ -19,7 +20,7 @@ class LabeledBulten:
     
 
 
-def getRandomAnnuals(k=1, **kwargs):
+def getRandomAnnuals(k=1, **kwargs) -> List[Bulten]:
     # returns: list of bulten objects (k per year)
     e = EKAPClient()
     year_now = date.today().year

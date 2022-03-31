@@ -7,6 +7,9 @@ import re
 from ihaleGozlemevi.lib.faults import *
 from datetime import datetime as dt
 from pathlib import Path
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 # generic pdf stuff
@@ -24,6 +27,7 @@ def safeSeek(seekbl, idx):
 
 
 @dataclass
+# TODO: upgrade Python to 3.10 and use slots=True for performance improvements
 class BBox:
     """Class for bulten tests where the expected answer is known."""
     x0: float
@@ -31,13 +35,33 @@ class BBox:
     y0: float
     y1: float
 
+class PDFCursor():
+    #__slots__ = ("pageNum","pdfComponent")
+    def __init__(self, LTPage, LTComponent=None):
+        self.pageNum = LTPage.pageid
+        #self.LTComponent = LTComponent
+        if LTComponent == None:
+            self.bbox = BBox(0,0,LTPage.y1,LTPage.y1)
+        else:
+            self.bbox = BBox(LTComponent.x0, LTComponent.x1, LTComponent.y0, LTComponent.y1)
+        self.pageBBox = BBox(LTPage.x0, LTPage.x1, LTPage.y0, LTPage.y1)
+    def getBBox(self):
+        return self.bbox
+    def getPageBelow(self):
+        # returns bbox that cuts out the part above and including the cursor's bbox
+        return BBox(self.pageBBox.x0, self.pageBBox.x1, self.pageBBox.y0, self.bbox.y0)
+    def isAbove(self, bbox):
+        pageBelow = self.getPageBelow()
+        return isWithinBBox(pageBelow, bbox)
 # ihale specific stuff
 class Bulten():
     def __init__(self, pdfFilePath):
-        self.bultenTree = seekable(getPdfTree(pdfFilePath))
+        self.bultenTree = seekable(getPdfTree(pdfFilePath), maxlen=5)
         self.documentName = Path(pdfFilePath).name
         self._date = None
+        #self._cursor = None
     def getPage(self,pageNum):
+        log.debug(f'New page fetched: {self.documentName}:{pageNum}')
         return safeSeek(self.bultenTree, pageNum)
     def getIhaleTipi(self):
         for i in self.getPage(0):
@@ -51,6 +75,7 @@ class Bulten():
                     print(utils.asciify(j.get_text()))
     def getIhaleList(self):
         # returns: seekable generator which looks through pdf and parses ihale's
+        # TODO: hello
         def ihaleGenerator():
             ihale = "lol"
             yield ihale
@@ -82,17 +107,62 @@ class Bulten():
         if isinstance(date, Fault):
             return date
         return date.year
+    def textSearcher(self, text, cursor=None):
+        # returns generator which yields PDFCursors to components with the specified text 
+        # NOTE: search queries are case-insensitive and asciified!!
+        textQuery = utils.asciify(text.lower())
+        if textQuery != text:
+            log.warning(f'PDF is searched for text {text}, which isn\'t in lower case OR has non-ASCII characters!')
+
+        if cursor is None:
+            cursor = PDFCursor(self.getPage(0))
+        startPage = self.getPage(cursor.pageNum)
+
+        # TODO: could be more functional with maps and all
+        for component in startPage:
+            if isinstance(component, LTTextContainer) and \
+                cursor.isAbove(component):
+                componentText = utils.asciify(component.get_text().lower())
+                if componentText.find(textQuery) != -1:
+                    yield component
+        
+        pageNum = cursor.pageNum + 1
+        page = self.getPage(pageNum)
+        while not isinstance(page, Fault):
+            for component in page:
+                if isinstance(component, LTTextContainer):
+                    componentText = utils.asciify(component.get_text().lower())
+                    if componentText.find(textQuery) != -1:
+                        yield component
+            pageNum += 1
+            page = self.getPage(pageNum)
+
+        if not isinstance(page, IndexFault):
+            log.warning('Page retrieval failed unexpectedly')
+            log.warning(page)
 def isWithinBBox(capturingBBox, capturedBBox):
-    # you were here, to help with parsing of date & year!!!
-    # you can test this using testGetRandomAnnuals
+    # this function supports both LTComponents and BBox objects
 
     a = capturingBBox
     b = capturedBBox
 
     return (a.x0 <= b.x0 and a.x1 >= b.x1 and a.y0 <=b.y0 and a.y1 >= b.y1)
-def findKeyBBoxes():
+def findKeyBBoxes(cursor: PDFCursor):
+
     # returns a partitioning of the document space to capture value bboxes into keys
-    # NOTE: must be aware of page breaks!!
+    # TODO: must be aware of page breaks!!
+    # looks below provided cursor
+    # REASONING:
+    # Ihale bultenlerindeki ilanlardaki metadata,
+    # sola dayali key ve saga dayali degerlerden olusuyor.
+    #
+    # Key X'in degeri ardisik key'in yatay pozisyonuna dusmuyor.
+    # Ardisik key'lerin yatay pozisyonlari alinarak o key'e
+    # karsilik sonuc bu sekilde bulunabilir.
+
+    # Tek istisna: Merkez-aligned degerler key'in ustune gecebiliyor.
+    # data-driven-design: En cok yatay deger overlap'e sahip key o value ile eslestirilir.
+
     pass
 def findValueBBoxes():
     # returns all bboxes that are likely to be values

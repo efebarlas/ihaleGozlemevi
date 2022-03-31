@@ -24,3 +24,16 @@ class TestDataDrivenDesign(unittest.TestCase):
         expectedTally = reduce(tallyReduceFn, expectedYears, dict())
 
         self.assertEqual(yearTally,expectedTally)
+    def test_textSearcher(self):
+
+        k = 3
+        bultenler = ddd.getRandomAnnuals(k)
+        # no cursor
+        textSearchers = map(lambda bulten: bulten.textSearcher('temizlik'), bultenler)
+        for searcher in textSearchers:
+            print('\n\n\n\n\n\nNew bulten\n\n\n\n\n\n')
+            for component in searcher:
+                print(component)
+class TestPdfParser(unittest.TestCase):
+    def test_findKeyBBoxes(self):
+        pass

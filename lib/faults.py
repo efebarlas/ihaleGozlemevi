@@ -35,7 +35,7 @@ class DocumentFault(Fault):
     def __str__(self):
         return f"DocumentFault: document '{self.documentName}' could not be parsed for field '{self.field}'."
 
-class IndexFault():
+class IndexFault(Fault):
     def __init__(self, obj, idx):
         self.obj = obj
         self.idx = idx
