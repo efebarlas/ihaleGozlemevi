@@ -1,12 +1,14 @@
 from pdfminer.high_level import extract_pages as pdf_extract_pages
 from pdfminer.layout import LTTextContainer
-from more_itertools import seekable
+# from more_itertools import seekable
 from ihaleGozlemevi.lib import utils
 from dataclasses import dataclass
 import re
 from ihaleGozlemevi.lib.faults import *
 from datetime import datetime as dt
 from pathlib import Path
+
+
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -17,14 +19,21 @@ def getPdfTree(pdfFilePath):
     # returns generator[PDF pages]
     return pdf_extract_pages(pdfFilePath)
 
+# def safeSeek(seekbl, idx):
+#     seekbl.seek(idx)
+#     try:
+#         return next(seekbl)
+#     except StopIteration:
+#         return IndexFault(seekbl, idx)
+
+# TODO: consider using a different pdfminer.six api, because random seeking with extract_pages is very slow
+
 def safeSeek(seekbl, idx):
     seekbl.seek(idx)
     try:
         return next(seekbl)
     except StopIteration:
         return IndexFault(seekbl, idx)
-
-
 
 @dataclass
 # TODO: upgrade Python to 3.10 and use slots=True for performance improvements
@@ -56,19 +65,34 @@ class PDFCursor():
 # ihale specific stuff
 class Bulten():
     def __init__(self, pdfFilePath):
-        self.bultenTree = seekable(getPdfTree(pdfFilePath), maxlen=5)
+        self.pageCursor = getPdfTree(pdfFilePath)
+        self.pdfFilePath = pdfFilePath
         self.documentName = Path(pdfFilePath).name
         self._date = None
-        #self._cursor = None
+        self._currPageNum = -1
+
     def getPage(self,pageNum):
+        if pageNum < self._currPageNum:
+            self.pageCursor = getPdfTree(self.pdfFilePath)
+            self._currPageNum = -1
+            return self.getPage(pageNum)
+        try:
+            for _ in range(pageNum - self._currPageNum - 1):
+                next(self.pageCursor)
+            page = next(self.pageCursor)
+        except StopIteration:
+            return IndexFault(self.pageCursor, pageNum)
+        
+        self._currPageNum = pageNum  
         log.debug(f'New page fetched: {self.documentName}:{pageNum}')
-        return safeSeek(self.bultenTree, pageNum)
+        return page
+
     def getIhaleTipi(self):
         for i in self.getPage(0):
             if isinstance(i, LTTextContainer):
                 print(i.get_text())
     def printBultenText(self):
-        for i in self.bultenTree:
+        for i in self.pageCursor:
             print(f'\n\n***PAGE {i}***\n\n')
             for j in i:
                 if isinstance(j, LTTextContainer):
@@ -79,7 +103,7 @@ class Bulten():
         def ihaleGenerator():
             ihale = "lol"
             yield ihale
-        return seekable(ihaleGenerator)
+        return ihaleGenerator
     def getDate(self):
         if self._date != None:
             return self._date
@@ -110,6 +134,8 @@ class Bulten():
     def textSearcher(self, text, cursor=None):
         # returns generator which yields PDFCursors to components with the specified text 
         # NOTE: search queries are case-insensitive and asciified!!
+
+        # TODO: we may only care about visible text (i.e., black text on white bg). there should be an arg about this!
         textQuery = utils.asciify(text.lower())
         if textQuery != text:
             log.warning(f'PDF is searched for text {text}, which isn\'t in lower case OR has non-ASCII characters!')
@@ -117,13 +143,14 @@ class Bulten():
         if cursor is None:
             cursor = PDFCursor(self.getPage(0))
         startPage = self.getPage(cursor.pageNum)
-
+        cpn = cursor.pageNum
         # TODO: could be more functional with maps and all
         for component in startPage:
             if isinstance(component, LTTextContainer) and \
                 cursor.isAbove(component):
                 componentText = utils.asciify(component.get_text().lower())
                 if componentText.find(textQuery) != -1:
+                    log.debug(f'text found in page num: {cpn}')
                     yield component
         
         pageNum = cursor.pageNum + 1
@@ -133,6 +160,7 @@ class Bulten():
                 if isinstance(component, LTTextContainer):
                     componentText = utils.asciify(component.get_text().lower())
                     if componentText.find(textQuery) != -1:
+                        log.debug(f'text found in page num: {pageNum}')
                         yield component
             pageNum += 1
             page = self.getPage(pageNum)
@@ -151,6 +179,13 @@ def findKeyBBoxes(cursor: PDFCursor):
 
     # returns a partitioning of the document space to capture value bboxes into keys
     # TODO: must be aware of page breaks!!
+    # ne olabilir: key onceki sayfada kalir ama yazi page break'e gider, header
+    # ve footer yaziyi ortadan boler.
+    # bir element'in header'in onunde oldugunu header cizgisinden anlayabiliriz.
+    # hatta, sanki header ve footer hep ayni absolut konumda gibi.
+    # in that case, sonraki sayfadaki value yazisini onceki sayfayla birlestirmek icin 
+    
+
     # looks below provided cursor
     # REASONING:
     # Ihale bultenlerindeki ilanlardaki metadata,
@@ -162,7 +197,36 @@ def findKeyBBoxes(cursor: PDFCursor):
 
     # Tek istisna: Merkez-aligned degerler key'in ustune gecebiliyor.
     # data-driven-design: En cok yatay deger overlap'e sahip key o value ile eslestirilir.
+    #textQuery = utils.asciify(text.lower())
+    #if textQuery != text:
+    #   log.warning(f'PDF is searched for text {text}, which isn\'t in lower case OR has non-ASCII characters!')
 
+    if cursor is None:
+        cursor = PDFCursor(self.getPage(0))
+    startPage = self.getPage(cursor.pageNum)
+
+    # TODO: could be more functional with maps and all
+    for component in startPage:
+        if isinstance(component, LTTextContainer) and \
+            cursor.isAbove(component):
+            componentText = utils.asciify(component.get_text().lower())
+            if componentText.find(textQuery) != -1:
+                yield component
+    
+    pageNum = cursor.pageNum + 1
+    page = self.getPage(pageNum)
+    while not isinstance(page, Fault):
+        for component in page:
+            if isinstance(component, LTTextContainer):
+                componentText = utils.asciify(component.get_text().lower())
+                if componentText.find(textQuery) != -1:
+                    yield component
+        pageNum += 1
+        page = self.getPage(pageNum)
+
+    if not isinstance(page, IndexFault):
+        log.warning('Page retrieval failed unexpectedly')
+        log.warning(page)
     pass
 def findValueBBoxes():
     # returns all bboxes that are likely to be values

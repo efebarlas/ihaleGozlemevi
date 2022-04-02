@@ -18,7 +18,14 @@ class LabeledBulten:
     bulten: Bulten
     
     
-
+def getBultensByDates(dates: List[str], ihaleType="mal"):
+    # returns: list of bulten objects at specified dates
+    # dates: List[date strings]
+    e = EKAPClient()
+    bultenler = [e.getBulten(date, ihaleType) for date in dates]
+    e.close()
+    
+    return bultenler
 
 def getRandomAnnuals(k=1, **kwargs) -> List[Bulten]:
     # returns: list of bulten objects (k per year)
