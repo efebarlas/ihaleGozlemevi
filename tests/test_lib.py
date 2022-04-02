@@ -28,27 +28,14 @@ class TestDataDrivenDesign(unittest.TestCase):
         expectedTally = reduce(tallyReduceFn, expectedYears, dict())
 
         self.assertEqual(yearTally,expectedTally)
-    def test_textSearcher(self):
 
-        # 10 dates
-        dates = ["31.01.2017","30.06.2016","29.03.2013"]
-        
-        #dates = ["31.01.2017","30.06.2016","29.03.2013","28.11.2014","26.06.2013","24.04.2015","01.07.2019","01.04.2021","04.11.2020", "05.07.2018"]
-        expectedTally = {"31.01.2017": 36, "30.06.2016": 23, "29.03.2013": 39, "28.11.2014": 10, "26.06.2013": 10, "24.04.2015": 21, "01.07.2019": 14,"01.04.2021":36,"04.11.2020":16, "05.07.2018":36}
-        
-        bultenler = ddd.getBultensByDates(dates)
-        # no cursor
-        textSearchers = map(lambda bulten: (dt.strftime(bulten.getDate(), "%d.%m.%Y"), bulten.textSearcher('temizlik')), bultenler)
-        
-        actualTally = {}
-        for dateStr, searcher in textSearchers:
-            for find in searcher:
-                foundTxt = utils.asciify(find.get_text().lower())
-                count = foundTxt.count('temizlik')
-                log.debug(f'There are {count} counts of the text search query within this component')
-                actualTally[dateStr] = count if dateStr not in actualTally else actualTally[dateStr] + count
-            self.assertEqual(expectedTally[dateStr], actualTally[dateStr])
+    
+    def test_inspectPageLayout(self):
+        ddd.inspectPageLayout(20)
+    
+
 class TestPdfParser(unittest.TestCase):
+
     def test_getPage(self):
         dates = ["31.01.2017"]
 
@@ -74,3 +61,23 @@ class TestPdfParser(unittest.TestCase):
             expectedPageId = 10
             page = i.getPage(expectedPageId)
             self.assertEqual(page.pageid - 1, expectedPageId)
+    def test_textSearcher(self):
+
+        # 10 dates
+        dates = ["31.01.2017","30.06.2016","29.03.2013"]
+        
+        #dates = ["31.01.2017","30.06.2016","29.03.2013","28.11.2014","26.06.2013","24.04.2015","01.07.2019","01.04.2021","04.11.2020", "05.07.2018"]
+        expectedTally = {"31.01.2017": 36, "30.06.2016": 23, "29.03.2013": 39, "28.11.2014": 10, "26.06.2013": 10, "24.04.2015": 21, "01.07.2019": 14,"01.04.2021":36,"04.11.2020":16, "05.07.2018":36}
+        
+        bultenler = ddd.getBultensByDates(dates)
+        # no cursor
+        textSearchers = map(lambda bulten: (dt.strftime(bulten.getDate(), "%d.%m.%Y"), bulten.textSearcher('temizlik')), bultenler)
+        
+        actualTally = {}
+        for dateStr, searcher in textSearchers:
+            for find in searcher:
+                foundTxt = utils.asciify(find.get_text().lower())
+                count = foundTxt.count('temizlik')
+                log.debug(f'There are {count} counts of the text search query within this component')
+                actualTally[dateStr] = count if dateStr not in actualTally else actualTally[dateStr] + count
+            self.assertEqual(expectedTally[dateStr], actualTally[dateStr])

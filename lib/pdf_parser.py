@@ -1,5 +1,27 @@
 from pdfminer.high_level import extract_pages as pdf_extract_pages
-from pdfminer.layout import LTTextContainer
+from pdfminer.layout import LTText, LTTextContainer
+# # import-time monkey patching of LTTextContainer
+# # so we can easily retrieve the text color
+
+# # there's a chance that the text has characters with
+# # different colors. so we just look at three characters and
+# # return 'mixed' if they aren't all the same.
+# # we don't look at each and every character because
+# # i suspect that is expensive to do for all text.
+# def textColor(self):
+#     from random import randrange
+
+#     txtObj = self._objs[0]
+#     charColors = tuple(txtObj._objs[randrange(0, len(txtObj))].ncs.name for _ in range(3))
+#     c = charColors[0]
+#     for i in charColors:
+#         if i != c:
+#             return "mixed"
+#     return c
+# LTTextContainer.text_color = textColor
+
+
+
 # from more_itertools import seekable
 from ihaleGozlemevi.lib import utils
 from dataclasses import dataclass
@@ -234,7 +256,7 @@ def findValueBBoxes():
 def BBoxToDict():
     # given the key partitioning and value bboxes, will return a dictionary of key-value pairs
     pass
-        
+
         
 
 # if __name__ == "__main__":

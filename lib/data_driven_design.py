@@ -7,6 +7,9 @@ from datetime import timedelta, date
 from ihaleGozlemevi.lib.faults import *
 from ihaleGozlemevi.lib import utils
 from functools import reduce
+from random import randrange
+from ihaleGozlemevi.lib.page import PDFPage
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -17,7 +20,7 @@ class LabeledBulten:
     ihale_tipi: str
     bulten: Bulten
     
-    
+# TODO: make this lazy-evaluated, so that failing tests fail quicker
 def getBultensByDates(dates: List[str], ihaleType="mal"):
     # returns: list of bulten objects at specified dates
     # dates: List[date strings]
@@ -26,7 +29,20 @@ def getBultensByDates(dates: List[str], ihaleType="mal"):
     e.close()
     
     return bultenler
+# TODO: make this lazy-evaluated, so that failing tests fail quicker
+def getRandomPages(bulten: Bulten, pageCount=1, pageRange=(0,10)) -> List[PDFPage]:
+    s = pageRange[0]
+    e = pageRange[1]
+    
+    pages = []
+    for _ in range(pageCount):
+        page = bulten.getPage(randrange(s,e))
+        while isinstance(page, IndexFault):
+            page = bulten.getPage(randrange(s,e))
+        pages.append(PDFPage(page))
+    return pages
 
+# TODO: make this lazy-evaluated, so that failing tests fail earlier
 def getRandomAnnuals(k=1, **kwargs) -> List[Bulten]:
     # returns: list of bulten objects (k per year)
     e = EKAPClient()
@@ -48,6 +64,19 @@ def getRandomAnnuals(k=1, **kwargs) -> List[Bulten]:
             bultenler.append(b)
     e.close()
     return bultenler
+
+def inspectPageLayout(pageNum):
+    bultenler = getRandomAnnuals(k=1)
+    sayfalar = map(lambda x: x.getPage(pageNum), bultenler)
+
+    # we're interested in: position, text color, text, pageid, width, height.
+    # text: try except & c.get_text()
+    # x0,x1,y0,y1: has direct properties
+    # width, height: has direct properties
+    for sayfa in sayfalar:
+        for component in sayfa:
+            print('hello')
+
 
 #def getRandomLabeledAnnuals(k=1):
     # returns: list of labeled bulten objects (k per year)

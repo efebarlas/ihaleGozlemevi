@@ -1,6 +1,13 @@
 from datetime import datetime as dt
 from datetime import timedelta, date
 from ihaleGozlemevi.lib.faults import *
+
+def flatten(l):
+    # we assume that l is an iterator of iterators and nothing else.
+    # we flatten for only one level.
+    for sublist in l:
+        yield from sublist
+
 def date_validate(date):
     try:
         dt_obj = dt.strptime(date, "%d.%m.%Y")
