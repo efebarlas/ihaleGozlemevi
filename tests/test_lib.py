@@ -30,9 +30,15 @@ class TestDataDrivenDesign(unittest.TestCase):
         self.assertEqual(yearTally,expectedTally)
 
     
-    def test_inspectPageLayout(self):
-        ddd.inspectPageLayout(20)
-    
+    #def test_inspectPageLayout(self):
+    #    ddd.inspectPageLayout(20)
+
+    def test_getIhaleList(self):
+        dates = ["01.04.2021"]
+        bultenler = ddd.getBultensByDates(dates)
+        for i in bultenler:
+            for ihale in i.getIhaleList(): 
+                print(ihale)
 
 class TestPdfParser(unittest.TestCase):
 

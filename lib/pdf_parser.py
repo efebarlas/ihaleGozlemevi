@@ -1,28 +1,6 @@
-from pdfminer.high_level import extract_pages as pdf_extract_pages
-from pdfminer.layout import LTText, LTTextContainer
-# # import-time monkey patching of LTTextContainer
-# # so we can easily retrieve the text color
+from pdfminer.psparser import PSKeyword
+import pdfplumber
 
-# # there's a chance that the text has characters with
-# # different colors. so we just look at three characters and
-# # return 'mixed' if they aren't all the same.
-# # we don't look at each and every character because
-# # i suspect that is expensive to do for all text.
-# def textColor(self):
-#     from random import randrange
-
-#     txtObj = self._objs[0]
-#     charColors = tuple(txtObj._objs[randrange(0, len(txtObj))].ncs.name for _ in range(3))
-#     c = charColors[0]
-#     for i in charColors:
-#         if i != c:
-#             return "mixed"
-#     return c
-# LTTextContainer.text_color = textColor
-
-
-
-# from more_itertools import seekable
 from ihaleGozlemevi.lib import utils
 from dataclasses import dataclass
 import re
@@ -30,16 +8,13 @@ from ihaleGozlemevi.lib.faults import *
 from datetime import datetime as dt
 from pathlib import Path
 
+from thefuzz import fuzz, process
 
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
-# generic pdf stuff
-def getPdfTree(pdfFilePath):
-    # returns generator[PDF pages]
-    return pdf_extract_pages(pdfFilePath)
 
 # def safeSeek(seekbl, idx):
 #     seekbl.seek(idx)
@@ -56,6 +31,13 @@ def safeSeek(seekbl, idx):
         return next(seekbl)
     except StopIteration:
         return IndexFault(seekbl, idx)
+def isWithinBBox(capturingBBox, capturedBBox):
+    # this function supports both LTComponents and BBox objects
+
+    a = capturingBBox
+    b = capturedBBox
+
+    return (a.x0 <= b.x0 and a.x1 >= b.x1 and a.y0 <=b.y0 and a.y1 >= b.y1)
 
 @dataclass
 # TODO: upgrade Python to 3.10 and use slots=True for performance improvements
@@ -87,109 +69,133 @@ class PDFCursor():
 # ihale specific stuff
 class Bulten():
     def __init__(self, pdfFilePath):
-        self.pageCursor = getPdfTree(pdfFilePath)
+        self.pdf = pdfplumber.open(pdfFilePath)
         self.pdfFilePath = pdfFilePath
         self.documentName = Path(pdfFilePath).name
         self._date = None
         self._currPageNum = -1
-
     def getPage(self,pageNum):
-        if pageNum < self._currPageNum:
-            self.pageCursor = getPdfTree(self.pdfFilePath)
-            self._currPageNum = -1
-            return self.getPage(pageNum)
-        try:
-            for _ in range(pageNum - self._currPageNum - 1):
-                next(self.pageCursor)
-            page = next(self.pageCursor)
-        except StopIteration:
-            return IndexFault(self.pageCursor, pageNum)
-        
-        self._currPageNum = pageNum  
-        log.debug(f'New page fetched: {self.documentName}:{pageNum}')
-        return page
-
+        pass
     def getIhaleTipi(self):
-        for i in self.getPage(0):
-            if isinstance(i, LTTextContainer):
-                print(i.get_text())
+        pass
     def printBultenText(self):
-        for i in self.pageCursor:
-            print(f'\n\n***PAGE {i}***\n\n')
-            for j in i:
-                if isinstance(j, LTTextContainer):
-                    print(utils.asciify(j.get_text()))
+        pass
+    def isSonuc(self):
+        pg = self.pdf.pages[1]
+                
+        line0 = pg.lines[0]
+        line1 = pg.lines[1]
+        headerBBox = (0, 0, pg.width, min(line0['top'], line1['top']))
+        pg = pg.crop(headerBBox)
+        txt = pg.extract_text()
+        if 'sonuc' in utils.asciify(txt.lower()):
+            return True
+        return False
     def getIhaleList(self):
-        # returns: seekable generator which looks through pdf and parses ihale's
-        # TODO: hello
-        def ihaleGenerator():
-            ihale = "lol"
-            yield ihale
-        return ihaleGenerator
+        
+        CUTOFF=80
+
+        # data-driven assumption: documents have > 2 pages
+        pg = self.pdf.pages[1]
+        # data-driven assumption: the header and footer will always have a line indicating where they end / begin.
+        line0 = pg.lines[0]
+        line1 = pg.lines[1]
+        headerFooterBBox = (0, min(line0['top'], line1['top']), pg.width, max(line0['top'], line1['top']))
+        ts = {"vertical_strategy": "text", 
+        "horizontal_strategy": "text",
+        "keep_blank_chars": 'true'
+        }
+        #x0,top,x1,bottom
+
+        
+        ikn_tokens={'ikn': 'ikn', 'ihale kayit numarasi': 'ikn'}
+        tablo_tokens=[{'ikn': 'ikn', 'ihale kayit numarasi': 'ikn'},
+        {
+            'adi': 'idare adi', 
+            'adresi': 'idare adresi', 
+            'telefon ve faks numarasi': 'idare telefon ve faks numarasi', 
+            'elektronik posta adresi': 'idare e-posta adresi',
+            'ihale dokumaninin gorulebilecegi ve e-imza kullanilarak indirilebilecegi internet sayfasi': 'kaynak',
+            # sonuc bultenleri
+            'tarihi': 'ihale tarihi',
+            'turu': 'ihale turu',
+            'usulu': 'ihale usulu',
+            'yaklasik maliyeti': 'ihale yaklasik maliyeti',
+            'sozlesmeye esas kisimlarinin yaklasik maliyeti': 'esas kisimlarin yaklasik maliyeti',
+        },{
+            'adi': 'mal adi',
+            'niteligi, turu ve miktari': 'mal niteligi',
+            'yapilacagi/teslim edilecegi yer': 'mal teslim yeri',
+            'suresi/teslim tarihi': 'mal teslim tarihi',
+            'ise baslama tarihi': 'ise baslama tarihi',
+            'teslim yerleri': 'mal teslim yeri',
+            'teslim tarihi': 'mal teslim tarihi'
+        },{
+            'ihale (son teklif verme) tarih ve saati': 'son teklif tarih ve saati',
+            'ihale komisyonunun toplanti yeri (e-tekliflerin acilacagi adres)': 'komisyon toplanti yeri',
+            'dokuman satin alan sayisi': 'dokuman satin alan sayisi',
+            'dokuman ekap uzerinden e-imza kullanarak indiren sayisi': 'e-imza indiren sayisi',
+            'toplam teklif sayisi': 'toplam teklif sayisi',
+            'toplam gecerli teklif sayisi': 'toplam gecerli teklif sayisi',
+            'yerli mali teklif eden istekli lehine fiyat avantaji uygulamasi': 'yerli mal fiyat avantaji'
+        },{
+            'tarihi': 'sozlesme tarihi',
+            'bedeli': 'sozlesme bedeli',
+            'suresi': 'sozlesme suresi',
+            'yuklenicisi': 'yuklenici',
+            'yuklenicinin uyrugu': 'yuklenici uyrugu',
+            'yuklenicinin adresi': 'yuklenici adresi',
+        }]
+        
+        # fsm: ikn -> idarenin -> ihale konusu mal aliminin -> ihalenin (end of table) ikn->...
+        tableCounter = 0
+        tablesPerIhale = 5 if self.isSonuc() else 4
+        ihaleBreak = False
+        keys = tablo_tokens[tableCounter].keys()
+        ihale = {}
+        for pg in self.pdf.pages[6:]: #[6:] ,TEMPORARY for faster testing
+            pg = pg.crop(headerFooterBBox)
+            tables = pg.extract_tables(ts)
+            for table in tables:
+                for line in table:
+                    if len(line) < 2:
+                        continue
+                    if len(line) > 2:
+                        print('what?')
+                    k, v = line
+                    
+                    k = utils.asciify(k.lower())
+                    if k in ('ikn', 'ihale kayit numarasi'):
+                        ihaleBreak = True
+                        yield ihale
+                        ihale = {}
+                    if not ihaleBreak:
+                        continue
+                    
+                    res = process.extractOne(k, keys, score_cutoff=CUTOFF)
+                    if res is None:
+                        # if next table has the answers, advance pointer
+                        res = process.extractOne(k, tablo_tokens[(tableCounter + 1) % tablesPerIhale].keys(), score_cutoff=CUTOFF)
+                        if res is not None:
+                            tableCounter = (tableCounter + 1) % tablesPerIhale
+                            keys = tablo_tokens[tableCounter].keys()
+                            if tableCounter == 0: # loop back but segment wasn't ikn
+                                log.debug('ihale table parsing fault')
+                    if res is not None:
+                        ihale[tablo_tokens[tableCounter][res[0]]] = v
+                break
+            print(tables)
     def getDate(self):
         if self._date != None:
             return self._date
-
-        
-        second_page = self.getPage(1)
-        dateBBox = BBox(300, 600, 750, 842.04)
-        for i in second_page:
-            if isinstance(i, LTTextContainer) and isWithinBBox(dateBBox, i):
-                dateStr = utils.asciify(i.get_text().lower())
-                break
-                        
-        regex = re.compile('(\\d{,2}) (ocak|subat|mart|nisan|mayıs|mayis|haziran|temmuz|agustos|eylul|ekim|kasım|kasim|aralık|aralik) (\\d{4})')
-        try:
-            day, month, year = regex.search(dateStr).groups()
-        except:
-            return DocumentFault('bulten tarihi', self.documentName)
-        monthNum = utils.monthNameToNum(month)
-        date = dt.strptime(f'{day}/{monthNum}/{year}', '%d/%m/%Y')
-
-        self._date = date
-        return date
+        pass
     def getYear(self):
         date = self.getDate()
         if isinstance(date, Fault):
             return date
         return date.year
     def textSearcher(self, text, cursor=None):
-        # returns generator which yields PDFCursors to components with the specified text 
-        # NOTE: search queries are case-insensitive and asciified!!
-
-        # TODO: we may only care about visible text (i.e., black text on white bg). there should be an arg about this!
-        textQuery = utils.asciify(text.lower())
-        if textQuery != text:
-            log.warning(f'PDF is searched for text {text}, which isn\'t in lower case OR has non-ASCII characters!')
-
-        if cursor is None:
-            cursor = PDFCursor(self.getPage(0))
-        startPage = self.getPage(cursor.pageNum)
-        cpn = cursor.pageNum
-        # TODO: could be more functional with maps and all
-        for component in startPage:
-            if isinstance(component, LTTextContainer) and \
-                cursor.isAbove(component):
-                componentText = utils.asciify(component.get_text().lower())
-                if componentText.find(textQuery) != -1:
-                    log.debug(f'text found in page num: {cpn}')
-                    yield component
-        
-        pageNum = cursor.pageNum + 1
-        page = self.getPage(pageNum)
-        while not isinstance(page, Fault):
-            for component in page:
-                if isinstance(component, LTTextContainer):
-                    componentText = utils.asciify(component.get_text().lower())
-                    if componentText.find(textQuery) != -1:
-                        log.debug(f'text found in page num: {pageNum}')
-                        yield component
-            pageNum += 1
-            page = self.getPage(pageNum)
-
-        if not isinstance(page, IndexFault):
-            log.warning('Page retrieval failed unexpectedly')
-            log.warning(page)
+        pass
 def isWithinBBox(capturingBBox, capturedBBox):
     # this function supports both LTComponents and BBox objects
 
@@ -197,72 +203,3 @@ def isWithinBBox(capturingBBox, capturedBBox):
     b = capturedBBox
 
     return (a.x0 <= b.x0 and a.x1 >= b.x1 and a.y0 <=b.y0 and a.y1 >= b.y1)
-def findKeyBBoxes(cursor: PDFCursor):
-
-    # returns a partitioning of the document space to capture value bboxes into keys
-    # TODO: must be aware of page breaks!!
-    # ne olabilir: key onceki sayfada kalir ama yazi page break'e gider, header
-    # ve footer yaziyi ortadan boler.
-    # bir element'in header'in onunde oldugunu header cizgisinden anlayabiliriz.
-    # hatta, sanki header ve footer hep ayni absolut konumda gibi.
-    # in that case, sonraki sayfadaki value yazisini onceki sayfayla birlestirmek icin 
-    
-
-    # looks below provided cursor
-    # REASONING:
-    # Ihale bultenlerindeki ilanlardaki metadata,
-    # sola dayali key ve saga dayali degerlerden olusuyor.
-    #
-    # Key X'in degeri ardisik key'in yatay pozisyonuna dusmuyor.
-    # Ardisik key'lerin yatay pozisyonlari alinarak o key'e
-    # karsilik sonuc bu sekilde bulunabilir.
-
-    # Tek istisna: Merkez-aligned degerler key'in ustune gecebiliyor.
-    # data-driven-design: En cok yatay deger overlap'e sahip key o value ile eslestirilir.
-    #textQuery = utils.asciify(text.lower())
-    #if textQuery != text:
-    #   log.warning(f'PDF is searched for text {text}, which isn\'t in lower case OR has non-ASCII characters!')
-
-    if cursor is None:
-        cursor = PDFCursor(self.getPage(0))
-    startPage = self.getPage(cursor.pageNum)
-
-    # TODO: could be more functional with maps and all
-    for component in startPage:
-        if isinstance(component, LTTextContainer) and \
-            cursor.isAbove(component):
-            componentText = utils.asciify(component.get_text().lower())
-            if componentText.find(textQuery) != -1:
-                yield component
-    
-    pageNum = cursor.pageNum + 1
-    page = self.getPage(pageNum)
-    while not isinstance(page, Fault):
-        for component in page:
-            if isinstance(component, LTTextContainer):
-                componentText = utils.asciify(component.get_text().lower())
-                if componentText.find(textQuery) != -1:
-                    yield component
-        pageNum += 1
-        page = self.getPage(pageNum)
-
-    if not isinstance(page, IndexFault):
-        log.warning('Page retrieval failed unexpectedly')
-        log.warning(page)
-    pass
-def findValueBBoxes():
-    # returns all bboxes that are likely to be values
-    pass
-def BBoxToDict():
-    # given the key partitioning and value bboxes, will return a dictionary of key-value pairs
-    pass
-
-        
-
-# if __name__ == "__main__":
-#     #testIndexFault()
-#     bulten = Bulten("./BULTEN_28032022_MAL_SONUC.pdf")
-#     #bulten.getIhaleTipi()
-#     #print('h')
-#     bulten.printBultenText()
-

@@ -1,12 +1,18 @@
 from datetime import datetime as dt
 from datetime import timedelta, date
 from ihaleGozlemevi.lib.faults import *
-
+from thefuzz import fuzz
 def flatten(l):
     # we assume that l is an iterator of iterators and nothing else.
     # we flatten for only one level.
     for sublist in l:
         yield from sublist
+
+# levenstein string comparison
+def strcmp(str1,str2):
+    str1 = asciify(str1.lower())
+    str2 = asciify(str2.lower())
+    return fuzz.ratio(str1,str2)
 
 def date_validate(date):
     try:
