@@ -2,8 +2,8 @@ from datetime import date
 from datetime import datetime as dt
 from functools import reduce
 import unittest
-from ihaleGozlemevi.lib import utils
-from ihaleGozlemevi.lib import data_driven_design as ddd
+from context import utils
+from context import data_driven_design as ddd
 import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -36,9 +36,36 @@ class TestDataDrivenDesign(unittest.TestCase):
     def test_getIhaleList(self):
         dates = ["01.04.2021"]
         bultenler = ddd.getBultensByDates(dates)
+        iknIndex={
+            '2021/166678':{
+                'ikn':'2021/166678',
+                'idare adi':'Gaziantep Su ve Kanalizasyon İdaresi (GASKİ) Genel Müdürlüğü',
+                'idare adresi':'İncilipınar Mah. Kıbrıs Caddesi Eruslu İş Merkezi 27000 \nŞehitkamil/Gaziantep',
+                'idare telefon ve faks numarasi':'3422111300 - 3422318833',
+                'kaynak':'https://ekap.kik.gov.tr/EKAP/',
+                'mal adi':'Motorin Alım İşi',
+                'mal niteligi':'Genel Müdürlüğümüz Bünyesindeki Araç, İş Makinesi, Dizel \nJeneratör ve Diğer Dizel Ekipmanlarda Kullanılmak Üzere \n2.500.000 Litre Motorin Alınacaktır.  \nAyrıntılı bilgiye EKAP’ta yer alan ihale dokümanı içinde bulunan \nidari şartnameden ulaşılabilir.',
+                'mal teslim yeri':'GASKİ Genel Müdürlüğü/25 Aralık İşletme Tesisleri',
+                'mal teslim tarihi':'İdarenin ihtiyacı doğrultusunda peyder pey sözleşme süresi \niçerisinde malın tamamı teslim edilecektir.',
+                'ise baslama tarihi':'Sözleşmenin imzalanmasına müteakip 10 gün içinde işe \nbaşlanacaktır.',
+                'son teklif tarih ve saati':'04.05.2021 - 14:00',
+                'komisyon toplanti yeri':'GASKİ Genel Müdürlüğü/Destek Hizmetleri Daire Başkanlığı/'
+            }, '2021/172451':{
+                'ikn':'2021/172451',
+                'idare adresi':'Kayaönü Mah. 42035 Nolu Cad. No:40 27060 Şehitkamil/Gaziantep',
+                'idare telefon ve faks numarasi':'3422209614 - 3422209622',
+                'idare e-posta adresi':'gaziantep.ihale@saglik.gov.tr',
+                'kaynak':'https://ekap.kik.gov.tr/EKAP/',
+                'mal niteligi':'240.000 Litre Akaryakıt (Motorin) Alımı. Toplam 240.000 Litre \nYakıt Talebinin; 220.000 Litresi El-Bab Hastanesi ve Bağlı Sağlık \nMerkezleri İhtiyacı İçin, 20.000 Litresi Cerablus Hastanesi ve Bağlı \nSağlık Merkezleri İhtiyaçları İçindir. \nAyrıntılı bilgiye EKAP’ta yer alan ihale dokümanı içinde bulunan \nidari şartnameden ulaşılabilir.',
+                'mal teslim yeri':'Müdürlüğümüz, Suriye Görev Gücü Başkanlığına bağlı El-Bab \nHastanesi ve bağlı sağlık merkezleri ile Cerablus Hastanesi ve  \nbağlı sağlık merkezlerine ait, Jeneratörler ve Araçlara ait yakıt \nihtiyaçlarını, ilgili İdareler sözleşme süresince yükleniciden istediği \nşekilde ve oranda peyder pey olarak talep edecek ve yüklenici \nidarenin istediği şekilde teslim edilecektir.',
+                'mal teslim tarihi':'Müdürlüğümüz, Suriye Görev Gücü Başkanlığına bağlı El-Bab \nHastanesi ve bağlı Sağlık Merkezleri ile Cerablus Hastanesi ve bağlı \nSağlık Merkezinin Jeneratörler ve Hizmet Araçlarına ait peyder pey \nolarak talep edeceği yakıt ihtiyaçlarını, Hastanelerde jeneratörler \n7/24 saat aktif olarak çalışacağından dolayı, jeneratörler için talep \nedilecek yakıt ihtiyaçlarını yükleniciye talebin bildirmesine \nmüteakip, acil durumlarda aynı gün, acil olmayan durumlarda ise  \nen geç beş (5) iş günü içerisinde ilgili hastanenin tanklarına idarenin \nistediği şekilde boşaltacak ve sorunsuz bir şekilde teslim edecektir. \nAyrıca, yüklenici sözleşme süresince idarelerin hizmet araçlarına \notomatik taşıt tanıma sistemini ücretsiz olarak takacak olup, \nAraçların yakıt ihtiyacını 7 (yedi) gün 24 saat nispetinde idarenin \nistediği şekilde yakıt verecektir.',
+                'ihale yeri':'Gaziantep İl Sağlık Müdürlüğü A-Blok 1.Kat İhale Salonu  \n(Kayaönü Mah. 42035 Nolu Cad. No:40 Şehitkâmil/Gaziantep) - \n(İpek Yolu Üzeri Safir Otel Bitişiği)',
+                'son teklif tarih ve saati':'29.04.2021 - 10:00'
+            }
+        }
         for i in bultenler:
             for ihale in i.getIhaleList(): 
-                print(ihale)
+                self.assertEqual(ihale, iknIndex[ihale['ikn']])
 
 class TestPdfParser(unittest.TestCase):
 

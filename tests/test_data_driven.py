@@ -2,8 +2,8 @@ from datetime import date
 from datetime import datetime as dt
 from functools import reduce
 import unittest
-from ihaleGozlemevi.lib import utils
-from ihaleGozlemevi.lib import data_driven_design as ddd
+from context import utils
+from context import data_driven_design as ddd
 from pdfminer.layout import LTTextContainer
 
 import logging
