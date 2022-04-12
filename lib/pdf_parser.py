@@ -93,19 +93,22 @@ class Bulten():
         return False
     def getIhaleList(self):
         
-        CUTOFF=80
+        CUTOFF=95
 
         # data-driven assumption: documents have > 2 pages
         pg = self.pdf.pages[1]
         # data-driven assumption: the header and footer will always have a line indicating where they end / begin.
         line0 = pg.lines[0]
         line1 = pg.lines[1]
-        headerFooterBBox = (0, min(line0['top'], line1['top']), pg.width, max(line0['top'], line1['top']))
+        headerFooterBBox = (0, min(line0['top'], line1['top']), pg.width, max(line0['top'], line1['top'])) #x0,top,x1,bottom
         ts = {"vertical_strategy": "text", 
         "horizontal_strategy": "text",
-        "keep_blank_chars": 'true'
+        "keep_blank_chars": 'true',
+        "explicit_vertical_lines": [0, 243], # so that the entire keys and values are captured. 242 represents the line between the key and value cells 
+        "text_x_tolerance": 1, # data-driven decision: spaces take ~4 'pixels' and key-value text never gets horizontally closer than 5 pixels
+        "text_y_tolerance": 3
         }
-        #x0,top,x1,bottom
+
 
         
         ikn_tokens={'ikn': 'ikn', 'ihale kayit numarasi': 'ikn'}
@@ -116,6 +119,7 @@ class Bulten():
             'telefon ve faks numarasi': 'idare telefon ve faks numarasi', 
             'elektronik posta adresi': 'idare e-posta adresi',
             'ihale dokumaninin gorulebilecegi ve e-imza kullanilarak indirilebilecegi internet sayfasi': 'kaynak',
+            'ihale dokumaninin gorulebilecegi ve': 'kaynak',
             # sonuc bultenleri
             'tarihi': 'ihale tarihi',
             'turu': 'ihale turu',
@@ -133,11 +137,14 @@ class Bulten():
         },{
             'ihale (son teklif verme) tarih ve saati': 'son teklif tarih ve saati',
             'ihale komisyonunun toplanti yeri (e-tekliflerin acilacagi adres)': 'komisyon toplanti yeri',
+            'ihale komisyonunun toplanti yeri': 'komisyon toplanti yeri',
             'dokuman satin alan sayisi': 'dokuman satin alan sayisi',
             'dokuman ekap uzerinden e-imza kullanarak indiren sayisi': 'e-imza indiren sayisi',
             'toplam teklif sayisi': 'toplam teklif sayisi',
             'toplam gecerli teklif sayisi': 'toplam gecerli teklif sayisi',
-            'yerli mali teklif eden istekli lehine fiyat avantaji uygulamasi': 'yerli mal fiyat avantaji'
+            'yerli mali teklif eden istekli lehine fiyat avantaji uygulamasi': 'yerli mal fiyat avantaji',
+            'tarihi ve saati': 'son teklif tarih ve saati',
+            'yapilacagi yer': 'ihale yeri'
         },{
             'tarihi': 'sozlesme tarihi',
             'bedeli': 'sozlesme bedeli',
@@ -146,7 +153,10 @@ class Bulten():
             'yuklenicinin uyrugu': 'yuklenici uyrugu',
             'yuklenicinin adresi': 'yuklenici adresi',
         }]
-        
+        delimiters = [('idarenin',),('ihale konusu mal alimin','ihale konusu malin'), ('ihalenin',), ('ikn', 'ihale kayit numarasi')]
+        sonuc_delimiters = [('ihalenin',), ('ihale konusu malin',), ('teklifler',), ('sozlesmenin',), ('ikn', 'ihale kayit numarasi')]
+        if self.isSonuc():
+            delimiters = sonuc_delimiters
         # fsm: ikn -> idarenin -> ihale konusu mal aliminin -> ihalenin (end of table) ikn->...
         tableCounter = 0
         tablesPerIhale = 5 if self.isSonuc() else 4
@@ -158,32 +168,38 @@ class Bulten():
             tables = pg.extract_tables(ts)
             for table in tables:
                 for line in table:
-                    if len(line) < 2:
+                    if len(line) < 3:
                         continue
-                    if len(line) > 2:
+                    if len(line) > 3:
                         print('what?')
-                    k, v = line
+                    k, _, v = line
                     
                     k = utils.asciify(k.lower())
                     if k in ('ikn', 'ihale kayit numarasi'):
+                        if ihaleBreak:
+                            yield ihale
+                            ihale = {}
                         ihaleBreak = True
-                        yield ihale
-                        ihale = {}
                     if not ihaleBreak:
                         continue
-                    
+                    k = k.split(')',maxsplit=1)[-1] # a), b), c)'yi gecmek adina
+                    if process.extractOne(k.split('-',maxsplit=1)[-1], delimiters[tableCounter], score_cutoff=CUTOFF): # 1-, 2-, 3-'u gecmek adina
+                        tableCounter += 1
+                        tableCounter %= tablesPerIhale
+                        keys = tablo_tokens[tableCounter].keys()
+                        if tableCounter != 0:
+                            continue
                     res = process.extractOne(k, keys, score_cutoff=CUTOFF)
-                    if res is None:
-                        # if next table has the answers, advance pointer
-                        res = process.extractOne(k, tablo_tokens[(tableCounter + 1) % tablesPerIhale].keys(), score_cutoff=CUTOFF)
-                        if res is not None:
-                            tableCounter = (tableCounter + 1) % tablesPerIhale
-                            keys = tablo_tokens[tableCounter].keys()
-                            if tableCounter == 0: # loop back but segment wasn't ikn
-                                log.debug('ihale table parsing fault')
-                    if res is not None:
+                    #if res is None:
+                        # # if next table has the answers, advance pointer
+                        # res = process.extractOne(k, tablo_tokens[(tableCounter + 1) % tablesPerIhale].keys(), score_cutoff=CUTOFF)
+                        # if res is not None:
+                        #     tableCounter = (tableCounter + 1) % tablesPerIhale
+                        #     keys = tablo_tokens[tableCounter].keys()
+                        #     if tableCounter == 0: # loop back but segment wasn't ikn
+                        #         log.debug('ihale table parsing fault')
+                    if res is not None and tablo_tokens[tableCounter][res[0]] not in ihale:
                         ihale[tablo_tokens[tableCounter][res[0]]] = v
-                break
             print(tables)
     def getDate(self):
         if self._date != None:
