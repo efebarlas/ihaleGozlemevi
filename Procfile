@@ -1,1 +1,1 @@
-web: gunicorn --pythonpath /app,/ihaleGozlemevi server:app
+web: gunicorn ihaleGozlemevi.app:app
