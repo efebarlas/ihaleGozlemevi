@@ -52,17 +52,21 @@ def main() -> int:
     assert stage.is_file(), "run `ihale build` first"
     src = sqlite3.connect(stage)
     paths = pick(src)
+    import random
+    rnd = random.Random(11)                                   # an incompressible page: its gzip needs several parts
+    synthetic = "<!doctype html><title>x</title><body>" + "".join(rnd.choice("abcdefghijklmnopqrstuvwxyz0123456789ğüşöçı İ<>/=") for _ in range(150_000)) + "</body>"
+    paths = sorted(paths + ["/ihale/2000-01-01-mal-Z-999999/"])
     tmp = Path(tempfile.mkdtemp(prefix="d1check-"))
     sub = d1.Stage(tmp / "subset.sqlite")
     for p in paths:
-        sub.add(p, src.execute("SELECT html FROM staged WHERE path=?", (p,)).fetchone()[0])
+        sub.add(p, synthetic if p == "/ihale/2000-01-01-mal-Z-999999/" else src.execute("SELECT html FROM staged WHERE path=?", (p,)).fetchone()[0])
     sub.close()
-    print("subset:", len(paths), "pages;", "parts per page:", {p: len(d1.chunks(d1.staged_html(tmp / "subset.sqlite", p))) for p in paths})
+    print("subset:", len(paths), "pages;", "parts per page:", {p: len(d1.gz_parts(d1.gzip_page(d1.staged_html(tmp / "subset.sqlite", p)))) for p in paths})
 
     # load into the local D1 exactly like deploy(local=True)
     d1.sync_pages(stage_db=tmp / "subset.sqlite", manifest_path=tmp / "m.json", batch_dir=tmp / "b",
                   execute=lambda f: sitegen._run_wrangler(["d1", "execute", sitegen.D1_NAME, "--local", f"--file={f}"]),
-                  updated="check", log=print)
+                  log=print)
 
     npx = sitegen._npx()
     env = dict(os.environ, npm_config_registry="https://registry.npmjs.org/")
@@ -87,7 +91,7 @@ def main() -> int:
         for p in paths:
             st, h, body = get("GET", p)
             expect = d1.staged_html(tmp / "subset.sqlite", p).encode("utf-8")
-            check(f"GET {p}", st == 200 and body == expect, f"{st}, {len(body)} bytes, parts={len(d1.chunks(expect.decode()))}")
+            check(f"GET {p}", st == 200 and body == expect, f"{st}, {len(body)} bytes, gzip parts={len(d1.gz_parts(d1.gzip_page(expect.decode())))}")
             if p == paths[0]:
                 check("content-type", h.get("content-type") == "text/html; charset=utf-8", h.get("content-type"))
                 check("X-Robots-Tag", h.get("x-robots-tag") == "noindex, nofollow", h.get("x-robots-tag"))
@@ -95,8 +99,9 @@ def main() -> int:
             # no trailing slash -> redirect to the slash form
             st2, h2, _ = get("GET", p.rstrip("/"))
             check(f"redirect {p.rstrip('/')}", st2 == 308 and h2.get("location", "").endswith(p), f"{st2} {h2.get('location')}")
-        multi = max(paths, key=lambda p: len(d1.staged_html(tmp / "subset.sqlite", p)))
-        check("multi-chunk page spans several parts", len(d1.chunks(d1.staged_html(tmp / "subset.sqlite", multi))) >= 3, multi)
+        multi = "/ihale/2000-01-01-mal-Z-999999/"
+        check("multi-part gzip page is stored in several rows and served byte for byte",
+              len(d1.gz_parts(d1.gzip_page(d1.staged_html(tmp / "subset.sqlite", multi)))) >= 3, multi)
         st, h, body = get("HEAD", paths[0])
         check("HEAD bulk page", st == 200 and body == b"" and h.get("x-robots-tag") == "noindex, nofollow", f"{st}, {len(body)} bytes")
         # static pass-through

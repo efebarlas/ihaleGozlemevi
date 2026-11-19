@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from datetime import date
 from pathlib import Path
 
@@ -782,13 +783,38 @@ def _d1_id() -> str | None:
     return dbs[0].get("database_id") if dbs else None
 
 
+_TRANSIENT_RE = re.compile(r"File could not be uploaded|ServiceUnavailable|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|"
+                           r"fetch failed|socket hang up|network error|timed out", re.I)
+RETRY_PAUSES = (15, 45)       # seconds before retry 1 and 2
+
+
+def run_with_retries(args: list[str], *, sleep=time.sleep) -> str:
+    """`_run_wrangler` with at most two retries after a transient upload/network error. Safe for `d1 execute --file`
+    batches because every page group starts with a DELETE of its own rows, so replaying a batch gives the same rows.
+    A payment/account prompt (PaymentRequired) or any other failure is never retried."""
+    for attempt in range(len(RETRY_PAUSES) + 1):
+        try:
+            return _run_wrangler(args)
+        except PaymentRequired:
+            raise
+        except RuntimeError as e:
+            if attempt >= len(RETRY_PAUSES) or not _TRANSIENT_RE.search(str(e)):
+                raise
+            log(f"transient wrangler error ({str(e).splitlines()[0][:100]}); retry {attempt + 1} in {RETRY_PAUSES[attempt]} s")
+            sleep(RETRY_PAUSES[attempt])
+    raise AssertionError("unreachable")
+
+
 def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: Path | None = None,
-           batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN) -> str:
+           batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN, dry_run: bool = False) -> str:
     """Deploy: changed bulk pages to D1, then the Worker + static assets, then D1 deletions.
 
     Returns the Worker URL (or "local" with local=True, which only fills the local D1 used by `wrangler dev --local`
     and skips `wrangler deploy`). Raises RuntimeError with wrangler's output on failure. The manifest of what is in
-    D1 (separate for local and remote) is updated only after each batch succeeds."""
+    D1 (separate for local and remote, versioned for the gzip table) is updated only after each batch succeeds.
+
+    With dry_run=True every guard and the real plan run, the exact rows/bytes are logged, and nothing else happens:
+    no wrangler call, no batch file, no manifest or usage change. Returns "dry-run"."""
     dist = Path(dist_dir) if dist_dir else SITE_DIR / "dist"
     index = dist / "index.html"
     if not index.is_file():
@@ -810,13 +836,24 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
 
     from ihale import config
     data = config.data_dir()
-    manifest_path = manifest_path or data / f"d1-manifest-{'local' if local else 'remote'}.json"
+    manifest_path = manifest_path or data / f"d1-manifest-{'local' if local else 'remote'}-{d1.MANIFEST_VERSION}.json"
     batch_dir = batch_dir or data / "d1-batches"
     where = ["--local"] if local else ["--remote"]
     url: list[str] = []
 
+    from datetime import datetime, timezone
+    usage_path = data / "d1-usage.json"
+
     def execute(f: Path) -> None:
-        _run_wrangler(["d1", "execute", D1_NAME, *where, f"--file={f}"])
+        size = f.stat().st_size
+        t0 = time.time()
+        started = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        run_with_retries(["d1", "execute", D1_NAME, *where, f"--file={f}"])
+        log(f"D1 execute {f.name}: {size:,} bytes, {time.time() - t0:.1f} s (started {started} UTC; "
+            "bulk pages answer 503 while an import runs)")
+        if not local:                                       # keep today's tally honest even if a later batch fails
+            d1.add_rows_written(usage_path, f.read_text(encoding="utf-8").count("INSERT INTO pg"),
+                                datetime.now(timezone.utc).strftime("%Y-%m-%d"))
 
     def between() -> None:
         if local:
@@ -831,20 +868,22 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
             raise RuntimeError(f"wrangler deploy succeeded but no URL found in output:\n{out}")
         url.append(m.group(0).rstrip(".,)"))
 
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
     plan = d1.sync_pages(stage_db=stage_db, manifest_path=manifest_path, batch_dir=batch_dir, execute=execute,
-                         between=between, updated=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         max_rows=max_rows, log=lambda m: log(m))
+                         between=between, max_rows=max_rows, dry_run=dry_run,
+                         rows_today=0 if local else d1.rows_written_today(usage_path, today), log=lambda m: log(m))
+    if dry_run:
+        return "dry-run"
     if not local:
-        report_d1_usage(data, plan, now.strftime("%Y-%m-%d"))
+        report_d1_usage(data, plan, today)
     return url[0]
 
 
 def report_d1_usage(data: Path, plan, today: str) -> list[str]:
     """Warn (log line + marker file in <data>/logs/) at 80% of any D1 free limit. Rows written are tracked here;
     storage and rows read come from `wrangler d1 info` / `insights` when they are available without extra auth."""
-    written = d1.add_rows_written(data / "d1-usage.json", plan.rows, today)
+    written = d1.rows_written_today(data / "d1-usage.json", today)       # tracked per executed batch
     size = reads = None
     try:
         size = d1.parse_info_size(_run_wrangler(["d1", "info", D1_NAME, "--json"]))

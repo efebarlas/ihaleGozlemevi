@@ -1,6 +1,8 @@
 """Offline tests for the D1 split: classifier, staging, SQL chunking/escaping, manifest diffing, deploy order."""
 from __future__ import annotations
 
+import gzip
+import json
 import re
 import sqlite3
 from pathlib import Path
@@ -104,8 +106,14 @@ def test_full_build_without_split_is_fully_static(tmp_path):
     assert not d1.staging_path(tmp_path / "p").exists()
 
 
-# ------------------------------------------------------------------ SQL: chunking and escaping
+# ------------------------------------------------------------------ SQL: gzip BLOB rows, chunking and escaping
 NASTY = "it's 100% a;b -- c /* d */ \n\r\n İİıışşğğüüööçç ''quoted'' \"dq\" \\ <b>x</b> é \U0001F600 NULL"
+
+
+@pytest.fixture(autouse=True)
+def _isolated_data_dir(tmp_path, monkeypatch):
+    """deploy() keeps its manifests and the daily usage tally in the data dir: never touch the real one in tests."""
+    monkeypatch.setenv("IHALE_DATA_DIR", str(tmp_path / "datadir"))
 
 
 def _apply(db: sqlite3.Connection, stmts: list[str]):
@@ -113,8 +121,9 @@ def _apply(db: sqlite3.Connection, stmts: list[str]):
 
 
 def _read_back(db, path):
-    rows = db.execute("SELECT html FROM pages WHERE path=? ORDER BY part", (path,)).fetchall()
-    return "".join(r[0] for r in rows)
+    """Concatenate the gzip parts of a page, gunzip once, return the HTML (what the Worker does)."""
+    rows = db.execute("SELECT gz FROM pg WHERE path=? ORDER BY part", (path,)).fetchall()
+    return gzip.decompress(b"".join(r[0] for r in rows)).decode("utf-8") if rows else ""
 
 
 def test_sql_quote_roundtrip_through_sqlite():
@@ -124,21 +133,39 @@ def test_sql_quote_roundtrip_through_sqlite():
     assert db.execute("SELECT x FROM t").fetchone()[0] == NASTY
 
 
-@pytest.mark.parametrize("html", ["", "x", NASTY, NASTY * 3000, "'" * 40_000, "ş" * 50_000, "\U0001F600" * 20_000])
-def test_page_statements_chunk_and_roundtrip(html):
-    stmts = d1.page_statements("/ihale/x'y;z/", html, d1.sha_of(html), "2026-11-19T00:00:00Z")
+import random as _random
+_rnd = _random.Random(7)
+RANDOM = "".join(_rnd.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ğüşöçıİ<>/=") for _ in range(150_000))   # barely compressible
+
+
+@pytest.mark.parametrize("html", ["", "x", NASTY, NASTY * 3000, "'" * 40_000, "ş" * 50_000, "\U0001F600" * 20_000, RANDOM])
+def test_page_statements_gzip_roundtrip(html):
+    gz = d1.gzip_page(html)
+    stmts = d1.page_statements("/ihale/x'y;z/", gz, d1.sha_of(html))
     assert all(len(s.encode("utf-8")) <= d1.MAX_STATEMENT_BYTES for s in stmts)
     db = sqlite3.connect(":memory:")
     _apply(db, stmts)
     assert _read_back(db, "/ihale/x'y;z/") == html
-    parts, sha = db.execute("SELECT parts, sha FROM page_meta").fetchone()
-    assert parts == len(d1.chunks(html)) and sha == d1.sha_of(html)
+    shas = db.execute("SELECT part, sha FROM pg ORDER BY part").fetchall()
+    assert shas[0] == (0, d1.sha_of(html)) and all(s is None for _, s in shas[1:])        # sha lives on part 0 only
+    assert len(shas) == len(d1.gz_parts(gz))
+    _apply(db, stmts)                                                                    # replaying the group changes nothing
+    assert db.execute("SELECT count(*) FROM pg").fetchone()[0] == len(shas)
+
+
+def test_a_typical_large_page_is_one_row_and_gzip_is_deterministic():
+    html = ("<li class=\"row\"><a href=\"/ihale/2026-11-18-mal-A-1/\">Örnek konu</a> <span>ÖRNEK İL MÜDÜRLÜĞÜ</span></li>\n" * 1200)
+    assert len(html.encode()) > 100_000
+    gz = d1.gzip_page(html)
+    assert gz == d1.gzip_page(html) and len(gz) < 10_000 and len(d1.gz_parts(gz)) == 1
+    big = d1.gzip_page(RANDOM)
+    assert len(d1.gz_parts(big)) >= 2 and b"".join(d1.gz_parts(big)) == big             # split compressed bytes, never members
 
 
 def test_statement_over_limit_is_rejected(monkeypatch):
-    monkeypatch.setattr(d1, "CHUNK_CHARS", 100_000)
+    monkeypatch.setattr(d1, "PART_BYTES", 60_000)                                       # hex literal would be 120 KB
     with pytest.raises(ValueError, match="over"):
-        d1.page_statements("/p/", "ş" * 100_000, "s", "u")
+        d1.page_statements("/p/", d1.gzip_page(RANDOM), "s")
 
 
 def test_batches_keep_pages_together_and_respect_limit():
@@ -160,10 +187,11 @@ def _mk_stage(path: Path, pages: dict[str, str]) -> Path:
 
 
 class FakeD1:
-    """Applies batch files to an in-memory SQLite, like `wrangler d1 execute` would."""
+    """Applies batch files to an in-memory SQLite, like `wrangler d1 execute` would (the v1 tables exist to be dropped)."""
 
     def __init__(self):
         self.db = sqlite3.connect(":memory:")
+        self.db.executescript("CREATE TABLE pages(path TEXT); CREATE TABLE page_meta(path TEXT);")
         self.files: list[Path] = []
 
     def __call__(self, f: Path):
@@ -171,42 +199,48 @@ class FakeD1:
         self.db.executescript(f.read_bytes().decode("utf-8"))
 
     def pages(self) -> dict[str, str]:
-        paths = [r[0] for r in self.db.execute("SELECT path FROM page_meta")]
+        try:
+            paths = [r[0] for r in self.db.execute("SELECT path FROM pg WHERE part=0")]
+        except sqlite3.OperationalError:
+            return {}
         return {p: _read_back(self.db, p) for p in paths}
 
 
 def _sync(tmp_path, stage, fake, **kw):
     return d1.sync_pages(stage_db=stage, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b",
-                         execute=fake, updated="t", log=lambda m: None, **kw)
+                         execute=fake, log=lambda m: None, **kw)
 
 
-def test_first_sync_uploads_everything_then_second_is_a_noop(tmp_path):
+def test_first_sync_uploads_everything_drops_v1_then_second_is_a_noop(tmp_path):
     pages = {"/ihale/a/": "A" * 40_000, "/ihale/b/": NASTY, "/gun/2026-11-18/1/": "<p>x</p>"}
     stage = _mk_stage(tmp_path / "s.sqlite", pages)
     fake = FakeD1()
     plan = _sync(tmp_path, stage, fake)
     assert len(plan.upserts) == 3 and plan.deletes == [] and fake.pages() == pages
-    assert plan.rows == (3 + 1) + (1 + 1) + (1 + 1)                      # 3 parts + meta, 1 part + meta, 1 part + meta
+    assert plan.rows == 3                                                  # one gzip row per page, no meta rows
+    assert "DROP TABLE IF EXISTS pages" in fake.files[-1].read_text(encoding="utf-8")
+    assert fake.db.execute("SELECT count(*) FROM sqlite_master WHERE name IN ('pages','page_meta')").fetchone()[0] == 0
     fake2 = FakeD1()
     fake2.db = fake.db
     plan2 = _sync(tmp_path, stage, fake2)
     assert plan2.upserts == [] and plan2.deletes == [] and plan2.unchanged == 3 and plan2.rows == 0
-    assert "INSERT INTO pages" not in fake2.files[-1].read_text(encoding="utf-8")
+    assert fake2.files == []                                               # nothing to upload: no wrangler import at all
 
 
 def test_changed_page_shrinks_and_deleted_page_is_removed(tmp_path):
-    big = "B" * (d1.CHUNK_CHARS * 2 + 10)                                    # 3 parts
+    big = RANDOM * 2                                                       # several gzip parts
     stage = _mk_stage(tmp_path / "s.sqlite", {"/ihale/a/": big, "/ihale/b/": "keep", "/ihale/c/": "gone"})
     fake = FakeD1()
     _sync(tmp_path, stage, fake)
-    assert fake.db.execute("SELECT count(*) FROM pages WHERE path='/ihale/a/'").fetchone()[0] == 3
-    stage2 = _mk_stage(tmp_path / "s2.sqlite", {"/ihale/a/": "B" * (d1.CHUNK_CHARS + 5), "/ihale/b/": "keep", "/ihale/new/": "n"})
+    old_parts = fake.db.execute("SELECT count(*) FROM pg WHERE path='/ihale/a/'").fetchone()[0]
+    assert old_parts >= 3
+    stage2 = _mk_stage(tmp_path / "s2.sqlite", {"/ihale/a/": "short", "/ihale/b/": "keep", "/ihale/new/": "n"})
     plan = _sync(tmp_path, stage2, fake)
     assert [u[0] for u in plan.upserts] == ["/ihale/a/", "/ihale/new/"] and plan.deletes == ["/ihale/c/"]
-    assert plan.rows == (3 + 2 + 1) + (0 + 1 + 1) + (1 + 1)                 # a: old 3 + new 2 + meta; new; delete c
-    assert fake.db.execute("SELECT count(*) FROM pages WHERE path='/ihale/a/'").fetchone()[0] == 2   # no stale part
-    assert fake.pages() == {"/ihale/a/": "B" * (d1.CHUNK_CHARS + 5), "/ihale/b/": "keep", "/ihale/new/": "n"}
-    assert d1.load_manifest(tmp_path / "m.json").keys() == {"/ihale/a/", "/ihale/b/", "/ihale/new/"}
+    assert plan.rows == (old_parts + 1) + 1 + 1                            # a: old parts + 1 new part; new; delete c
+    assert fake.db.execute("SELECT count(*) FROM pg WHERE path='/ihale/a/'").fetchone()[0] == 1       # no stale part
+    assert fake.pages() == {"/ihale/a/": "short", "/ihale/b/": "keep", "/ihale/new/": "n"}
+    assert {k for k in d1.load_manifest(tmp_path / "m.json") if not k.startswith("__")} == {"/ihale/a/", "/ihale/b/", "/ihale/new/"}
 
 
 def test_deletions_run_after_the_between_step(tmp_path):
@@ -217,22 +251,38 @@ def test_deletions_run_after_the_between_step(tmp_path):
     events = []
     d1.sync_pages(stage_db=stage2, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b",
                   execute=lambda f: (events.append("exec"), fake(f)), between=lambda: events.append("deploy"),
-                  updated="t", log=lambda m: None)
+                  log=lambda m: None)
     assert events == ["exec", "deploy", "exec"]                             # upserts, Worker deploy, deletions
     assert "/ihale/c/" not in fake.pages()
 
 
-def test_row_guard_refuses_before_any_write(tmp_path):
+def test_row_guard_counts_todays_tally_and_refuses_before_any_write(tmp_path):
     stage = _mk_stage(tmp_path / "s.sqlite", {f"/ihale/{i}/": "x" for i in range(30)})
     fake = FakeD1()
     with pytest.raises(RuntimeError, match="exceeds the limit"):
-        _sync(tmp_path, stage, fake, max_rows=50)
+        _sync(tmp_path, stage, fake, max_rows=50, rows_today=21)                    # 30 rows + 21 already today > 50
     assert fake.files == [] and not (tmp_path / "m.json").exists()
     assert d1.D1_MAX_ROWS_PER_RUN == 90_000
+    # the failed real run: ~48k rows planned on top of 44.8k already written today must be refused
+    big = d1.Plan(rows=47_958)
+    assert 44_807 + big.rows > d1.D1_MAX_ROWS_PER_RUN
+
+
+def test_dry_run_reports_and_changes_nothing(tmp_path):
+    stage = _mk_stage(tmp_path / "s.sqlite", {"/ihale/a/": "a" * 5000, "/ihale/b/": RANDOM})
+    fake = FakeD1()
+    logs = []
+    plan = d1.sync_pages(stage_db=stage, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b", execute=fake,
+                         dry_run=True, rows_today=1000, log=logs.append)
+    assert fake.files == [] and not (tmp_path / "m.json").exists() and not (tmp_path / "b").exists()
+    text = "\n".join(logs)
+    assert "2 changed/new pages" in text and f"rows to write: {plan.rows}" in text and "gzip bytes stored" in text
+    assert "rows written today (UTC): 1000" in text and f"with this run {1000 + plan.rows}" in text and "SQL batch files: 1" in text
+    assert plan.rows >= 2 and plan.gz_bytes > 0 and plan.max_html_bytes >= 5000
 
 
 def test_failed_batch_keeps_manifest_for_the_uncommitted_pages_only(tmp_path, monkeypatch):
-    pages = {f"/ihale/{i:03d}/": "p" * 6000 for i in range(40)}
+    pages = {f"/ihale/{i:03d}/": "".join(_rnd.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(6000)) for i in range(40)}
     stage = _mk_stage(tmp_path / "s.sqlite", pages)
     fake = FakeD1()
     calls = []
@@ -242,14 +292,48 @@ def test_failed_batch_keeps_manifest_for_the_uncommitted_pages_only(tmp_path, mo
         if len(calls) == 2:
             raise RuntimeError("boom")
         fake(f)
-    monkeypatch.setattr(d1, "BATCH_BYTES", 100_000)
+    monkeypatch.setattr(d1, "BATCH_BYTES", 60_000)
     with pytest.raises(RuntimeError, match="boom"):
         _sync(tmp_path, stage, flaky)
-    done = d1.load_manifest(tmp_path / "m.json")
+    done = {k for k in d1.load_manifest(tmp_path / "m.json") if not k.startswith("__")}
     assert 0 < len(done) < 40
-    assert set(done) == set(fake.pages())                                   # manifest == what really reached D1
+    assert done == set(fake.pages())                                         # manifest == what really reached D1
     plan = _sync(tmp_path, stage, fake)                                      # re-run finishes only the rest
     assert len(plan.upserts) == 40 - len(done) and fake.pages() == pages
+
+
+# ------------------------------------------------------------------ transient upload errors
+def test_transient_upload_errors_are_retried_twice_with_pauses(monkeypatch):
+    sleeps, calls = [], []
+
+    def flaky(args):
+        calls.append(args)
+        if len(calls) <= 2:
+            raise RuntimeError("wrangler d1 execute failed (1):\nFile could not be uploaded. Please retry.\nServiceUnavailable")
+        return "ok"
+    monkeypatch.setattr(sitegen, "_run_wrangler", flaky)
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    assert sitegen.run_with_retries(["d1", "execute"], sleep=sleeps.append) == "ok"
+    assert sleeps == [15, 45] and len(calls) == 3
+
+
+def test_retries_give_up_after_two_and_skip_other_errors(monkeypatch):
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    calls = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda a: calls.append(a) or (_ for _ in ()).throw(RuntimeError("ECONNRESET")))
+    with pytest.raises(RuntimeError, match="ECONNRESET"):
+        sitegen.run_with_retries(["x"], sleep=lambda s: None)
+    assert len(calls) == 3                                                     # first try + 2 retries
+    calls.clear()
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda a: calls.append(a) or (_ for _ in ()).throw(RuntimeError("SQLITE_ERROR: syntax")))
+    with pytest.raises(RuntimeError, match="SQLITE_ERROR"):
+        sitegen.run_with_retries(["x"], sleep=lambda s: None)
+    assert len(calls) == 1                                                     # not transient: no retry
+    calls.clear()
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda a: calls.append(a) or (_ for _ in ()).throw(sitegen.PaymentRequired("STOP: card")))
+    with pytest.raises(sitegen.PaymentRequired):
+        sitegen.run_with_retries(["x"], sleep=lambda s: None)
+    assert len(calls) == 1                                                     # never retry a payment prompt
 
 
 # ------------------------------------------------------------------ deploy() order and guards
@@ -273,15 +357,15 @@ def test_deploy_local_runs_d1_only_with_local_flag(tmp_path, monkeypatch):
     assert not any(c[0] == "deploy" for c in calls)
 
 
-def test_deploy_remote_order_and_placeholder_guard(tmp_path, monkeypatch):
+def test_deploy_remote_order_timing_log_and_placeholder_guard(tmp_path, monkeypatch):
     dist = _fake_dist(tmp_path)
-    calls = []
+    calls, logs = [], []
 
     def fake(args):
         calls.append(args)
         return "Published ihale-gozlemevi\n  https://ihale-gozlemevi.example.workers.dev\n" if args[0] == "deploy" else ""
     monkeypatch.setattr(sitegen, "_run_wrangler", fake)
-    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    monkeypatch.setattr(sitegen, "log", logs.append)
     monkeypatch.setattr(sitegen, "_d1_id", lambda: sitegen.PLACEHOLDER_D1_ID)
     with pytest.raises(RuntimeError, match="placeholder"):
         sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
@@ -291,9 +375,48 @@ def test_deploy_remote_order_and_placeholder_guard(tmp_path, monkeypatch):
     assert url == "https://ihale-gozlemevi.example.workers.dev"
     kinds = [("d1:" + ("remote" if "--remote" in c else "local") if c[:2] == ["d1", "execute"] else c[0] + (":" + c[1] if c[0] == "d1" else ""))
              for c in calls]
-    assert kinds[0] == "d1:remote" and kinds.index("deploy") > max(i for i, k in enumerate(kinds) if k == "d1:remote")
-    assert "d1:local" not in kinds
-    assert kinds[kinds.index("deploy") + 1:] == ["d1:info", "d1:insights"]       # usage check runs after the deploy
+    # upserts (one batch), Worker deploy, then the one-time drop of the v1 tables, then the usage lookups
+    assert kinds == ["d1:remote", "deploy", "d1:remote", "d1:info", "d1:insights"]
+    assert sum(1 for m in logs if m.startswith("D1 execute batch-")) == 2 and any("start" in m and " s " in m for m in logs)
+    usage = json.loads((tmp_path / "datadir" / "d1-usage.json").read_text(encoding="utf-8"))
+    assert usage["rows_written"] == 2                                          # per executed batch, not at the end
+
+
+def test_deploy_dry_run_makes_no_wrangler_call_and_no_state_change(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    logs = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("wrangler must not be called in a dry run"))
+    monkeypatch.setattr(sitegen, "log", logs.append)
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
+    assert sitegen.deploy(dist, dry_run=True, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b") == "dry-run"
+    assert not (tmp_path / "m.json").exists() and not (tmp_path / "b").exists()
+    assert not (tmp_path / "datadir" / "d1-usage.json").exists()
+    assert any("rows to write: 2" in m for m in logs)
+    sitegen_dist = tmp_path / "dist"
+    (sitegen_dist / "tokens").mkdir()                                          # guards still run before a dry run
+    with pytest.raises(RuntimeError, match="design preview"):
+        sitegen.deploy(dist, dry_run=True)
+
+
+def test_deploy_refuses_when_todays_tally_plus_plan_is_over_the_limit(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    d1.add_rows_written(tmp_path / "datadir" / "d1-usage.json", 89_999, __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y-%m-%d"))
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("no wrangler call expected"))
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
+    with pytest.raises(RuntimeError, match="already written today"):
+        sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+
+
+def test_v2_manifest_file_is_separate_from_the_v1_one(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: "")
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    (tmp_path / "datadir").mkdir()
+    (tmp_path / "datadir" / "d1-manifest-local.json").write_text('{"/ihale/a/": ["old", 3]}', encoding="utf-8")   # a v1 manifest
+    sitegen.deploy(dist, local=True, batch_dir=tmp_path / "b")
+    assert (tmp_path / "datadir" / f"d1-manifest-local-{d1.MANIFEST_VERSION}.json").is_file()
+    assert json.loads((tmp_path / "datadir" / "d1-manifest-local.json").read_text(encoding="utf-8")) == {"/ihale/a/": ["old", 3]}
 
 
 def test_deploy_refuses_without_staged_pages_and_keeps_old_guards(tmp_path, builds):
@@ -410,11 +533,12 @@ def test_report_d1_usage_writes_marker_and_clears_it(tmp_path, monkeypatch):
     monkeypatch.setattr(sitegen, "log", logs.append)
     outputs = {"info": '{"file_size": 420000000}', "insights": "[]"}
     monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: outputs[args[1]])
+    d1.add_rows_written(tmp_path / "d1-usage.json", 85_000, "2026-11-19")          # the tally is kept per executed batch
     w = sitegen.report_d1_usage(tmp_path, d1.Plan(rows=85_000, total_bytes=124_000_000), "2026-11-19")
     assert len(w) == 2 and (tmp_path / "logs" / "d1-usage-warning.txt").is_file()
     assert any(m.startswith("WARNING") for m in logs)
     outputs["info"] = '{"file_size": 1000}'
-    assert sitegen.report_d1_usage(tmp_path, d1.Plan(rows=1, total_bytes=10), "2026-11-20") == []
+    assert sitegen.report_d1_usage(tmp_path, d1.Plan(rows=1, total_bytes=10), "2026-11-20") == []     # a new UTC day resets it
     assert not (tmp_path / "logs" / "d1-usage-warning.txt").exists()
 
 

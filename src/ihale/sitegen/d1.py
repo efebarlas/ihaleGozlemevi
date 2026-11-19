@@ -2,12 +2,14 @@
 
 The build keeps core pages as static assets and stages the bulk pages (`/ihale/<id>/`, `/idare/<slug>/...`,
 `/yuklenici/<slug>/...`, `/gun/<date>/<n>/`) in a local SQLite file with a sha per page. `sync_pages` diffs that
-against the last deployed manifest and writes only the changes to D1 as SQL batch files.
+against the last deployed manifest and writes only the changes to D1 as SQL batch files; each page is stored gzip-compressed
+(one BLOB row per page in the normal case) and decompressed in the Worker.
 
 The path classifier here is mirrored exactly by site/worker/index.js; keep both in sync.
 """
 from __future__ import annotations
 
+import gzip
 import hashlib
 import html as _html
 import json
@@ -17,19 +19,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-CHUNK_CHARS = 16_000          # <= 4 bytes/char, quote doubling only on ' -> every statement stays well under 90 KB
+PART_BYTES = 40_000           # raw gzip bytes per part: a hex literal doubles it, so a statement stays well under 90 KB
 MAX_STATEMENT_BYTES = 90_000
-BATCH_BYTES = 3_000_000       # one `wrangler d1 execute --file` per batch
-D1_MAX_ROWS_PER_RUN = 90_000  # D1 free tier: 100k rows written per day
+BATCH_BYTES = 3_000_000       # one `wrangler d1 execute --file` per batch (the first full upload used 2.9 MB files)
+D1_MAX_ROWS_PER_RUN = 90_000  # D1 free tier: 100k rows written per UTC day; today's tally counts too
+MANIFEST_VERSION = "v2"       # v2 = gzip BLOB table `pg`; a v1 manifest (table `pages`) is never reused
 
 JV_LABEL = "Gerçek kişi içeren iş ortaklığı"
 
+# One row per page part: the sha lives on part 0 (no separate meta table, which would cost a row per page).
 SCHEMA = (
-    "CREATE TABLE IF NOT EXISTS pages(path TEXT NOT NULL, part INTEGER NOT NULL, html TEXT NOT NULL, "
+    "CREATE TABLE IF NOT EXISTS pg(path TEXT NOT NULL, part INTEGER NOT NULL, sha TEXT, gz BLOB NOT NULL, "
     "PRIMARY KEY(path, part)) WITHOUT ROWID;\n"
-    "CREATE TABLE IF NOT EXISTS page_meta(path TEXT PRIMARY KEY, sha TEXT NOT NULL, parts INTEGER NOT NULL, "
-    "updated TEXT NOT NULL) WITHOUT ROWID;\n"
 )
+# The v1 tables are dropped in the deletion phase, after the Worker that reads `pg` is live.
+DROP_V1 = "DROP TABLE IF EXISTS pages;\nDROP TABLE IF EXISTS page_meta;\n"
 
 # ---- classifier (URL path with trailing slash). `liste` is reserved: /idare/liste/<n>/ is a static index page.
 _BULK = (
@@ -103,24 +107,28 @@ def staged_html(path: Path, url: str) -> str | None:
         db.close()
 
 
-# ---- SQL generation
+# ---- SQL generation (gzip BLOBs, one row per page in the normal case)
 def sql_quote(s: str) -> str:
     return "'" + s.replace("'", "''") + "'"
 
 
-def chunks(html: str, size: int | None = None) -> list[str]:
-    size = size or CHUNK_CHARS
-    return [html[i:i + size] for i in range(0, len(html), size)] or [""]
+def gzip_page(html: str) -> bytes:
+    """Deterministic gzip (mtime 0) of the page, one single member: DecompressionStream reads it in the Worker."""
+    return gzip.compress(html.encode("utf-8"), 9, mtime=0)
 
 
-def page_statements(path: str, html: str, sha: str, updated: str) -> list[str]:
-    """Replace a page: delete all its parts, insert the new parts, upsert its meta row."""
-    parts = chunks(html)
-    out = [f"DELETE FROM pages WHERE path={sql_quote(path)};"]
-    for i, c in enumerate(parts):
-        out.append(f"INSERT INTO pages(path,part,html) VALUES({sql_quote(path)},{i},{sql_quote(c)});")
-    out.append(f"INSERT OR REPLACE INTO page_meta(path,sha,parts,updated) VALUES({sql_quote(path)},{sql_quote(sha)},"
-               f"{len(parts)},{sql_quote(updated)});")
+def gz_parts(gz: bytes, size: int | None = None) -> list[bytes]:
+    """Split the *compressed* bytes (never separate gzip members) so every INSERT stays under the statement limit."""
+    size = size or PART_BYTES
+    return [gz[i:i + size] for i in range(0, len(gz), size)] or [b""]
+
+
+def page_statements(path: str, gz: bytes, sha: str) -> list[str]:
+    """Replace a page: delete its old parts, insert the new ones (sha on part 0). Replay-safe: the group starts with a
+    DELETE, so running a batch twice (e.g. after a transient upload error) leaves the same rows."""
+    out = [f"DELETE FROM pg WHERE path={sql_quote(path)};"]
+    for i, part in enumerate(gz_parts(gz)):
+        out.append(f"INSERT INTO pg(path,part,sha,gz) VALUES({sql_quote(path)},{i},{sql_quote(sha) if i == 0 else 'NULL'},X'{part.hex()}');")
     for s in out:
         if len(s.encode("utf-8")) > MAX_STATEMENT_BYTES:
             raise ValueError(f"SQL statement over {MAX_STATEMENT_BYTES} bytes for {path}")
@@ -128,7 +136,7 @@ def page_statements(path: str, html: str, sha: str, updated: str) -> list[str]:
 
 
 def delete_statements(path: str) -> list[str]:
-    return [f"DELETE FROM pages WHERE path={sql_quote(path)};", f"DELETE FROM page_meta WHERE path={sql_quote(path)};"]
+    return [f"DELETE FROM pg WHERE path={sql_quote(path)};"]
 
 
 def batch_files(statement_groups: list[list[str]], limit: int | None = None) -> list[list[list[str]]]:
@@ -169,7 +177,12 @@ class Plan:
     deletes: list[str] = field(default_factory=list)
     rows: int = 0
     unchanged: int = 0
-    total_bytes: int = 0
+    total_bytes: int = 0          # HTML bytes of every staged page
+    changed_html_bytes: int = 0
+    gz_bytes: int = 0             # gzip bytes of the changed pages (what is actually stored)
+    max_html_bytes: int = 0
+    max_gz_bytes: int = 0
+    gz: dict = field(default_factory=dict)                              # path -> gzip bytes of changed pages
 
 
 def make_plan(stage_db: Path, manifest: dict[str, list]) -> Plan:
@@ -177,61 +190,78 @@ def make_plan(stage_db: Path, manifest: dict[str, list]) -> Plan:
     db = sqlite3.connect(stage_db)
     try:
         seen = set()
-        for path, sha, nbytes, nchars in db.execute("SELECT path, sha, length(CAST(html AS BLOB)), length(html) FROM staged ORDER BY path"):
+        for path, sha, html in db.execute("SELECT path, sha, html FROM staged ORDER BY path"):
             seen.add(path)
+            nbytes = len(html.encode("utf-8"))
             plan.total_bytes += nbytes
             old = manifest.get(path)
             if old and old[0] == sha:
                 plan.unchanged += 1
                 continue
-            parts = max(1, -(-nchars // CHUNK_CHARS))
+            gz = gzip_page(html)
+            parts = len(gz_parts(gz))
             plan.upserts.append((path, sha, parts))
-            # rows written: old parts deleted + new parts + meta (delete/replace counted once)
-            plan.rows += (old[1] if old else 0) + parts + 1
+            plan.gz[path] = gz
+            plan.changed_html_bytes += nbytes
+            plan.gz_bytes += len(gz)
+            plan.max_html_bytes = max(plan.max_html_bytes, nbytes)
+            plan.max_gz_bytes = max(plan.max_gz_bytes, len(gz))
+            plan.rows += (old[1] if old else 0) + parts           # old parts deleted + new parts inserted
         for path, old in manifest.items():
+            if path.startswith("__"):
+                continue                                            # bookkeeping keys, not pages
             if path not in seen:
                 plan.deletes.append(path)
-                plan.rows += old[1] + 1
+                plan.rows += old[1]
     finally:
         db.close()
     return plan
 
 
+def plan_report(plan: Plan, *, rows_today: int = 0, max_rows: int = D1_MAX_ROWS_PER_RUN) -> str:
+    n = len(plan.upserts)
+    batches = batch_files([[f"x{'0' * (len(gz) * 2 + 120)}"] for gz in plan.gz.values()]) if n else []
+    sizes = [sum(len(g[0]) + 1 for g in b) for b in batches]
+    return "\n".join([
+        f"D1 plan: {n} changed/new pages, {len(plan.deletes)} deletions, {plan.unchanged} unchanged",
+        f"  rows to write: {plan.rows} ({plan.rows / n:.2f} per changed page)" if n else f"  rows to write: {plan.rows}",
+        f"  HTML bytes of changed pages: {plan.changed_html_bytes:,} (mean {plan.changed_html_bytes // max(n, 1):,}, max {plan.max_html_bytes:,})",
+        f"  gzip bytes stored: {plan.gz_bytes:,} (mean {plan.gz_bytes // max(n, 1):,}, max {plan.max_gz_bytes:,})",
+        f"  SQL batch files: {len(batches)} (about {max(sizes, default=0) / 1e6:.1f} MB max, {sum(sizes) / 1e6:.1f} MB total)",
+        f"  all staged pages: {plan.total_bytes / 1e6:.1f} MB of HTML",
+        f"  rows written today (UTC): {rows_today}; with this run {rows_today + plan.rows} of the {max_rows} allowed",
+    ])
+
+
 def sync_pages(*, stage_db: Path, manifest_path: Path, batch_dir: Path, execute: Callable[[Path], None],
-               between: Callable[[], None] | None = None, updated: str, max_rows: int = D1_MAX_ROWS_PER_RUN,
-               log: Callable[[str], None] = print) -> Plan:
-    """Push changed pages to D1, run `between` (the Worker deploy), then push deletions; update the manifest
-    after each successful batch. Idempotent: a re-run after a failure repeats only what is not in the manifest."""
+               between: Callable[[], None] | None = None, max_rows: int = D1_MAX_ROWS_PER_RUN,
+               rows_today: int = 0, dry_run: bool = False, log: Callable[[str], None] = print) -> Plan:
+    """Push changed pages to D1, run `between` (the Worker deploy), then push deletions (and drop the v1 tables);
+    update the manifest after each successful batch. Idempotent: a re-run after a failure repeats only what is not
+    in the manifest. With dry_run nothing is written (no batch files, no execute, no manifest change)."""
     manifest = load_manifest(manifest_path)
     plan = make_plan(stage_db, manifest)
-    log(f"D1 plan: {len(plan.upserts)} changed/new pages, {len(plan.deletes)} deletions, {plan.unchanged} unchanged; "
-        f"{plan.rows} rows to write, {plan.total_bytes / 1e6:.1f} MB of bulk HTML stored in total")
-    if plan.rows > max_rows:
-        raise RuntimeError(f"refusing: {plan.rows} D1 rows to write in one run exceeds the limit of {max_rows} "
-                           f"(free tier: 100,000 rows/day). Nothing was written.")
+    log(plan_report(plan, rows_today=rows_today, max_rows=max_rows))
+    if rows_today + plan.rows > max_rows:
+        raise RuntimeError(f"refusing: {plan.rows} rows to write plus {rows_today} already written today exceeds the "
+                           f"limit of {max_rows} (free tier: 100,000 rows/day). Nothing was written.")
+    if dry_run:
+        return plan
     batch_dir.mkdir(parents=True, exist_ok=True)
     for old in batch_dir.glob("batch-*.sql"):
         old.unlink()
 
-    db = sqlite3.connect(stage_db)
-    try:
-        groups, meta_for = [], []
-        for path, sha, parts in plan.upserts:
-            html = db.execute("SELECT html FROM staged WHERE path=?", (path,)).fetchone()[0]
-            groups.append(page_statements(path, html, sha, updated))
-            meta_for.append((path, sha, parts))
-    finally:
-        db.close()
-
+    groups = [page_statements(path, plan.gz[path], sha) for path, sha, _ in plan.upserts]
     n = 0
     idx = 0
-    for batch in batch_files(groups) if groups else [[]]:
+    first_run = not manifest                                      # nothing deployed under this manifest yet
+    for batch in batch_files(groups) if (groups or first_run) else []:
         text = SCHEMA + "".join(s + "\n" for g in batch for s in g)
         f = batch_dir / f"batch-{n:04d}.sql"
         f.write_text(text, encoding="utf-8", newline="\n")
         execute(f)
         for _ in batch:
-            path, sha, parts = meta_for[idx]
+            path, sha, parts = plan.upserts[idx]
             manifest[path] = [sha, parts]
             idx += 1
         save_manifest(manifest_path, manifest)
@@ -240,16 +270,19 @@ def sync_pages(*, stage_db: Path, manifest_path: Path, batch_dir: Path, execute:
     if between:
         between()
 
-    if plan.deletes:
-        for k in range(0, len(plan.deletes), 500):
-            part = plan.deletes[k:k + 500]
-            f = batch_dir / f"batch-{n:04d}.sql"
-            f.write_text("".join(s + "\n" for p in part for s in delete_statements(p)), encoding="utf-8", newline="\n")
-            execute(f)
-            for p in part:
-                manifest.pop(p, None)
-            save_manifest(manifest_path, manifest)
-            n += 1
+    drop_v1 = "__v1_dropped__" not in manifest                   # one-time: remove the v1 tables once `pg` is live
+    steps = [plan.deletes[k:k + 500] for k in range(0, len(plan.deletes), 500)] or ([[]] if drop_v1 else [])
+    for part in steps:
+        f = batch_dir / f"batch-{n:04d}.sql"
+        f.write_text((DROP_V1 if drop_v1 else "") + "".join(s + "\n" for p in part for s in delete_statements(p)),
+                     encoding="utf-8", newline="\n")
+        execute(f)
+        drop_v1 = False
+        manifest["__v1_dropped__"] = ["1", 0]
+        for p in part:
+            manifest.pop(p, None)
+        save_manifest(manifest_path, manifest)
+        n += 1
     return plan
 
 
@@ -319,6 +352,14 @@ def usage_warnings(*, rows_written_today: int | None, rows_read_today: int | Non
         if v is not None and v >= WARN_FRACTION * limit:
             out.append(f"D1 {name}: {v:,} is {100 * v / limit:.0f}% of the free limit ({limit:,})")
     return out
+
+
+def rows_written_today(usage_path: Path, today: str) -> int:
+    if usage_path.is_file():
+        data = json.loads(usage_path.read_text(encoding="utf-8"))
+        if data.get("date") == today:
+            return int(data.get("rows_written", 0))
+    return 0
 
 
 def add_rows_written(usage_path: Path, rows: int, today: str) -> int:

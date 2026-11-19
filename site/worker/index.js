@@ -34,10 +34,17 @@ function unavailable(request) {
   return new Response(request.method === "HEAD" ? null : body, { status: 503, headers });
 }
 
+// Pages are stored gzip-compressed (table pg: one BLOB row per page, more parts only for very large pages). The parts
+// are slices of ONE gzip stream, so they are concatenated before decompressing.
 async function loadPage(env, path) {
-  const { results } = await env.PAGES.prepare("SELECT html FROM pages WHERE path = ?1 ORDER BY part").bind(path).all();
+  const { results } = await env.PAGES.prepare("SELECT gz FROM pg WHERE path = ?1 ORDER BY part").bind(path).all();
   if (!results || results.length === 0) return null;
-  return results.map((r) => r.html).join("");
+  const parts = results.map((r) => new Uint8Array(r.gz));   // D1 hands BLOBs over as number[] or ArrayBuffer
+  const bytes = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let off = 0;
+  for (const p of parts) { bytes.set(p, off); off += p.length; }
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return await new Response(stream).text();
 }
 
 export default {
