@@ -66,9 +66,8 @@ Flags alone fire on roughly half of all tenders, and their base rates differ a l
 - `idare_orani`: the idare's tek-geçerli share within its usul_turu is ≥ 2× the share of its per-procedure peers (min n as in Peer comparison).
 
 **Points per part.** points = ln(1 / p), where p is that part's base rate among stored records with the same `usul_turu`.
-- If that group has n < 100, use the all-records rate.
 - Recompute p on every `flag` run from the whole stored history.
-- Floor p at 0.001, so no part exceeds about 6.9 points.
+- **Smoothing (replaces the old floor and the n<100 fallback):** if k < 5 in the group, use p = p_parent (the `<type>/hepsi` rate). Otherwise p = (k + 50·p_parent) / (n + 50). Export `p_source: group|type`, `k` and `n`.
 
 **Score.** The sum of points, a float. Export `score` rounded to 2 decimals and `score_parts` as `[{"code", "points", "p", "p_group"}]`, where `p_group` is the usul_turu used, or `"hepsi"` for the fallback.
 
