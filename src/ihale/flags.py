@@ -86,6 +86,22 @@ def possessive_suffix(n: int) -> str:
     return _TENS_SUFFIX[(n // 10) % 10]
 
 
+TYPO_NOTE = " · Bültendeki iki rakam arasındaki fark tam bir 10'un katı; kaynakta yazım hatası olabilir."
+LARGE_NOTE = " · Fark olağan dışı büyük; rakamlar bültende bu şekilde yazıyor, kaynağı kontrol edin."
+LARGE_RATIO = 1.5
+
+
+def source_check(ratio: float | None) -> str | None:
+    """'typo' when the ratio is within +-1% of a power of ten other than 1 (10, 100 ... or 0.1, 0.01 ...);
+    'large' for any other ratio > 1.5; else None."""
+    if ratio is None or ratio <= 0:
+        return None
+    for k in range(-6, 7):
+        if k and abs(ratio / 10 ** k - 1) <= 0.01 + 1e-9:
+            return "typo"
+    return "large" if ratio > LARGE_RATIO else None
+
+
 def money_tr(kurus: int, currency: str) -> str:
     """406700 → '4.067,00 TRY' (Turkish separators)."""
     return f"{kurus // 100:,}".replace(",", ".") + f",{kurus % 100:02d} {currency}"
@@ -459,6 +475,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
 
         # --- bedel_orani
         ratio_val = None
+        check = None
         est = _estimate(r)
         ok = True
         if est is None:
@@ -480,6 +497,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
             total = sum(m.record.sozlesme_bedeli.kurus for m in members)
             est_k = est[1].kurus
             ratio_val = total / est_k
+            check = source_check(ratio_val)
             if total * 100 >= est_k * RATIO_THRESHOLD_PCT:
                 pct = total * 100 // est_k          # floor: 0.999 → 99
                 if len(members) == 1:
@@ -491,7 +509,12 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                             f"(%{percent_tr(total, est_k)})")
                 else:
                     text = f"{lead} yaklaşık maliyetin {percent_possessive(pct)}"
-                res.flags.append({"code": "bedel_orani", "value": total / est_k, "text": text})
+                flag = {"code": "bedel_orani", "value": total / est_k, "text": text}
+                if check == "typo":
+                    flag["source_check"], flag["text"] = "typo", text + TYPO_NOTE
+                elif check == "large":
+                    flag["source_check"], flag["text"] = "large", text + LARGE_NOTE
+                res.flags.append(flag)
 
         # --- tekrarlayan_yuklenici
         inputs_ok = True
@@ -546,6 +569,8 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                 elif ratio_val is not None:     # per-procedure peer chain, like idare_stats
                     bedel_peer = windows[ukey].peer_ratio_median(ik, peers.idare_turu(r.idare), peers.il_of(r.idare))
         have = {f["code"] for f in res.flags}
+        if check == "typo":
+            have.discard("bedel_orani")      # probable source typo: shown, but no points, no partner, not in p
         # conditions and computability, ignoring structural exclusions (the base rates must not lose them)
         cond = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
         if idare_raw:
@@ -555,7 +580,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         comp = set()
         if counts_ok:
             comp |= {"tek_teklif", "diger_teklifler_elendi"}
-        if ratio_val is not None:
+        if ratio_val is not None and check != "typo":
             comp.add("bedel_orani")
         if idare_computable:
             comp.add("idare_orani")
@@ -573,13 +598,13 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
             parts.add("tekrarlayan_eslesik")
         res.score_parts = [c for c in PART_CODES if c in parts]      # codes for now; _score_all adds the points
         res.usul_group = usul
-        res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer)
+        res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer, check)
         results[s.id] = res
     return results, _score_all(results)
 
 
 def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, payi_idx: "_PayiIndex",
-                ratio_val: float | None = None, bedel_peer: tuple = (None, 0)) -> dict:
+                ratio_val: float | None = None, bedel_peer: tuple = (None, 0), check: str | None = None) -> dict:
     elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
     karar = None
     if r.confident("ihale_tarihi") and r.confident("sozlesme_tarihi"):
@@ -604,6 +629,7 @@ def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, pay
         "yuklenici_payi": payi, "yuklenici_payi_n": payi_n,
         # the real value with its peer context (no threshold is ever exported); same number the flag uses
         "bedel_orani": ratio_val,
+        "source_check": check,
         "bedel_orani_peer_median": bedel_peer[0] if ratio_val is not None else None,
         "bedel_orani_peer_n": bedel_peer[1] if ratio_val is not None and bedel_peer[0] is not None else None,
     }
