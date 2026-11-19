@@ -70,6 +70,7 @@ def env(monkeypatch, tmp_path):
                         lambda: SimpleNamespace(build=build, deploy=lambda: e.deployed.append(True)))
     monkeypatch.setattr(pipeline, "repo_root", lambda: tmp_path / "repo")
     monkeypatch.setattr(pipeline, "today_istanbul", lambda: e.today)
+    monkeypatch.setattr(cli, "DEFAULT_TYPES", ["mal"])   # real default is all three types (test_default_types)
     monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 0)   # most tests: only today; catch-up tests set it to 7
     return e
 

@@ -49,7 +49,7 @@ def test_1000x_is_a_typo_shown_but_unscored_and_excluded_from_p():
     assert [p["code"] for p in a.score_parts] == ["tek_teklif"]               # no bedel_orani points
     assert a.indicators["source_check"] == "typo" and a.indicators["bedel_orani"] == 1000.0
     # excluded from p: 30 near-estimate among 300 computable (the typo record is neither numerator nor base)
-    assert rates["acik"]["n_computable"]["bedel_orani"] == 300 and rates["acik"]["bedel_orani"] == 0.1
+    assert rates["mal/acik"]["n_computable"]["bedel_orani"] == 300 and rates["mal/acik"]["bedel_orani"] == 0.1
 
 
 def test_typo_is_not_a_partner_for_the_repeat_pair():
@@ -69,8 +69,8 @@ def test_4_83x_is_large_scored_normally_and_counted_in_p():
     assert f["source_check"] == "large" and f["text"].endswith(LARGE_NOTE)
     assert [p["code"] for p in a.score_parts] == ["bedel_orani"] and a.score_raw > 0
     assert a.indicators["source_check"] == "large"
-    assert rates["acik"]["n_computable"]["bedel_orani"] == 301
-    assert rates["acik"]["bedel_orani"] == round(31 / 301, 4)
+    assert rates["mal/acik"]["n_computable"]["bedel_orani"] == 301
+    assert rates["mal/acik"]["bedel_orani"] == round(31 / 301, 4)
 
 
 def test_0_1001x_has_no_flag_but_a_typo_indicator():

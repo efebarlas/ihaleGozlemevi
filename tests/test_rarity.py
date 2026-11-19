@@ -36,7 +36,7 @@ def test_points_are_ln_of_inverse_rate_within_the_usul_group():
     res, stored = run(*recs)
     a = res[1]
     (part,) = a.score_parts
-    assert part == {"code": "tek_teklif", "points": round(math.log(20), 2), "p": 0.05, "p_group": "acik"}
+    assert part == {"code": "tek_teklif", "points": round(math.log(20), 2), "p": 0.05, "p_group": "mal/acik"}
     assert a.score == 3.0 and a.score >= BUGUN_CUTOFF            # ln 20 ≈ 3.00 is exactly the cut-off
     assert res[200].score == 0.0 and res[200].score_parts == []
 
@@ -47,15 +47,15 @@ def test_small_group_falls_back_to_all_records_rate():
     res, stored = run(*big, *small)
     sid = next(s.id for s in stored if s.record.ikn == "2026/1000")
     part = res[sid].score_parts[0]
-    assert part["p_group"] == "hepsi" and part["p"] == round(8 / 310, 4)
+    assert part["p_group"] == "mal/hepsi" and part["p"] == round(8 / 310, 4)
     assert part["points"] == round(math.log(310 / 8), 2)
     big_id = next(s.id for s in stored if s.record.ikn == "2026/0")
-    assert res[big_id].score_parts[0]["p_group"] == "acik" and res[big_id].score_parts[0]["p"] == 0.01
+    assert res[big_id].score_parts[0]["p_group"] == "mal/acik" and res[big_id].score_parts[0]["p"] == 0.01
 
 
 def test_group_threshold_is_100_records():
     assert MIN_GROUP_N == 100
-    for n, expected in ((99, "hepsi"), (100, "acik")):
+    for n, expected in ((99, "mal/hepsi"), (100, "mal/acik")):
         recs = population(n, 5)
         recs += [mk(5000 + i, usul="Pazarlık (MD 21 B)") for i in range(150 - n)] if n < 100 else []
         res, _ = run(*recs)
@@ -92,10 +92,10 @@ def test_bare_repeat_earns_nothing_but_paired_repeat_is_a_part():
 def test_part_rates_table():
     recs = population(150, 15) + [mk(900 + i, usul="Pazarlık (MD 21 F)", tek=True) for i in range(5)]
     _, rates = compute_flags_full([StoredRecord(id=i + 1, record=r) for i, r in enumerate(recs)])
-    assert set(rates) == {"hepsi", "acik", "pazarlik_21f"}
-    assert rates["acik"]["n"] == 150 and rates["acik"]["tek_teklif"] == 0.1
-    assert rates["hepsi"]["n"] == 155 and rates["hepsi"]["tek_teklif"] == round(20 / 155, 4)
-    assert set(rates["hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik",
+    assert set(rates) == {"mal/hepsi", "mal/acik", "mal/pazarlik_21f"}
+    assert rates["mal/acik"]["n"] == 150 and rates["mal/acik"]["tek_teklif"] == 0.1
+    assert rates["mal/hepsi"]["n"] == 155 and rates["mal/hepsi"]["tek_teklif"] == round(20 / 155, 4)
+    assert set(rates["mal/hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik",
                                    "idare_orani", "n", "n_computable", "bedel_median_try"}
 
 

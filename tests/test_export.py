@@ -32,7 +32,7 @@ CONTRACT_DAY = json.loads("""
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
-   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "acik"}],
+   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "mal/acik"}],
    "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
                   "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
@@ -103,7 +103,7 @@ def test_export_matches_contract_shape():
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
     assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates"}
     assert meta["bugun_cutoff"] == 3.0
-    assert set(meta["part_rates"]["hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
+    assert set(meta["part_rates"]["mal/hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
                                                 "tekrarlayan_eslesik", "idare_orani", "n", "n_computable", "bedel_median_try"}
     t = d["tenders"][0]
     expected = CONTRACT_DAY["tenders"][0]

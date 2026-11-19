@@ -47,13 +47,13 @@ def test_p_matches_a_direct_count_including_structurally_excluded_records():
         return sum(1 for r in den if code_cond(r)) / len(den)
 
     ok = lambda r: r.confident("toplam_teklif") and r.confident("gecerli_teklif")  # noqa: E731
-    assert rates["acik"]["tek_teklif"] == round(direct(lambda r: r.ihale_usulu == "Açık",
+    assert rates["mal/acik"]["tek_teklif"] == round(direct(lambda r: r.ihale_usulu == "Açık",
                                                        lambda r: r.toplam_teklif == 1, ok), 4)
-    assert rates["acik"]["tek_teklif"] == round(60 / 275, 4)                        # 25 unreadable are not in the base
+    assert rates["mal/acik"]["tek_teklif"] == round(60 / 275, 4)                        # 25 unreadable are not in the base
     # 3-e single bids earn no points, but they still count in the rate: p must not collapse to 0
-    assert rates["istisna_3e"]["tek_teklif"] == round(80 / 200, 4) == 0.4
-    assert rates["istisna_3e"]["n"] == 200 and rates["istisna_3e"]["n_computable"]["tek_teklif"] == 200
-    assert rates["hepsi"]["tek_teklif"] == round(direct(lambda r: True, lambda r: r.toplam_teklif == 1, ok), 4)
+    assert rates["mal/istisna_3e"]["tek_teklif"] == round(80 / 200, 4) == 0.4
+    assert rates["mal/istisna_3e"]["n"] == 200 and rates["mal/istisna_3e"]["n_computable"]["tek_teklif"] == 200
+    assert rates["mal/hepsi"]["tek_teklif"] == round(direct(lambda r: True, lambda r: r.toplam_teklif == 1, ok), 4)
     # the 3-e records have no tek_teklif part in their score, whatever the rates
     assert results[400].score_parts == [] and results[400].flags == []
 
@@ -62,8 +62,8 @@ def test_p_denominator_counts_only_computable_records():
     recs = [mk(i, bedel=99.0, maliyet=100.0) if i < 20 else mk(i) for i in range(200)]       # 20 near-estimate
     recs += [mk(1000 + i, conf={"yaklasik_maliyet": 0.1}) for i in range(100)]               # ratio not computable
     _, rates = full(recs)
-    assert rates["acik"]["n"] == 300 and rates["acik"]["n_computable"]["bedel_orani"] == 200
-    assert rates["acik"]["bedel_orani"] == 0.1                                               # 20 / 200, not 20 / 300
+    assert rates["mal/acik"]["n"] == 300 and rates["mal/acik"]["n_computable"]["bedel_orani"] == 200
+    assert rates["mal/acik"]["bedel_orani"] == 0.1                                               # 20 / 200, not 20 / 300
 
 
 def test_part_with_a_small_computable_base_falls_back_to_all_records():
@@ -72,7 +72,7 @@ def test_part_with_a_small_computable_base_falls_back_to_all_records():
              for i in range(60)]                                                             # < 100 in its group
     results, rates = full(recs)
     part = results[150].score_parts[0]
-    assert part["code"] == "tek_teklif" and part["p_group"] == "hepsi" and part["p"] == round(15 / 210, 4)
+    assert part["code"] == "tek_teklif" and part["p_group"] == "mal/hepsi" and part["p"] == round(15 / 210, 4)
 
 
 # ---------------------------------------------------------------- 3-g split
@@ -92,12 +92,12 @@ def test_dmo_and_other_3g_have_separate_rates_and_peer_chains():
     other = [mk(1000 + i, "4734 / 3-g", idare=f"BELEDİYE {i}", toplam=1 if i < 20 else 3,
                 gecerli=1 if i < 20 else 3) for i in range(200)]                                       # 10% single
     results, rates = full(dmo + other)
-    assert rates["istisna_3g_dmo"]["n"] == 300 and rates["istisna_3g_dmo"]["tek_teklif"] == 1.0
-    assert rates["istisna_3g"]["n"] == 200 and rates["istisna_3g"]["tek_teklif"] == 0.1
-    assert results[0].usul_group == "istisna_3g_dmo" and results[300].usul_group == "istisna_3g"
+    assert rates["mal/istisna_3g_dmo"]["n"] == 300 and rates["mal/istisna_3g_dmo"]["tek_teklif"] == 1.0
+    assert rates["mal/istisna_3g"]["n"] == 200 and rates["mal/istisna_3g"]["tek_teklif"] == 0.1
+    assert results[0].usul_group == "mal/istisna_3g_dmo" and results[300].usul_group == "mal/istisna_3g"
     # DMO single bids are ordinary within DMO (p = 1 → 0 points); other buyers are rare against their own norm
     assert results[0].score_parts[0]["p"] == 1.0 and results[0].score_parts[0]["points"] == 0.0
-    assert results[300].score_parts[0]["p"] == 0.1 and results[300].score_parts[0]["p_group"] == "istisna_3g"
+    assert results[300].score_parts[0]["p"] == 0.1 and results[300].score_parts[0]["p_group"] == "mal/istisna_3g"
     # idare_stats of another idare: peers exclude DMO
     st = results[300].idare_stats
     assert st["usul_turu"] == "istisna_3g" and st["usul_label"] == "4734/3-g (diğer idareler)"
@@ -128,7 +128,7 @@ def test_value_weight_formula_clamp_and_fallbacks():
     mid = mk(0, bedel=316.2278, toplam=1, gecerli=1)              # sqrt(10) x median → 1 + 0.5 * 0.5 = 1.25
     results2, _ = full([mid] + weighted_population()[1:])
     assert results2[0].value_weight == pytest.approx(1.25, abs=0.005)
-    assert rates["acik"]["bedel_median_try"] == 100.0 and rates["hepsi"]["bedel_median_try"] == 100.0
+    assert rates["mal/acik"]["bedel_median_try"] == 100.0 and rates["mal/hepsi"]["bedel_median_try"] == 100.0
 
 
 def test_score_is_raw_times_weight():
@@ -143,8 +143,8 @@ def test_group_median_is_used_when_the_group_is_big_enough_else_all_records():
     cheap = [mk(i, bedel=100.0) for i in range(200)]
     dear = [mk(1000 + i, "Pazarlık (MD 21 B)", bedel=10_000.0, toplam=1, gecerli=1) for i in range(30)]   # n < 100
     results, rates = full(cheap + dear)
-    assert rates["pazarlik_21b"]["bedel_median_try"] == 10_000.0
-    expected = min(1.5, 1 + 0.5 * math.log10(10_000.0 / rates["hepsi"]["bedel_median_try"]))
+    assert rates["mal/pazarlik_21b"]["bedel_median_try"] == 10_000.0
+    expected = min(1.5, 1 + 0.5 * math.log10(10_000.0 / rates["mal/hepsi"]["bedel_median_try"]))
     assert results[200].value_weight == pytest.approx(expected, abs=0.001)          # all-records median is used
 
 
@@ -158,4 +158,4 @@ def test_export_has_score_raw_value_weight_and_medians():
     assert {"score", "score_raw", "value_weight"} <= set(t)
     assert t["score"] == pytest.approx(t["score_raw"] * t["value_weight"], abs=0.01)
     meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
-    assert "bedel_median_try" in meta["part_rates"]["hepsi"] and meta["bugun_cutoff"] == 3.0
+    assert "bedel_median_try" in meta["part_rates"]["mal/hepsi"] and meta["bugun_cutoff"] == 3.0

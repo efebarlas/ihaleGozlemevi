@@ -33,6 +33,6 @@ def test_report_contents(capsys):
     assert "3 records, 1 bulletin day(s)" in out
     assert "By usul" in out and "By section" in out and "Score distribution" in out
     assert "tek geçerli teklif" in out and "bedel >= 0.97" in out
-    assert "Part base rates p by usul_turu" in out and "score>=3.0" in out
+    assert "Part base rates p by <type>/<usul group>" in out and "By type" in out and "score>=3.0" in out
     assert "Indicators by usul_turu" in out and "Indicators by section" in out
-    assert "[istisna_3g]" in out and "karar_suresi_gun" in out and "yuklenici_payi" in out
+    assert "[mal/istisna_3g]" in out and "karar_suresi_gun" in out and "yuklenici_payi" in out

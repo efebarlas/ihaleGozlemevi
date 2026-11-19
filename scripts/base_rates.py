@@ -48,14 +48,14 @@ def part_rate_tables(part_rates: dict, rows: list[dict]) -> None:
     over the Bugün cut-off per usul_turu."""
     short = {"tek_teklif": "tek", "diger_teklifler_elendi": "diğer", "bedel_orani": "bedel",
              "tekrarlayan_eslesik": "tekrar", "idare_orani": "idare"}
-    print(f"\nPart base rates p by usul_turu (ln(1/p) points; groups with n < 100 use 'hepsi')")
+    print(f"\nPart base rates p by <type>/<usul group> (ln(1/p) points; groups with n < 100 use <type>/hepsi)")
     print(f"  {'group':<20}{'n':>7}  " + "  ".join(f"{short[c]:>7}" for c in PART_CODES)
           + f"  {'tek share*':>10}  {'bedel med.':>11}  {'score>=' + str(BUGUN_CUTOFF):>9}")
     by_group: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
         by_group[r["usul_turu"]].append(r)
-        by_group["hepsi"].append(r)
-    for g in sorted(part_rates, key=lambda k: (k != "hepsi", -part_rates[k]["n"])):
+        by_group[f"{r['type']}/hepsi"].append(r)
+    for g in sorted(part_rates, key=lambda k: (k.split('/')[0], not k.endswith('/hepsi'), -part_rates[k]["n"])):
         rs = by_group.get(g, [])
         over = pct(sum(1 for r in rs if r["score"] >= BUGUN_CUTOFF), len(rs)) if rs else "    - "
         direct = pct(sum(r["tek_teklif"] for r in rs), len(rs)) if rs else "    - "
@@ -72,7 +72,8 @@ def indicator_tables(rows: list[dict]) -> None:
         groups: dict[str, list[dict]] = defaultdict(list)
         for r in rows:
             groups["(hepsi)"].append(r)
-            groups[(r["ind"].get("usul_turu") or "(bilinmiyor)") if key == "usul_turu" else r["section"]].append(r)
+            groups[f"{r['type']}/{r['ind'].get('usul_turu') or '(bilinmiyor)'}" if key == "usul_turu"
+                   else f"{r['type']}/{r['section']}"].append(r)
         print(f"\nIndicators by {title}")
         for g, rs in sorted(groups.items(), key=lambda kv: (kv[0] != "(hepsi)", -len(kv[1]))):
             print(f"  [{g}]  records={len(rs)}  acik_olmayan={pct(sum(1 for r in rs if r['ind'].get('acik_olmayan')), len(rs))}")
@@ -97,7 +98,7 @@ def main(argv=None) -> int:
             continue
         have = {x["code"] for x in f.flags}
         rows.append({
-            "date": r.bulletin_date, "ikn": r.ikn, "usul": r.ihale_usulu or "(boş)", "section": r.section,
+            "date": r.bulletin_date, "type": r.bulletin_type, "ikn": r.ikn, "usul": r.ihale_usulu or "(boş)", "section": r.section,
             "tek": bool(have & {"tek_teklif", "diger_teklifler_elendi"}),
             "tek_teklif": "tek_teklif" in have, "diger": "diger_teklifler_elendi" in have,
             "ind": f.indicators or {}, "bedel": "bedel_orani" in have,
@@ -127,10 +128,12 @@ def main(argv=None) -> int:
           f"bedel>=.97 {pct(sum(t['bedel'] for t in tenders.values()), tn)}, "
           f"score>={BUGUN_CUTOFF} {pct(sum(t['score'] >= BUGUN_CUTOFF for t in tenders.values()), tn)}")
 
-    by_usul, by_section = defaultdict(list), defaultdict(list)
+    by_type, by_usul, by_section = defaultdict(list), defaultdict(list), defaultdict(list)
     for r in rows:
+        by_type[r["type"]].append(r)
         by_usul[r["usul"]].append(r)
         by_section[r["section"]].append(r)
+    table("By type", by_type)
     table("By usul", by_usul)
     table("By section", by_section)
 

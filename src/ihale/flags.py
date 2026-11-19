@@ -16,7 +16,7 @@ import logging
 from . import indicators as ind
 from . import structural
 from . import peers
-from .keys import normalize_key
+from .keys import normalize_key, turkish_lower
 from .model import CONFIDENT, Money, Record
 from .store import StoredRecord
 
@@ -25,7 +25,15 @@ PART_CODES = ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlaya
 MIN_GROUP_N = 100                 # a usul_turu group needs >= 100 records, else the all-records rate is used
 P_FLOOR = 0.001                   # no part exceeds ln(1000) = 6.9 points
 BUGUN_CUTOFF = 3.0                # Bugün shows score >= 3.0 (about ln 20); the site applies it
-ALL_GROUP = "hepsi"
+
+
+def all_group(btype: str) -> str:
+    """Per-type fallback group key, e.g. "mal/hepsi"."""
+    return f"{btype}/hepsi"
+
+
+def group_key(btype: str, usul: str | None) -> str | None:
+    return f"{btype}/{usul}" if usul else None
 RATIO_THRESHOLD_PCT = 97          # ratio >= 0.97 (ihalent's low_discount: kırım < 3%)
 REPEAT_MIN_IKNS = 3
 REPEAT_WINDOW_DAYS = 365          # bulletin dates in [d - 365 days, d]
@@ -136,7 +144,8 @@ class FlagResult:
     idare_stats: dict | None = None
     indicators: dict | None = None
     structural: dict | None = None     # {"id", "text"} of the matching structural rule (§4.1.1)
-    usul_group: str | None = None      # usul group used for the base rates (None = unknown)
+    usul_group: str | None = None      # "<type>/<usul group>" used for the base rates (None = unknown)
+    btype: str = ""                    # bulletin type of the record
     bedel_try: float | None = None     # this record's TRY bedel in major units (materiality weight)
     cond: set = field(default_factory=set)         # parts whose condition holds, ignoring structural exclusions
     computable: set = field(default_factory=set)   # parts whose inputs are all confident
@@ -239,10 +248,11 @@ def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender
 class _Window:
     """Accumulators [awards, tek awards, eligible awards for elenen, sum of elenen] per scope, one (sector, date)."""
 
-    def __init__(self, tenders: list[_Tender], d: date, usul: str | None = None):
+    def __init__(self, tenders: list[_Tender], d: date, usul: str | None = None, days: int = IDARE_WINDOW_DAYS):
         """`usul` restricts the window to awards of that usul_turu (like with like)."""
+        self.days = days
         dates = [t.date for t in tenders]
-        lo = bisect.bisect_right(dates, d - timedelta(days=IDARE_WINDOW_DAYS))
+        lo = bisect.bisect_right(dates, d - timedelta(days=days))
         hi = bisect.bisect_right(dates, d)
         self.idare: dict[str, list] = {}
         self.turu_il: dict[tuple, list] = {}
@@ -292,13 +302,18 @@ def _candidates(win: _Window, turu: str, il: str | None) -> list[tuple[str, list
     return out
 
 
+def _lc(label: str | None) -> str | None:
+    """Lower-case the first letter (Turkish): 'Açık' -> 'açık'; '4734/3-g (DMO)' stays."""
+    return label if not label else turkish_lower(label[0]) + label[1:]
+
+
 def idare_stats(win: _Window, idare_name: str, sector: str, usul: str) -> tuple[dict, bool]:
     """(stats for export, idare_orani fires), within one usul_turu: `win` holds only awards of that usul."""
     ik = normalize_key(idare_name)
     turu, il = peers.idare_turu(idare_name), peers.il_of(idare_name)
     own = win.idare.get(ik, [0, 0, 0, 0.0])
     own_n, own_tek = own[0], own[1]
-    stats = {"records": own_n, "tek_gecerli_teklif": None, "window_days": IDARE_WINDOW_DAYS,
+    stats = {"records": own_n, "tek_gecerli_teklif": None, "window_days": win.days,
              "idare_turu": turu, "il": il, "usul_turu": usul, "usul_label": ind.usul_label(usul), "peer": None}
     if own_n >= IDARE_MIN_N:
         stats["tek_gecerli_teklif"] = round(own_tek / own_n, 4)
@@ -307,7 +322,7 @@ def idare_stats(win: _Window, idare_name: str, sector: str, usul: str) -> tuple[
     for scope, acc in cands:
         if acc[0] - own_n >= PEER_MIN_N:
             peer_n, peer_tek = acc[0] - own_n, acc[1] - own_tek
-            stats["peer"] = {"label": peers.peer_label(scope, turu, il, sector, ind.usul_label(usul)), "records": peer_n,
+            stats["peer"] = {"label": peers.peer_label(scope, turu, il, sector, _lc(ind.usul_label(usul))), "records": peer_n,
                              "tek_gecerli_teklif": round(peer_tek / peer_n, 4)}
             break
     fires = (own_n >= IDARE_MIN_N and stats["peer"] is not None and own_tek > 0
@@ -389,7 +404,7 @@ def _score_all(results: dict[int, FlagResult]) -> dict:
     sizes: dict[str, int] = {}
     bedels: dict[str, list[float]] = {}
     for res in results.values():
-        for g in {ALL_GROUP, res.usul_group} - {None}:
+        for g in {all_group(res.btype), res.usul_group} - {None}:
             sizes[g] = sizes.get(g, 0) + 1
             c1 = cond.setdefault(g, dict.fromkeys(PART_CODES, 0))
             c2 = comp.setdefault(g, dict.fromkeys(PART_CODES, 0))
@@ -407,14 +422,15 @@ def _score_all(results: dict[int, FlagResult]) -> dict:
     for res in results.values():
         parts, total = [], 0.0
         for code in res.score_parts:
-            g = res.usul_group if res.usul_group and comp[res.usul_group][code] >= MIN_GROUP_N else ALL_GROUP
+            g = res.usul_group if res.usul_group and comp[res.usul_group][code] >= MIN_GROUP_N else all_group(res.btype)
             p = max(rate(g, code), P_FLOOR)
             points = round(math.log(1 / p), 2)
             total += points
             parts.append({"code": code, "points": points, "p": round(p, 4), "p_group": g})
         w = 1.0
         if res.bedel_try is not None:
-            g = res.usul_group if res.usul_group and len(bedels.get(res.usul_group, ())) >= MIN_GROUP_N else ALL_GROUP
+            g = (res.usul_group if res.usul_group and len(bedels.get(res.usul_group, ())) >= MIN_GROUP_N
+                 else all_group(res.btype))
             med = medians.get(g)
             if med and med > 0:
                 w = min(1.5, max(0.5, 1 + 0.5 * math.log10(res.bedel_try / med)))
@@ -597,7 +613,8 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         if "tekrarlayan_yuklenici" in have and parts:     # a bare repeat earns nothing (the flag is still shown)
             parts.add("tekrarlayan_eslesik")
         res.score_parts = [c for c in PART_CODES if c in parts]      # codes for now; _score_all adds the points
-        res.usul_group = usul
+        res.btype = r.bulletin_type
+        res.usul_group = group_key(r.bulletin_type, usul)
         res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer, check)
         results[s.id] = res
     return results, _score_all(results)

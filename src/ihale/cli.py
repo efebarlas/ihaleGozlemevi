@@ -10,6 +10,7 @@ from . import config, ekap, pipeline
 # exit codes: 0 ok, 1 error, 2 usage, 3 BLOCKED (EKAP hard stop / marker present), 4 no bulletin (fetch only),
 # 5 backfill stopped at the request cap
 BULLETIN_TYPES = sorted(ekap.TYPE_CODES)
+DEFAULT_TYPES = ["mal", "hizmet", "yapim"]     # run / backfill; resolved at call time (tests patch it)
 
 
 def parse_day(s: str) -> date:
@@ -141,13 +142,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     r = sub.add_parser("run", help="daily job: fetch, parse, store, flag, export, build, deploy")
     r.add_argument("--date", type=parse_day, default=None, help=day_help + " (default: today, Europe/Istanbul)")
-    r.add_argument("--types", nargs="+", default=["mal"], type=str, help="e.g. mal  or  mal,hizmet")
+    r.add_argument("--types", nargs="+", default=None, type=str,
+                   help="default: mal hizmet yapim; e.g. mal  or  mal,hizmet")
     r.add_argument("--no-deploy", action="store_true")
     r.set_defaults(func=cmd_run)
 
     bf = sub.add_parser("backfill", help="load the last N days of history (sequential, rate limited)")
     bf.add_argument("--days", type=int, required=True)
-    bf.add_argument("--types", nargs="+", default=["mal"], type=str)
+    bf.add_argument("--types", nargs="+", default=None, type=str, help="default: mal hizmet yapim")
     bf.add_argument("--max-requests", type=int, default=None,
                     help=f"raise the per-run EKAP request cap (default {ekap.MAX_REQUESTS_PER_RUN})")
     bf.set_defaults(func=cmd_backfill)
@@ -159,7 +161,7 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if hasattr(args, "types"):
         try:
-            args.types = parse_types(args.types)
+            args.types = parse_types(args.types or DEFAULT_TYPES)
         except argparse.ArgumentTypeError as e:
             parser.error(str(e))
     if getattr(args, "days", 1) < 1:
