@@ -32,7 +32,7 @@ CONTRACT_DAY = json.loads("""
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
-   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "mal/acik", "k": 8, "n": 100}],
+   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "mal/acik", "k": 8, "n": 100, "p_source": "group"}],
    "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
                   "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
@@ -86,7 +86,7 @@ def test_export_matches_contract_shape():
     assert d["tenders"][0]["idare"].pop("parent") is None            # no alias matches this idare
     sc, sp = d["tenders"][0].pop("score"), d["tenders"][0].pop("score_parts")
     c_sc, c_sp = CONTRACT_DAY["tenders"][0].pop("score"), CONTRACT_DAY["tenders"][0].pop("score_parts")
-    assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group", "k", "n"}
+    assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group", "k", "n", "p_source"}
     assert [x["code"] for x in sp] == ["bedel_orani"]
     indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)

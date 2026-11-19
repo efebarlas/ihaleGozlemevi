@@ -52,9 +52,11 @@ def test_each_type_is_smoothed_toward_its_own_parent_rate():
     res, rates = full(recs)
     mal_b = next(r for r, s in zip(res, recs) if s.ikn == "2026/500")
     yap_b = next(r for r, s in zip(res, recs) if s.ikn == "2026/2000")
-    assert mal_b.score_parts[0]["p_group"] == "mal/pazarlik_21b" and yap_b.score_parts[0]["p_group"] == "yapim/pazarlik_21b"
+    assert mal_b.score_parts[0]["p_group"] == "mal/pazarlik_21b" and mal_b.score_parts[0]["p_source"] == "group"
     assert mal_b.score_parts[0]["p"] == pytest.approx((20 + 50 * 35 / 190) / 90, rel=1e-3)      # parent: all mal records
-    assert yap_b.score_parts[0]["p"] == pytest.approx((4 + 50 * 79 / 190) / 90, rel=1e-3)       # parent: all yapim records
+    # yapim 21/b has only 4 events (< 5): p is the yapim-wide rate, never the mal one
+    assert yap_b.score_parts[0]["p_source"] == "type" and yap_b.score_parts[0]["p_group"] == "yapim/hepsi"
+    assert yap_b.score_parts[0]["p"] == pytest.approx(79 / 190, rel=1e-3)
 
 
 def test_bedel_median_fallback_is_per_type():

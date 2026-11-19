@@ -37,7 +37,7 @@ def test_points_are_ln_of_inverse_rate_within_the_usul_group():
     a = res[1]
     (part,) = a.score_parts
     assert part == {"code": "tek_teklif", "points": round(math.log(20), 2), "p": 0.05, "p_group": "mal/acik",
-                    "k": 10, "n": 200}
+                    "k": 10, "n": 200, "p_source": "group"}
     assert a.score == 3.0 and a.score >= BUGUN_CUTOFF            # ln 20 ≈ 3.00 is exactly the cut-off
     assert res[200].score == 0.0 and res[200].score_parts == []
 
@@ -53,8 +53,8 @@ def test_small_group_is_smoothed_toward_the_type_wide_rate():
     assert part["p"] == pytest.approx((5 + 50 * parent) / 60, rel=1e-3) and 0.5 > part["p"] > parent   # between local and parent
     assert part["points"] == round(math.log(1 / ((5 + 50 * parent) / 60)), 2)
     big_id = next(s.id for s in stored if s.record.ikn == "2026/0")
-    bp = res[big_id].score_parts[0]
-    assert bp["p_group"] == "mal/acik" and bp["p"] == pytest.approx((3 + 50 * parent) / 350, rel=1e-3)
+    bp = res[big_id].score_parts[0]                          # acik has only 3 events (< 5): the type-wide rate
+    assert bp["p_source"] == "type" and bp["p_group"] == "mal/hepsi" and bp["p"] == pytest.approx(parent, rel=1e-3)
 
 
 def test_no_fallback_rule_and_no_floor_any_more():
@@ -66,16 +66,43 @@ def test_no_fallback_rule_and_no_floor_any_more():
     assert part["p"] < 0.001 and part["points"] > round(math.log(1000), 2)
 
 
-def test_single_event_in_a_huge_group_versus_stacked_pattern():
-    # an 8,308-record group (like DMO 3-g) with exactly one single-bid record, inside a type with a 5% single-bid rate
-    big = population(8308, 1, usul="4734 / 3-g", start=0)
-    rest = population(2000, 100, usul="Açık", start=20_000)
-    res, stored = run(*big, *rest)
+def test_single_event_in_a_huge_group_scores_below_a_stacked_open_pattern():
+    # an 8,308-record group (like DMO 3-g) with exactly one disqualified-bids record
+    big = [mk(i, usul="4734 / 3-g", tek=False) for i in range(8308)]
+    lone = mk(0, usul="4734 / 3-g")
+    lone.toplam_teklif, lone.gecerli_teklif = 4, 1           # diger_teklifler_elendi
+    big[0] = lone
+    # open tenders: 100 with disqualified bids, 100 near the estimate, one with both (the stacked pattern)
+    acik = []
+    for i in range(2000):
+        r = mk(20_000 + i)
+        if i < 100 or i == 1999:
+            r.toplam_teklif, r.gecerli_teklif = 4, 1
+        if 100 <= i < 200 or i == 1999:
+            r.sozlesme_bedeli = r.yaklasik_maliyet.__class__(9_900, "TRY")
+        acik.append(r)
+    res, stored = run(*big, *acik)
     single = res[1].score_parts[0]
-    parent = (1 + 100) / 10308
-    assert (single["k"], single["n"]) == (1, 8308)
-    assert single["p"] == pytest.approx((1 + 50 * parent) / 8358, rel=1e-3)
-    assert single["p"] > 1 / 8308                            # smoothing pulls it toward the parent: never rarer than raw
+    assert single["p_source"] == "type" and single["p_group"] == "mal/hepsi"
+    stacked = res[8308 + 2000]
+    assert [p["code"] for p in stacked.score_parts] == ["diger_teklifler_elendi", "bedel_orani"]
+    assert all(p["p_source"] == "group" for p in stacked.score_parts)
+    assert single["points"] < stacked.score_raw               # one rare event < two stacked open-tender parts
+    assert res[1].score_raw == single["points"]
+
+
+def test_min_k_boundary_4_uses_the_type_rate_5_uses_the_group():
+    def world(k):
+        recs = [mk(i, usul="Açık", tek=i < k) for i in range(500)]                    # group acik: k events of 500
+        recs += [mk(10_000 + i, usul="Pazarlık (MD 21 B)", tek=i < 50) for i in range(500)]   # parent rate is higher
+        res, _ = run(*recs)
+        return res[1].score_parts[0]
+    p4, p5 = world(4), world(5)
+    parent4, parent5 = (4 + 50) / 1000, (5 + 50) / 1000
+    assert (p4["k"], p4["p_source"], p4["p_group"]) == (54, "type", "mal/hepsi")
+    assert p4["p"] == pytest.approx(parent4, rel=1e-3)
+    assert (p5["k"], p5["n"], p5["p_source"], p5["p_group"]) == (5, 500, "group", "mal/acik")
+    assert p5["p"] == pytest.approx((5 + 50 * parent5) / 550, rel=1e-3)
 
 
 def test_score_is_the_sum_of_part_points():
