@@ -94,15 +94,9 @@ Some single-bid patterns have a known structural cause. These are listed in a sm
 
 Add an entry only together with a stated reason.
 
-The first entry:
-- `id`: `dmo-3g`
-- match: idare name starts with `DEVLET MALZEME OFİSİ`, with `usul_turu == istisna_3g`
-- `reason_tr`: `Devlet Malzeme Ofisi merkezî alım kurumudur; 4734/3-g kapsamındaki seri, markaya özgü alımlarında tek teklif yapısı gereğidir.`
-- `effects`:
-  - `no_single_bid_points`: the `tek_teklif` and `diger_teklifler_elendi` flags are still shown as facts, but they add no score points. They stay out of `score_parts` and don't count as "another flag" for the tekrarlayan +2.
-  - `own_peer_group`: the idare is compared only with its own history. In v1 that means `idare_stats.peer = null`, with `peer_note: "Kendi geçmişiyle karşılaştırılır"`, so `idare_orani` cannot fire. M5 adds drift against its own past.
+A `dmo-3g` entry (DMO's 3-g purchases) was proposed and then removed on 2026-11-19 after it was measured. Only 106 of DMO's 1,120 single-bid 3-g records (9.5%) were brand- or model-specific series purchases; 87% were templated per-province medical and drug tenders. DMO is scored like any other idare.
 
-A second entry, `istisna-3e`, was added 2026-11-19 from the law text, not the rate:
+The table's entry `istisna-3e` was added 2026-11-19 from the law text, not the rate:
 - match: any idare, `usul_turu == istisna_3e`
 - effect: `no_single_bid_points`
 - reason: `4734 sayılı Kanun md. 3/e: alım, Kanunda adı sayılan kamu kuruluşundan (ör. ceza infaz kurumu işyurtları, DMO, TCDD, Et ve Balık Kurumu) yapılır; tek tedarikçi Kanun gereğidir.`
