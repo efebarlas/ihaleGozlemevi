@@ -631,8 +631,9 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     href_by_id = {t["id"]: t["_href"] for ds in dates for t in day_ctx[ds]["tenders"]}
     build_dossiers(export_dir=export_dir, meta=meta, env=env, write=write, ctx_base=ctx_base,
                    render_fragment=lambda tpl, **kw: _squeeze(tpl.render(**ctx_base, **kw)),
-                   href_by_id=href_by_id, idare_href=idare_href, yuk_href=yuk_href, idare_parent=idare_parent,
-                   fmt=dict(tr_money=tr_money, tr_int=tr_int, tr_date_short=tr_date_short),
+                   href_by_id=href_by_id,
+                   src_by_id={t["id"]: t["_c"]["src_text"] for ds in dates for t in day_ctx[ds]["tenders"] if t["_c"]["src_text"]}, idare_href=idare_href, yuk_href=yuk_href, idare_parent=idare_parent,
+                   fmt=dict(tr_money=tr_money, tr_int=tr_int, tr_date_short=tr_date_short, type_labels=TYPE_LABELS),
                    paginate_list=lambda sizes, mb: paginate(sizes, max_bytes=mb, max_records=10**9))
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,

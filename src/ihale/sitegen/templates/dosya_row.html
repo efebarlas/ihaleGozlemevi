@@ -3,5 +3,6 @@
   {% if r.href %}<a class="rt" href="{{ r.href }}">{{ r.title }}</a>{% else %}<span class="rt">{{ r.title }}</span>{% endif %}
   <span class="rm">{{ r.date }} · {% if r.who_href %}<a href="{{ r.who_href }}">{% if r.who_yk %}{{ yk(r.who) }}{% else %}{{ r.who }}{% endif %}</a>{% else %}{% if r.who_yk %}{{ yk(r.who) }}{% else %}{{ r.who }}{% endif %}{% endif %}{% if r.second %} · {{ r.second }}{% endif %}</span>
   <span class="rb">{{ r.bedel }}</span>
+  {% if r.src %}<p class="srcline"><span class="lbl">Kaynak</span>{{ r.src }} · <a href="{{ ekap_url }}">EKAP Bülten İndirme</a></p>{% endif %}
   {% if r.flags %}<ul class="flags small">{% for f in r.flags %}<li class="flag">{{ f }}</li>{% endfor %}</ul>{% endif %}
 </li>

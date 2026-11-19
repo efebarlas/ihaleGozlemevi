@@ -79,7 +79,7 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
 
 
 def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment, ctx_base: dict, href_by_id: dict,
-                   idare_href: dict, yuk_href: dict, idare_parent: dict, fmt: dict, paginate_list) -> None:
+                   idare_href: dict, yuk_href: dict, idare_parent: dict, src_by_id: dict, fmt: dict, paginate_list) -> None:
     """Write all dossier pages. `idare_href` / `yuk_href`: display name -> page path (for linking)."""
     flag_titles = ctx_base["flag_titles"]
     idx_i = meta.get("idare_index") or []
@@ -88,6 +88,13 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
     yuks = _load_dir(export_dir, "yuklenici", idx_y)
     tr_money, tr_int, tr_date_short = fmt["tr_money"], fmt["tr_int"], fmt["tr_date_short"]
     row_tpl = env.get_template("dosya_row.html")
+    type_labels = fmt["type_labels"]
+
+    def source_text(a: dict) -> str:
+        """'Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18' (page only when the day export has it)."""
+        if a["id"] in src_by_id:
+            return src_by_id[a["id"]]
+        return f"Kamu İhale Bülteni, {tr_date_short(a['date'])}, {type_labels.get(a.get('type'), a.get('type') or '')} – Sonuç İlanları"
 
     def render_rows(rows: list[dict]) -> list[str]:
         return [render_fragment(row_tpl, r=r) for r in rows]
@@ -105,7 +112,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
                 href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
                 who=who, who_yk=True, who_href=(f"/yuklenici/{ys}/" if ys and ys in yuks else None),
                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı",
-                flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None))
+                flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None, src=source_text(a)))
         rendered = render_rows(rows)
         pages = _chunk([len(x.encode("utf-8")) for x in rendered], ROW_BYTES_FIRST, ROW_BYTES_NEXT)
         mix, legend, peak = mix_rows(d)
@@ -146,7 +153,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
                 href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
                 who=ih.get("name") or "okunamadı", who_href=(idare_href.get(ih.get("name"))),
                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı", flags=[],
-                second=a.get("usul")))
+                second=a.get("usul"), src=source_text(a)))
         rendered = render_rows(rows)
         pages = _chunk([len(x.encode("utf-8")) for x in rendered], ROW_BYTES_FIRST, ROW_BYTES_NEXT)
         tot = [dict(name=t.get("idare"), href=idare_href.get(t.get("idare")), count=t.get("count"),

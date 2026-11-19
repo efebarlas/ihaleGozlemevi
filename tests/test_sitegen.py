@@ -858,3 +858,25 @@ def test_kurul_karari_line_and_ocp_note(dist):
     y = _read(dist, "yontem/index.html")
     i = y.index('id="gostergeler"')
     assert "OCP Cardinal ile çapraz kontrol planlanmıştır; henüz çalıştırılmadı." in y[i:y.index("Sınırlar", i)]
+
+
+def test_dossier_rows_all_carry_a_source_line(dist):
+    pages = [dist / "idare" / "ornek-il-mudurlugu" / "index.html", dist / "yuklenici" / "ornek-yapi-ltd" / "index.html"]
+    for p in pages:
+        t = p.read_text(encoding="utf-8")
+        rows = re.findall(r'<li class="row">.*?</li>', t, flags=re.S)
+        assert rows and all('class="srcline"' in r and "BultenIndirme.aspx" in r for r in rows), p
+    t = pages[0].read_text(encoding="utf-8")
+    assert "Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18" in t        # page comes from the day export
+    assert "Kamu İhale Bülteni, 17.11.2026, Mal – Sonuç İlanları" in t
+
+
+def test_dossier_continuation_pages_have_source_lines_and_stay_small(tmp_path):
+    out = tmp_path / "o"
+    _build_full(_big_dossier_export(tmp_path), out)
+    for kind, slug in (("idare", "ornek-il-mudurlugu"), ("yuklenici", "ornek-yapi-ltd")):
+        for p in sorted((out / kind / slug).glob("*/index.html")) + [out / kind / slug / "index.html"]:
+            t = p.read_text(encoding="utf-8")
+            rows = re.findall(r'<li class="row">.*?</li>', t, flags=re.S)
+            assert rows and all('class="srcline"' in r for r in rows), p
+            assert p.stat().st_size <= 150_000, (p, p.stat().st_size)
