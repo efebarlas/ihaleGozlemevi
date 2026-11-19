@@ -72,7 +72,9 @@ Flags alone fire on roughly half of all tenders, and their base rates differ a l
 
 **Score.** The sum of points, a float. Export `score` rounded to 2 decimals and `score_parts` as `[{"code", "points", "p", "p_group"}]`, where `p_group` is the usul_turu used, or `"hepsi"` for the fallback.
 
-**Source inconsistency.** When sözleşme bedeli / estimate > 1.5, the `bedel_orani` flag is still shown as printed, with `source_check: true` and the appended text ` · Bültendeki iki rakam arasındaki fark olağan dışı; kaynakta yazım hatası olabilir.` It earns no points, isn't a partner for `tekrarlayan_eslesik`, and is excluded from p. Checked on 2026-11-19: all 8 such records in 30 days are printed that way in the bulletin, with no parse errors. One is exactly 1000×.
+**Source inconsistency** (rule from the spec owner, 2026-11-19):
+- **Probable typo.** The ratio sözleşme bedeli / estimate is within ±1% of a power of ten (10, 100, 1000 … or 0.1, 0.01 …). The flag is shown with `source_check: "typo"` and the note ` · Bültendeki iki rakam arasındaki fark tam bir 10'un katı; kaynakta yazım hatası olabilir.` It earns no points, isn't a `tekrarlayan_eslesik` partner, and is excluded from p. A 0.1× or 0.01× record has no `bedel_orani` flag, but still gets the note on its detail page via `indicators.source_check`.
+- **Any other ratio > 1.5.** The flag scores normally. `bedel_orani` points are ln(1/p) and don't grow with the ratio, so the outlier is already capped. It is shown with `source_check: "large"` and the note ` · Fark olağan dışı büyük; rakamlar bültende bu şekilde yazıyor, kaynağı kontrol edin.`
 
 **Groups.** The usul group is the record's `usul_turu`, with one split: 3-g records whose idare starts with `DEVLET MALZEME OFİSİ` form `istisna_3g_dmo` (label `4734/3-g (DMO)`). All other 3-g records stay in `istisna_3g` (label `4734/3-g (diğer idareler)`). DMO is 8,308 of 8,964 3-g records. This grouping is used for p, the bedel medians and the per-procedure peer chain.
 
