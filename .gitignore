@@ -1,8 +1,19 @@
-**/__pycache__/
+# local data (bulletins, sqlite) normally lives outside the repo; belt and braces
+/data/
+/ihaleGozlemevi-data/
+*.zip
+*.db
+*.sqlite
+
+# bulk bulletin PDFs; only tests/fixtures/ is allowed
+*.pdf
+!tests/fixtures/*.pdf
+
 __pycache__/
-
-bultenler/
-
-.vscode/
-temp_*
-.coverage
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+node_modules/
+.wrangler/
+.env
