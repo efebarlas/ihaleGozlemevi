@@ -210,31 +210,29 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 - No color tied to political parties.
 - The source link is always visually present, not buried.
 
-**Hold-off: Efe's guidance comes second** (Efe, 2026-11-19: he wants to see what gets made before his guidance).
-
 **Phase 1, unguided.** Runs once real data is live.
 - A fresh-context reviewer proposes 2–3 distinct directions, each grounded in this product rather than generic app conventions.
 - Each direction is a **set of design tokens** (colors in light and dark, type scale, spacing, flag treatment) applied to the real Bugün and İhale detayı pages with real tenders. No static mocks.
 - The builder applies the reviewer's recommendation as the default. Efe is not asked to pick: a pick would already be guidance.
 - The site gets a hidden switch to flip between the token sets, so Efe can look at all of them on his phone.
 
-**Isolation until Phase 1 is frozen:**
-- No one passes Efe's design opinions to a builder or reviewer. That includes the spec owner.
-- No one asks Efe leading design questions.
 - No reviewer reads another project's design files. In particular, clearpile's `design/BRIEF.md` holds Efe's taste.
-- The baseline includes only this spec's product-grounded rules (the neutral visual language and the "default look" list above). Those are the spec owner's, not Efe's.
+- After the direction is applied, a fresh reviewer runs a design audit of every page in light and dark at phone width, judged against these rules.
 
-**Freeze the baseline.** When Phase 1 is deployed:
-- save `design/unguided/`: the token sets, the reviewer's rationale, and screenshots of every page in light and dark at phone width;
+**Freeze the baseline** once Phase 1 and its audit are done:
+- save `design/unguided/`: the token sets, both reviewers' rationale, and the screenshots;
 - tag the commit `design-unguided`;
-- the spec owner tells Efe the baseline is ready to look at.
+- tell the spec owner.
 
-**Phase 2, guided.** Whenever Efe is ready, he gives his guidance in his own words, as he did for clearpile. The spec owner writes it into `design/BRIEF.md` unedited. Then:
-- a fresh reviewer reads the brief, which outranks the reviewer's own defaults, and proposes directions;
-- they are built the same way, and Efe picks through Günün sorusu, one pair per day if needed;
-- save `design/guided/` and tag `design-guided`.
+**Phase 2: Efe's guidance.** Feedback Efe released after the hold-off (§9.3), plus any new feedback, goes into `design/BRIEF.md` in his own words. A fresh reviewer treats the brief as outranking its own defaults. Efe picks between directions through Günün sorusu. Record the outcome in `design/DIRECTION.md`.
 
-**Comparison.** Keep a page at `design/COMPARISON.md`, and a private route on the site, showing unguided vs. guided side by side: the same pages and the same tenders. Note what the guidance changed and what it didn't. The winner is written up in `design/DIRECTION.md`.
+### 9.3 Hold-off (all feedback, design included)
+Adopted from clearpile (Efe, 2026-11-19).
+- Efe may mark a piece of feedback as **"hold-off"**. The spec owner records it privately, outside the repo and the data folder, and **never relays it** to builders or reviewers.
+- When the review phase that should cover it finishes, the spec owner tells Efe which held-back items the reviews caught and fixed on their own, and which they missed. The design audit in §9.2 is one such phase.
+- Only the missed items are then released, as normal feedback.
+- The share caught on their own tells Efe how hands-off he can get.
+- **Builders and reviewers:** don't look for held-back items or ask about them, and don't treat a missing rule as permission. Review as thoroughly as if no one else were watching.
 
 **"Default look" tells to avoid**, taken from clearpile's list and extended by the reviewer:
 - generic rounded cards with soft shadows everywhere;
