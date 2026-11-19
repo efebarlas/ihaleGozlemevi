@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="tr" data-direction="defter">
+<html lang="tr"{% if preview %} data-direction="defter"{% endif %}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light dark">
 <title>{{ title }} · İhale Gözlemevi</title>
+{% if preview %}
 <link rel="stylesheet" href="/tokens/defter.css">
 <link rel="stylesheet" href="/style.css">
 <script>
@@ -24,6 +25,9 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
  e.preventDefault();var n=D[(D.indexOf(d.getAttribute("data-direction"))+1)%D.length];s("yon",n);dir(n)});
 })();
 </script>
+{% else %}
+<link rel="stylesheet" href="/style.css">
+{% endif %}
 </head>
 <body>
 <a class="skip" href="#icerik">İçeriğe geç</a>

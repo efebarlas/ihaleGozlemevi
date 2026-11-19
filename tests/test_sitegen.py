@@ -650,17 +650,39 @@ def test_srcline_everywhere(dist):
     assert day.count('class="row"') == day.count('class="srcline"') == 8        # every row has a source line
 
 
-def test_direction_assets_and_hidden_switch(dist):
+def test_live_build_has_no_design_direction_or_switch(dist):
+    assert not (dist / "tokens").exists()
+    for p in dist.rglob("*.html"):
+        t = p.read_text(encoding="utf-8")
+        assert "data-direction" not in t and "<script" not in t and "tokens/" not in t, p
+        assert "?yon=" not in t, p
+    css = (dist / "style.css").read_text(encoding="utf-8")
+    assert "data-direction" not in css and "--c-bg" not in css            # the live CSS is the plain one
+    assert (dist / "style.css").read_bytes() == (Path(sitegen.__file__).parent / "static" / "style.css").read_bytes()
+
+
+def test_design_preview_build_and_deploy_refuses_it(tmp_path):
+    out = tmp_path / "preview"
+    sitegen.build(SAMPLE, out, preview_design=True)
     for n in ("defter", "gazete", "evrak"):
-        css = dist / "tokens" / f"{n}.css"
+        css = out / "tokens" / f"{n}.css"
         assert css.is_file() and css.stat().st_size < 8000
-    h = _read(dist, "index.html")
+    h = _read(out, "index.html")
     assert 'data-direction="defter"' in h and 'href="/tokens/defter.css"' in h
     assert "yon" in h and "tema" in h and "localStorage" in h and "try{" in h      # switch script, guarded
-    y = _read(dist, "yontem/index.html")
-    assert 'class="sw"' in y and 'class="sw"' not in h                           # the only visible switch is on Yöntem
+    assert 'class="sw"' in _read(out, "yontem/index.html") and 'class="sw"' not in h
+    assert "--c-bg" in (out / "style.css").read_text(encoding="utf-8")
+    assert '<p class="srcline">' in h                                              # rule fixes are in both builds
+    with pytest.raises(RuntimeError, match="design preview"):
+        sitegen.deploy(out)
 
 
-def test_part_rates_group_keys_with_type_prefix(dist):
-    y = _read(dist, "yontem/index.html")
-    assert "<td>Mal · 4734/3-g (DMO)</td>" in y and "<td>Mal · Tüm usuller</td>" in y
+def test_deploy_refuses_data_direction_without_tokens(tmp_path):
+    out = tmp_path / "d"
+    sitegen.build(SAMPLE, out)
+    idx = out / "index.html"
+    idx.write_text(idx.read_text(encoding="utf-8").replace('<html lang="tr">', '<html lang="tr" data-direction="defter">'),
+                   encoding="utf-8")
+    with pytest.raises(RuntimeError, match="design preview"):
+        sitegen.deploy(out)
+

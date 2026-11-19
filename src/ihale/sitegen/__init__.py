@@ -443,7 +443,7 @@ def _load(export_dir: Path):
     return meta, days
 
 
-def build(export_dir: Path, out_dir: Path) -> None:
+def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None:
     export_dir, out_dir = Path(export_dir), Path(out_dir)
     meta, days = _load(export_dir)
     _wipe(out_dir)
@@ -454,7 +454,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(innocent=INNOCENT, idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(preview=preview_design, innocent=INNOCENT, idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
@@ -592,10 +592,14 @@ def build(export_dir: Path, out_dir: Path) -> None:
                  for r in meta.get("structural_rules") or []])
     write("404.html", "404.html", page="404", title="Sayfa bulunamadı")
 
-    shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")
-    (out_dir / "tokens").mkdir(exist_ok=True)
-    for tok in sorted((PKG_DIR / "static" / "tokens").glob("*.css")):
-        shutil.copyfile(tok, out_dir / "tokens" / tok.name)
+    if preview_design:
+        # design preview only (never deployed): consumer CSS + the three direction token sets + hidden switch
+        shutil.copyfile(PKG_DIR / "static" / "preview" / "style.css", out_dir / "style.css")
+        (out_dir / "tokens").mkdir(exist_ok=True)
+        for tok in sorted((PKG_DIR / "static" / "preview" / "tokens").glob("*.css")):
+            shutil.copyfile(tok, out_dir / "tokens" / tok.name)
+    else:
+        shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")
     (out_dir / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8", newline="\n")
     (out_dir / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8", newline="\n")
 
@@ -616,6 +620,10 @@ def deploy(dist_dir: Path | None = None) -> str:
     index = dist / "index.html"
     if not index.is_file():
         raise RuntimeError(f"nothing to deploy: {index} missing (run build first)")
+    if (dist / "tokens").exists() or any(
+            "data-direction" in f.read_text(encoding="utf-8", errors="replace") for f in (index, dist / "yontem" / "index.html")
+            if f.is_file()):
+        raise RuntimeError("refusing to deploy: dist is a design preview build (token files / data-direction)")
     if "ÖRNEK İL MÜDÜRLÜĞÜ" in index.read_text(encoding="utf-8"):
         raise RuntimeError("refusing to deploy: dist was built from the test sample export")
     npx = shutil.which("npx.cmd") if os.name == "nt" else None

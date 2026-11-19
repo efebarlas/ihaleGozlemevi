@@ -88,6 +88,10 @@ def cmd_export(args) -> int:
 
 def cmd_build(args) -> int:
     try:
+        if getattr(args, "design_preview", False):   # never deployed: deploy() refuses this output
+            pipeline.sitegen_module().build(pipeline.export_dir(), args.out or pipeline.repo_root() / "site" / "preview",
+                                            preview_design=True)
+            return 0
         pipeline.build_site(args.out)
     except Exception as e:  # noqa: BLE001
         print(f"build failed: {type(e).__name__}: {e}", file=sys.stderr)
@@ -136,7 +140,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     b = sub.add_parser("build", help="build the static site from the export")
     b.add_argument("--out", type=Path, default=None,
-                   help="output dir (default: <repo>/site/dist)")
+                   help="output dir (default: <repo>/site/dist, or site/preview with --design-preview)")
+    b.add_argument("--design-preview", action="store_true",
+                   help="design preview build (Defter direction + hidden switch) into site/preview; not deployable")
     b.set_defaults(func=cmd_build)
     sub.add_parser("deploy", help="deploy the built site (via ihale.sitegen.deploy)").set_defaults(func=cmd_deploy)
 
