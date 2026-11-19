@@ -224,7 +224,9 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 - tag the commit `design-unguided`;
 - tell the spec owner.
 
-**Phase 2: Efe's guidance.** Feedback Efe released after the hold-off (§9.3), plus any new feedback, goes into `design/BRIEF.md` in his own words. A fresh reviewer treats the brief as outranking its own defaults. Efe picks between directions through Günün sorusu. Record the outcome in `design/DIRECTION.md`.
+**Freeze requirement:** also save the exact briefs given to the direction reviewer and the audit reviewer, verbatim, in `design/unguided/briefs/`.
+
+**Phase 2** is run by the spec owner after the freeze, apart from the main build. Its outcome, and what Efe decides from it, is recorded in `design/DIRECTION.md`. Until then, the Phase 1 direction stays the default.
 
 ### 9.3 Hold-off (all feedback, design included)
 Adopted from clearpile (Efe, 2026-11-19).
