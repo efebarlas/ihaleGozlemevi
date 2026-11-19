@@ -76,7 +76,7 @@ Flags alone fire on roughly half of all tenders, and their base rates differ a l
 - **Probable typo.** The ratio sözleşme bedeli / estimate is within ±1% of a power of ten (10, 100, 1000 … or 0.1, 0.01 …). The flag is shown with `source_check: "typo"` and the note ` · Bültendeki iki rakam arasındaki fark tam bir 10'un katı; kaynakta yazım hatası olabilir.` It earns no points, isn't a `tekrarlayan_eslesik` partner, and is excluded from p. A 0.1× or 0.01× record has no `bedel_orani` flag, but still gets the note on its detail page via `indicators.source_check`.
 - **Any other ratio > 1.5.** The flag scores normally. `bedel_orani` points are ln(1/p) and don't grow with the ratio, so the outlier is already capped. It is shown with `source_check: "large"` and the note ` · Fark olağan dışı büyük; rakamlar bültende bu şekilde yazıyor, kaynağı kontrol edin.`
 
-**Groups.** The usul group is the record's `usul_turu`, with one split: 3-g records whose idare starts with `DEVLET MALZEME OFİSİ` form `istisna_3g_dmo` (label `4734/3-g (DMO)`). All other 3-g records stay in `istisna_3g` (label `4734/3-g (diğer idareler)`). DMO is 8,308 of 8,964 3-g records. This grouping is used for p, the bedel medians and the per-procedure peer chain.
+**Groups (M4: per bulletin type).** The group key is `<bulletin_type>/<usul group>`, e.g. `mal/acik` or `yapim/pazarlik_21b`, and each type has its own `<type>/hepsi` fallback. The usul group is the record's `usul_turu`, with one split: 3-g records whose idare starts with `DEVLET MALZEME OFİSİ` form `istisna_3g_dmo` (label `4734/3-g (DMO)`). All other 3-g records stay in `istisna_3g` (label `4734/3-g (diğer idareler)`). DMO is 8,308 of 8,964 3-g records. This grouping is used for p, the bedel medians and the per-procedure peer chain.
 
 **p** = records in the group where the part's condition holds (counted regardless of structural exclusions) / records in the group where the part is computable.
 
@@ -167,6 +167,18 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
 - Every record of the day is included, flagged or not. The site decides what to show.
 - Money is a JSON number in major units plus a currency, with an optional `"alt"` for dual figures. Persons' names appear exactly as printed.
 - `unreadable` lists the field names whose values were missing or below `CONFIDENT`, plus `{"field": ..., "reason": ...}` objects for reasons such as a currency mismatch.
+
+## 5.2 Dosyalar export (M4)
+- **`export/idare/<slug>.json`:**
+  - identity, `idare_turu`, `il`;
+  - totals per type;
+  - the procedure mix per ISO week (açık / pazarlık with 21/b separate / istisna 3-g, 3-e, other / other), so displacement is visible (SPEC §6.2);
+  - the tek-geçerli share per usul group, with n, next to the peer group's share and n;
+  - a continuity timeline of every award;
+  - the top yüklenicis by count and TRY, as facts only.
+- **`export/yuklenici/<slug>.json`:** only for yüklenicis that are not natural persons (`sitegen/persons.py`). It holds the awards in date order and the totals per idare. It never has a score, rank or rate (SPEC §6.1).
+- **`meta.json`:** `idare_index` and `yuklenici_index`, each sorted with Turkish collation.
+- **Slugs:** Turkish-aware ASCII, kept stable through a slug map in the data dir.
 
 ## 5.1 Oracle candidates (M3, SPEC §9.1 Günün sorusu)
 Each `run` writes `<data>/oracle/candidates.json`. It is local only and never deployed or committed. The spec owner appends Efe's answers to `<data>/oracle/log.jsonl`, and the pipeline never writes that file.

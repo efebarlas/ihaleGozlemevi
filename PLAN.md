@@ -23,7 +23,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
-| M4 | Breadth | not started |
+| M4 | Dosyalar and better peers | in progress: hizmet/yapım adapter + labels (parser builder), per-type groups + Dosyalar export (M2 builder); site pages next |
 | M5 | History | not started |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
