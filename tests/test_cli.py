@@ -246,7 +246,7 @@ def test_flag_and_export_commands(env, data_dir):
     Store().replace_day(D, "mal", [rec(1, gecerli=1, toplam=1)])
     assert run("flag") == 0 and run("export") == 0
     day = json.loads((data_dir / "export" / "days" / "2026-11-18.json").read_text(encoding="utf-8"))
-    assert day["tenders"][0]["flags"][0]["code"] == "tek_gecerli_teklif"
+    assert day["tenders"][0]["flags"][0]["code"] == "tek_teklif"
 
 
 def test_build_and_deploy_commands(env, data_dir):

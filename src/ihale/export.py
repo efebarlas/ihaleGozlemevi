@@ -13,7 +13,8 @@ from .store import Store, StoredRecord
 
 SCHEMA = 1
 TR_TZ = timezone(timedelta(hours=3))   # Turkey is on permanent UTC+3 (no tzdata needed on Windows)
-FLAG_CODES = ("tek_gecerli_teklif", "bedel_orani", "tekrarlayan_yuklenici")
+FLAG_CODES = ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_yuklenici")
+# "tek_gecerli_teklif" in meta.counts = records with either of the first two (the idare/peer rate basis)
 
 
 def istanbul_now() -> datetime:
@@ -57,6 +58,7 @@ def tender_json(s: StoredRecord) -> dict:
         "unreadable": s.unreadable or [],
         "flags": s.flags or [],
         "score": s.score or 0, "score_parts": s.score_parts or [],
+        "indicators": s.indicators,
         "idare_stats": s.idare_stats,
     }
 
@@ -86,6 +88,8 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
         c = {"records": len(tenders), "flagged": sum(1 for t in tenders if t["flags"])}
         for code in FLAG_CODES:
             c[code] = sum(1 for t in tenders if any(f["code"] == code for f in t["flags"]))
+        c["tek_gecerli_teklif"] = sum(1 for t in tenders if any(
+            f["code"] in ("tek_teklif", "diger_teklifler_elendi") for f in t["flags"]))
         c["unreadable"] = sum(1 for t in tenders if t["unreadable"])
         counts[day] = c
 

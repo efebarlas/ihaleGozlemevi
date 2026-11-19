@@ -34,3 +34,5 @@ def test_report_contents(capsys):
     assert "By usul" in out and "By section" in out and "Score distribution" in out
     assert "tek geçerli teklif" in out and "bedel >= 0.97" in out
     assert "score 2:" in out
+    assert "Indicators by usul_turu" in out and "Indicators by section" in out
+    assert "[istisna_3g]" in out and "karar_suresi_gun" in out and "yuklenici_payi" in out

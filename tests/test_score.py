@@ -37,7 +37,7 @@ def first(recs):
 def test_score_parts_weights():
     a, b = run(rec(1, ikn="2026/1", gecerli=1, toplam=1, bedel=99.0, maliyet=100.0, yuklenici="X"),
                rec(1, ikn="2026/2", gecerli=3, yuklenici="Y"))
-    assert a.score == 2 and a.score_parts == ["tek_gecerli_teklif", "bedel_orani"]
+    assert a.score == 2 and a.score_parts == ["tek_teklif", "bedel_orani"]
     assert b.score == 0 and b.score_parts == []
 
 
@@ -46,7 +46,7 @@ def test_repeat_adds_two_only_with_another_flag():
     bare = run(*[rec(1, day=d, ikn=f"2026/{i}") for i, d in enumerate(dates)])[2]
     assert "tekrarlayan_yuklenici" in codes(bare) and bare.score == 0 and bare.score_parts == []
     comp = run(*[rec(1, day=d, ikn=f"2026/{i}", gecerli=1, toplam=1) for i, d in enumerate(dates)])[2]
-    assert comp.score == 3 and comp.score_parts == ["tek_gecerli_teklif", "tekrarlayan_yuklenici"]
+    assert comp.score == 3 and comp.score_parts == ["tek_teklif", "tekrarlayan_yuklenici"]
 
 
 def test_idare_orani_fires_with_local_peers():

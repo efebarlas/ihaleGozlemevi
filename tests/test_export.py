@@ -33,6 +33,8 @@ CONTRACT_DAY = json.loads("""
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
    "score": 1, "score_parts": ["bedel_orani"],
+   "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
+                  "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
                    "peer": {"label": "Antalya'daki sağlık idareleri (mal)", "records": 140, "tek_gecerli_teklif": 0.43}}}
  ]}
@@ -53,7 +55,8 @@ def load_all(day=date(2026, 11, 18)):
     stored = store.all_records()
     res = compute_flags(stored)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
-                         "score_parts": r.score_parts, "idare_stats": r.idare_stats} for i, r in res.items()})
+                         "score_parts": r.score_parts, "idare_stats": r.idare_stats,
+                         "indicators": r.indicators} for i, r in res.items()})
     return store
 
 
@@ -75,10 +78,16 @@ def test_export_matches_contract_shape():
     # shape: every key of the contract example, nothing else (flags/unreadable lists compared by element shape)
     # idare_stats: a lone record has no peer group, so compare that block's keys separately
     stats, c_stats = d["tenders"][0].pop("idare_stats"), CONTRACT_DAY["tenders"][0].pop("idare_stats")
+    indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)
+    assert set(indic) == set(c_indic) | {"elenen_orani_peer_n"}     # the one key added for display of n
+    assert indic == {"elenen_orani": 0.0, "elenen_orani_peer": None, "elenen_orani_peer_n": 0,
+                     "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": False,
+                     "yuklenici_payi": None, "yuklenici_payi_n": 1}
     assert set(stats) == set(c_stats) and stats["peer"] is None and stats["records"] == 1
     assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
-    assert shape(meta)["counts"]["2026-11-18"].keys() == shape(CONTRACT_META)["counts"]["2026-11-18"].keys()
+    got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
+    assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
     assert set(meta) == set(CONTRACT_META)
     t = d["tenders"][0]
     expected = CONTRACT_DAY["tenders"][0]
@@ -86,7 +95,8 @@ def test_export_matches_contract_shape():
     assert t == expected
     assert meta["generated_at"] == "2026-11-18T21:30:00+03:00"
     assert meta["latest_date"] == "2026-11-18" and meta["dates"] == ["2026-11-18"]
-    assert meta["counts"]["2026-11-18"] == {"records": 1, "flagged": 1, "tek_gecerli_teklif": 0, "bedel_orani": 1,
+    assert meta["counts"]["2026-11-18"] == {"records": 1, "flagged": 1, "tek_gecerli_teklif": 0, "tek_teklif": 0,
+                                            "diger_teklifler_elendi": 0, "bedel_orani": 1,
                                             "tekrarlayan_yuklenici": 0, "unreadable": 0}
 
 

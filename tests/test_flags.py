@@ -47,28 +47,44 @@ def test_percent_suffix_examples(n, s):
     assert percent_possessive(n) == s
 
 
-# ---------------------------------------------------------------- tek_gecerli_teklif
-def test_tek_gecerli_basic_and_text():
-    a, b, c = run(rec(1, toplam=1, gecerli=1), rec(2, ikn="2026/2", toplam=2, gecerli=1, yuklenici="B"),
-                  rec(3, ikn="2026/3", toplam=2, gecerli=2, yuklenici="C"))
-    assert a.flags == [{"code": "tek_gecerli_teklif", "value": 1, "text": "Tek geçerli teklif"}]
-    assert b.flags[0]["text"] == "Tek geçerli teklif (2 teklif, 1 geçerli)"
-    assert "tek_gecerli_teklif" not in codes(c)
+# ---------------------------------------------------------------- tek_teklif / diger_teklifler_elendi
+def tek(toplam, gecerli, **kw):
+    (a,) = run(rec(1, toplam=toplam, gecerli=gecerli, **kw))
+    return a
 
 
-def test_tek_gecerli_unconfident_is_unreadable_not_flag():
-    (a,) = run(rec(1, gecerli=1, conf={"gecerli_teklif": 0.5}))
-    assert "tek_gecerli_teklif" not in codes(a) and "gecerli_teklif" in a.unreadable
+@pytest.mark.parametrize("toplam,gecerli,expected", [
+    (1, 1, ["tek_teklif"]),
+    (1, 0, ["tek_teklif"]),              # a single bid, but not valid: still a single bid
+    (2, 1, ["diger_teklifler_elendi"]),
+    (2, 2, []),
+    (2, 0, []),
+    (4, 1, ["diger_teklifler_elendi"]),
+    (4, 3, []),
+])
+def test_offer_flag_boundaries(toplam, gecerli, expected):
+    a = tek(toplam, gecerli)
+    assert [c for c in codes(a) if c in ("tek_teklif", "diger_teklifler_elendi")] == expected
 
 
-def test_tek_gecerli_missing_value():
-    (a,) = run(rec(1, gecerli=None))
-    assert codes(a) == [] and "gecerli_teklif" in a.unreadable
+def test_offer_flag_texts_and_values():
+    assert tek(1, 1).flags[0] == {"code": "tek_teklif", "value": 1, "text": "Tek teklif verildi"}
+    f = tek(4, 1).flags[0]
+    assert f == {"code": "diger_teklifler_elendi", "value": 4,
+                 "text": "4 teklif verildi, yalnızca kazananınki geçerli sayıldı"}
 
 
-def test_unconfident_toplam_only_drops_the_extra_text():
-    (a,) = run(rec(1, toplam=2, gecerli=1, conf={"toplam_teklif": 0.3}))
-    assert a.flags[0]["text"] == "Tek geçerli teklif"
+@pytest.mark.parametrize("bad", ["gecerli_teklif", "toplam_teklif"])
+def test_offer_flags_need_both_counts_confident(bad):
+    a = tek(1, 1, conf={bad: 0.5})
+    assert codes(a) == [] and bad in a.unreadable
+
+
+def test_offer_flags_missing_values():
+    a = tek(None, 1)
+    assert codes(a) == [] and "toplam_teklif" in a.unreadable
+    b = tek(2, None)
+    assert codes(b) == [] and "gecerli_teklif" in b.unreadable
 
 
 # ---------------------------------------------------------------- bedel_orani

@@ -34,6 +34,31 @@ def table(title: str, groups: dict[str, list]) -> None:
               f"{pct(sum(r['score'] >= 2 for r in rows), n):>8}")
 
 
+def _quantiles(vals: list[float]) -> str:
+    if not vals:
+        return "n=0"
+    v = sorted(vals)
+    q = lambda p: v[min(len(v) - 1, int(p * (len(v) - 1) + 0.5))]  # noqa: E731
+    return (f"n={len(v):<6} mean={sum(v) / len(v):8.3f}  p10={q(.1):8.3f}  p50={q(.5):8.3f}  "
+            f"p90={q(.9):8.3f}  max={v[-1]:8.3f}")
+
+
+def indicator_tables(rows: list[dict]) -> None:
+    """Distribution of each §4.2 indicator, overall and by usul_turu and section (not yet in the score)."""
+    numeric = ("elenen_orani", "karar_suresi_gun", "yuklenici_payi")
+    for key, title in (("usul_turu", "usul_turu"), ("section", "section")):
+        groups: dict[str, list[dict]] = defaultdict(list)
+        for r in rows:
+            groups["(hepsi)"].append(r)
+            groups[(r["ind"].get("usul_turu") or "(bilinmiyor)") if key == "usul_turu" else r["section"]].append(r)
+        print(f"\nIndicators by {title}")
+        for g, rs in sorted(groups.items(), key=lambda kv: (kv[0] != "(hepsi)", -len(kv[1]))):
+            print(f"  [{g}]  records={len(rs)}  acik_olmayan={pct(sum(1 for r in rs if r['ind'].get('acik_olmayan')), len(rs))}")
+            for name in numeric:
+                vals = [r["ind"][name] for r in rs if r["ind"].get(name) is not None]
+                print(f"    {name:<18}{_quantiles(vals)}")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--date", type=date.fromisoformat, help="only report records of this bulletin date")
@@ -51,7 +76,9 @@ def main(argv=None) -> int:
         have = {x["code"] for x in f.flags}
         rows.append({
             "date": r.bulletin_date, "ikn": r.ikn, "usul": r.ihale_usulu or "(boş)", "section": r.section,
-            "tek": "tek_gecerli_teklif" in have, "bedel": "bedel_orani" in have,
+            "tek": bool(have & {"tek_teklif", "diger_teklifler_elendi"}),
+            "tek_teklif": "tek_teklif" in have, "diger": "diger_teklifler_elendi" in have,
+            "ind": f.indicators or {}, "bedel": "bedel_orani" in have,
             "rep": "tekrarlayan_yuklenici" in have, "score": f.score,
             "unread": bool(f.unreadable), "parts": tuple(f.score_parts)})
     if not rows:
@@ -61,7 +88,9 @@ def main(argv=None) -> int:
     days = sorted({r["date"] for r in rows})
     n = len(rows)
     print(f"{n} records, {len(days)} bulletin day(s): {days[0]} .. {days[-1]}")
-    print(f"tek geçerli teklif   {pct(sum(r['tek'] for r in rows), n)}")
+    print(f"tek geçerli teklif   {pct(sum(r['tek'] for r in rows), n)}  (either of the two below)")
+    print(f"  tek teklif         {pct(sum(r['tek_teklif'] for r in rows), n)}")
+    print(f"  diğerleri elendi   {pct(sum(r['diger'] for r in rows), n)}")
     print(f"bedel >= 0.97        {pct(sum(r['bedel'] for r in rows), n)}")
     reps = [r for r in rows if r["rep"]]
     print(f"tekrarlayan          {pct(len(reps), n)}  ({len(reps)} records)")
@@ -81,6 +110,8 @@ def main(argv=None) -> int:
         by_section[r["section"]].append(r)
     table("By usul", by_usul)
     table("By section", by_section)
+
+    indicator_tables(rows)
 
     print("\nScore distribution (records)")
     dist = Counter(r["score"] for r in rows)

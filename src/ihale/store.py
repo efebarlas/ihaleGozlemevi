@@ -11,7 +11,7 @@ from pathlib import Path
 from . import config
 from .model import Money, Record
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 MONEY_FIELDS = ("yaklasik_maliyet", "esas_kisim_yaklasik_maliyet", "sozlesme_bedeli")
 DATE_FIELDS = ("ihale_tarihi", "sozlesme_tarihi")
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS records (
     warnings TEXT NOT NULL DEFAULT '[]',
     raw_fields TEXT NOT NULL DEFAULT '[]',
     flags TEXT, unreadable TEXT, kisim_n INTEGER,
-    score INTEGER, score_parts TEXT, idare_stats TEXT,
+    score INTEGER, score_parts TEXT, idare_stats TEXT, indicators TEXT,
     UNIQUE (bulletin_date, bulletin_type, section, seq)
 );
 CREATE INDEX IF NOT EXISTS records_ikn ON records (ikn);
@@ -70,6 +70,7 @@ class StoredRecord:
     score: int | None = None
     score_parts: list | None = None
     idare_stats: dict | None = None
+    indicators: dict | None = None
 
 
 def _money_cols(name: str, m: Money | None) -> dict:
@@ -149,12 +150,12 @@ class Store:
             row = c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
             if row is None:
                 c.execute("INSERT INTO meta VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
-            elif int(row["value"]) == 1:   # v1 → v2: raw_fields, score columns
-                for ddl in ("ALTER TABLE records ADD COLUMN raw_fields TEXT NOT NULL DEFAULT '[]'",
-                            "ALTER TABLE records ADD COLUMN score INTEGER",
-                            "ALTER TABLE records ADD COLUMN score_parts TEXT",
-                            "ALTER TABLE records ADD COLUMN idare_stats TEXT"):
-                    c.execute(ddl)
+            elif int(row["value"]) < SCHEMA_VERSION:   # v1/v2 → v3: add whichever columns are missing
+                have = {r["name"] for r in c.execute("PRAGMA table_info(records)")}
+                for col, decl in (("raw_fields", "TEXT NOT NULL DEFAULT '[]'"), ("score", "INTEGER"),
+                                  ("score_parts", "TEXT"), ("idare_stats", "TEXT"), ("indicators", "TEXT")):
+                    if col not in have:
+                        c.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
                 c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
             elif int(row["value"]) != SCHEMA_VERSION:
                 raise RuntimeError(f"database schema {row['value']} != supported {SCHEMA_VERSION}; migrate or rebuild")
@@ -192,13 +193,13 @@ class Store:
         return stored
 
     def set_flags(self, results: dict[int, dict]) -> None:
-        """results: record id → {flags, unreadable, kisim_n, score, score_parts, idare_stats}."""
+        """results: record id → {flags, unreadable, kisim_n, score, score_parts, idare_stats, indicators}."""
         dump = lambda v: json.dumps(v, ensure_ascii=False)  # noqa: E731
         with self._conn() as c:
             c.executemany(
-                "UPDATE records SET flags=?, unreadable=?, kisim_n=?, score=?, score_parts=?, idare_stats=? WHERE id=?",
+                "UPDATE records SET flags=?, unreadable=?, kisim_n=?, score=?, score_parts=?, idare_stats=?, indicators=? WHERE id=?",
                 [(dump(r["flags"]), dump(r["unreadable"]), r["kisim_n"], r["score"], dump(r["score_parts"]),
-                  dump(r["idare_stats"]), i) for i, r in results.items()])
+                  dump(r["idare_stats"]), dump(r["indicators"]), i) for i, r in results.items()])
 
     # ------------------------------------------------------------ read
     def all_records(self) -> list[StoredRecord]:
@@ -212,7 +213,8 @@ class Store:
                 unreadable=json.loads(row["unreadable"]) if row["unreadable"] is not None else None,
                 kisim_n=row["kisim_n"], score=row["score"],
                 score_parts=json.loads(row["score_parts"]) if row["score_parts"] is not None else None,
-                idare_stats=json.loads(row["idare_stats"]) if row["idare_stats"] is not None else None))
+                idare_stats=json.loads(row["idare_stats"]) if row["idare_stats"] is not None else None,
+                indicators=json.loads(row["indicators"]) if row["indicators"] is not None else None))
         return out
 
     def dates(self) -> list[date]:
