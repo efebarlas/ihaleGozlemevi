@@ -14,13 +14,15 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-19: independent label spot-check (fresh agent, page images, not the labeler): 10 records (B4, A76, B2, B275, A183 plus random B421, A184, A3, B3, B321), 80 fields, 0 mismatches.
 
+- 2026-11-19: M3 live. Bugün 19 Nov: 51 of 591 records shown. Scheduled task runs the pipeline daily; auto-deploy needs Efe's one-time Cloudflare login (optional; a session deploys meanwhile). Next: §9.2 unguided visual pass, then M4.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
-| M2 | Store and flag | code done (93564e7; 414 tests pass); verifying on real data via backfill |
-| M3 | Site v1, unlisted, with the daily run | in progress (site generator; deploy and scheduling after M1/M2 land) |
+| M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
+| M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
 | M4 | Breadth | not started |
 | M5 | History | not started |
 
