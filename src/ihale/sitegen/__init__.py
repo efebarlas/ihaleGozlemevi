@@ -28,7 +28,6 @@ PKG_DIR = Path(__file__).resolve().parent
 SITE_DIR = PKG_DIR.parents[2] / "site"
 EKAP_URL = "https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx"
 KURUL_URL = "https://ekap.kik.gov.tr/EKAP/Vatandas/KurulKararSorgu.aspx"   # plain search page; nothing is fetched
-REPO_URL = "https://github.com/efebarlas/ihaleGozlemevi"
 
 MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz",
           "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
@@ -806,6 +805,7 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
     if not stage_db.is_file():
         raise RuntimeError(f"nothing to deploy: staged bulk pages {stage_db.name} missing (run build first)")
     d1.check_masking(dist, stage_db)
+    d1.check_identity(dist, stage_db, SITE_DIR / "worker" / "index.js")
     if not local and _d1_id() in (None, PLACEHOLDER_D1_ID):
         raise RuntimeError("refusing to deploy: site/wrangler.jsonc still has the placeholder D1 database_id "
                            f"(create the database with `wrangler d1 create {D1_NAME}` and paste its id)")

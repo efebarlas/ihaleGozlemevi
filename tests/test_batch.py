@@ -243,3 +243,93 @@ def test_no_repo_link_anywhere_but_ihalent_credit_stays(dist):
         t = p.read_text(encoding="utf-8")
         assert "github.com/efebarlas" not in t and "Kaynak kod" not in t, p
     assert "github.com/gulmezeren2-byte/ihalent" in read(dist, "yontem/index.html")
+
+# ---------------------------------------------------------------- maintainer identity guard
+def test_identity_guard_passes_clean_builds_and_the_real_worker(dist, tmp_path):
+    out = tmp_path / "split"
+    sitegen.build(SAMPLE, out)
+    d1.check_identity(out, d1.staging_path(out), Path(sitegen.SITE_DIR) / "worker" / "index.js")
+    d1.check_identity(dist, None, None)
+    assert "Efe" not in read(dist, "_headers") and "github" not in read(dist, "_headers")
+
+
+def test_identity_guard_rules():
+    v = d1.identity_violations
+    assert v("/yontem/", '<a href="https://github.com/gulmezeren2-byte/ihalent">ihalent</a>') == []     # the one allowed URL
+    assert len(v("/yontem/", '<a href="https://github.com/efebarlas/ihaleGozlemevi">x</a>')) == 2           # github.com + efebarlas
+    assert len(v("/idare/x/", '<main>a github.com/foo b</main>')) == 1                                        # even inside data
+    assert len(v("/idare/x/", "<footer>Efe Barlas</footer>")) == 2                                            # chrome
+    assert len(v("/", '<head><meta name="author" content="Efe"></head><main>x</main>')) == 1                  # meta tag
+    assert v("/idare/x/", "<main>Efe Taşınmaz Değerleme İnşaat Limited Şirketi</main>") == []                 # contractor name in data
+    assert v("/ihale/a/", "<head></head><main><dd>Efe Rıza Taahhüt</dd></main><footer>ok</footer>") == []
+    assert len(v("/yontem/", "<main>Hazırlayan: Efe</main>")) == 1                                            # authored page: whole body
+    assert v("/yontem/", "<main>Birefe Barlasan</main>") == []                                               # whole words only
+    assert len(v("/_headers", "/*\n  X-Maintainer: Efe Barlas\n")) == 2
+    assert v("/arama-idare.json", '[["Efe İnşaat","efe-insaat"]]') == []
+
+
+def test_identity_guard_catches_plants_everywhere(tmp_path):
+    import shutil as _sh
+    out = tmp_path / "split"
+    sitegen.build(SAMPLE, out)
+    worker = Path(sitegen.SITE_DIR) / "worker" / "index.js"
+    stage = d1.staging_path(out)
+
+    def fails(**kw):
+        with pytest.raises(RuntimeError, match="identity guard"):
+            d1.check_identity(kw.get("dist", out), kw.get("stage", stage), kw.get("worker", worker))
+
+    page = out / "arsiv" / "index.html"                                    # (a) static page
+    orig = page.read_text(encoding="utf-8")
+    page.write_text(orig.replace("</footer>", '<a href="https://github.com/efebarlas/x">repo</a></footer>'), encoding="utf-8")
+    fails()
+    page.write_text(orig, encoding="utf-8")
+    d1.check_identity(out, stage, worker)
+    hdr = out / "_headers"                                                 # (b) _headers
+    hdr.write_text(hdr.read_text(encoding="utf-8") + "  X-Built-By: Efe Barlas\n", encoding="utf-8")
+    fails()
+    hdr.write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8")
+    bad_worker = tmp_path / "w.js"                                         # (c) Worker response headers
+    bad_worker.write_text(worker.read_text(encoding="utf-8") + '\nheaders.set("X-Maintainer", "Barlas");\n', encoding="utf-8")
+    fails(worker=bad_worker)
+    st2 = tmp_path / "st.sqlite"                                           # (d) staged D1 page
+    _sh.copyfile(stage, st2)
+    import sqlite3 as _sq
+    db = _sq.connect(st2)
+    p, h = db.execute("SELECT path, html FROM staged LIMIT 1").fetchone()
+    db.execute("UPDATE staged SET html=? WHERE path=?", (h.replace("</footer>", "<p>Efe</p></footer>"), p))
+    db.commit()
+    db.close()
+    fails(stage=st2)
+
+
+def test_deploy_runs_the_identity_guard_before_any_wrangler_call(tmp_path, monkeypatch):
+    dist = tmp_path / "dist"
+    (dist / "yontem").mkdir(parents=True)
+    (dist / "index.html").write_text("<html><footer>site by Efe Barlas</footer></html>", encoding="utf-8")
+    (dist / "yontem" / "index.html").write_text("<html></html>", encoding="utf-8")
+    st = d1.Stage(d1.staging_path(dist))
+    st.add("/ihale/a/", "<html>a</html>")
+    st.close()
+    calls = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: calls.append(args) or "")
+    with pytest.raises(RuntimeError, match="identity guard"):
+        sitegen.deploy(dist, local=True, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+    assert calls == []
+
+
+def test_no_maintainer_identity_in_sources():
+    root = Path(sitegen.SITE_DIR)
+    for f in (root / "worker" / "index.js", root / "wrangler.jsonc"):
+        assert d1.identity_violations("/" + f.name, f.read_text(encoding="utf-8")) == [], f
+    for f in (Path(sitegen.__file__).parent / "templates").glob("*.html"):
+        assert "github.com/efebarlas" not in f.read_text(encoding="utf-8"), f
+    assert not hasattr(sitegen, "REPO_URL")
+
+def test_identity_guard_treats_the_title_of_data_pages_as_data():
+    v = d1.identity_violations
+    page = "<html><head><title>Efe İnşaat Limited Şirketi · İhale Gözlemevi</title></head><body><main>x</main></body></html>"
+    assert v("/yuklenici/efe-insaat-ltd/", page) == []
+    assert len(v("/yontem/", page)) == 1                                    # authored page: the whole document counts
+    assert len(v("/arsiv/", page.replace("<main>x</main>", "<main>x</main><footer>Barlas</footer>"))) >= 1
+    assert len(v("/idare/x/", page.replace("</body>", "<footer>Efe</footer></body>"))) == 1

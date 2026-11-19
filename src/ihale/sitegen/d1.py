@@ -366,3 +366,55 @@ def parse_rows_read(text: str) -> int | None:
     except (ValueError, TypeError):
         return None
     return _sum_keys(data, {"rowsread", "sumrowsread", "totalrowsread"})
+
+# ---- maintainer identity guard (SPEC §6: no maintainer name, account or repo link on the site until G-Public)
+ALLOWED_URLS = ("https://github.com/gulmezeren2-byte/ihalent",)         # the ihalent credit in Yöntem only
+_ALWAYS = re.compile(r"github\.com|efebarlas", re.I)                     # forbidden anywhere, data included
+_NAMES = re.compile(r"\b(?:Efe|Barlas)\b")                              # forbidden in page chrome and authored text
+_MAIN = re.compile(r"<main\b.*?</main>", re.S)
+# Pages whose <main> is authored text (not bulletin data): the name check covers their whole body.
+_AUTHORED = ("/yontem/", "/404.html", "/arsiv/")
+
+
+def identity_violations(url: str, text: str) -> list[str]:
+    """`github.com` (except the ihalent URL) and `efebarlas` are forbidden everywhere. `Efe` / `Barlas` as whole words
+    are forbidden in the page chrome (head, header, footer, headers files, Worker source) and on authored pages; inside
+    the <main> of data pages they can be part of a contractor's name printed in the bulletin (e.g. «Efe Taşınmaz
+    Değerleme …»), which is data, not the maintainer."""
+    t = text
+    for u in ALLOWED_URLS:
+        t = t.replace(u, "")
+    out = [f"{url}: {m.group(0)!r}" for m in _ALWAYS.finditer(t)]
+    if url.endswith(".html") or url.endswith("/"):
+        # <title> of a data page repeats the contractor / idare name, which is data too
+        scan = t if url in _AUTHORED or not _MAIN.search(t) else re.sub(r"<title>.*?</title>", " ", _MAIN.sub(" ", t), flags=re.S)
+    else:
+        scan = t                                                    # _headers, robots.txt, Worker source, JSON, CSS
+    if url.endswith(".json") and url != "/worker/index.js":
+        scan = ""                                                   # search index of idare names: data
+    out += [f"{url}: {m.group(0)!r}" for m in _NAMES.finditer(scan)]
+    return out
+
+
+def check_identity(dist: Path, stage_db: Path | None, worker_js: Path | None = None) -> None:
+    """Raise RuntimeError if the site would publish the maintainer's identity (static files, staged D1 pages, the
+    `_headers` file or the Worker source that sets response headers)."""
+    bad: list[str] = []
+    dist = Path(dist)
+    for f in sorted(dist.rglob("*")):
+        if f.is_file() and (f.suffix in (".html", ".txt", ".css", ".json", ".js", ".xml") or f.name == "_headers"):
+            rel = f.relative_to(dist).as_posix()
+            url = url_path(rel) or "/" + rel
+            bad += identity_violations(url, f.read_text(encoding="utf-8", errors="replace"))
+    if stage_db and Path(stage_db).is_file():
+        db = sqlite3.connect(stage_db)
+        try:
+            for url, html in db.execute("SELECT path, html FROM staged"):
+                bad += identity_violations(url, html)
+        finally:
+            db.close()
+    if worker_js and Path(worker_js).is_file():
+        bad += identity_violations("/worker/index.js", Path(worker_js).read_text(encoding="utf-8"))
+    if bad:
+        raise RuntimeError("refusing to deploy: maintainer identity guard failed:\n  " + "\n  ".join(bad[:10])
+                           + (f"\n  ... and {len(bad) - 10} more" if len(bad) > 10 else ""))
