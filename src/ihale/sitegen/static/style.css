@@ -58,3 +58,4 @@ details[open]>summary::before{content:"▾"}
 .dbody h2{font-size:1rem;margin:1rem 0 .3rem}
 .row:target{background:var(--card)}
 @media (min-width:40rem){details>summary{grid-template-columns:1fr auto}details>summary .rm{grid-column:1/-1}}
+.fold{background:transparent;border-style:dashed}.fold summary{cursor:pointer;font-weight:600}

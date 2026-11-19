@@ -22,7 +22,9 @@
     {% endfor %}
   </div>
   <ol class="cards">
-  {% for t in day.flagged %}
+  {% for it in items %}
+  {% if it.card %}
+    {% set t = it.card %}
     <li class="card {% for c in t._codes %}c-{{ c }} {% endfor %}">
       <h2><a href="/ihale/{{ t.id }}/">{{ t._name }}</a></h2>
       {{ facts(t) }}
@@ -31,6 +33,19 @@
       <p class="muted">Puan: {{ t.score }}</p>
       <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı ve kaynak →</a></p>
     </li>
+  {% else %}
+    <li class="card fold {% for c in it.codes %}c-{{ c }} {% endfor %}">
+      <details>
+        <summary>Bu idareden bugün {{ it.fold | length }} kayıt daha (puan ≥ 2)</summary>
+        <p class="muted">{{ it.idare }}</p>
+        <ul>
+        {% for t in it.fold %}
+          <li><a href="/ihale/{{ t.id }}/">{{ t._name }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %} · Puan: {{ t.score }}{% for f in t.flags %} · {{ f.text }}{% endfor %}</li>
+        {% endfor %}
+        </ul>
+      </details>
+    </li>
+  {% endif %}
   {% endfor %}
   </ol>
 </div>

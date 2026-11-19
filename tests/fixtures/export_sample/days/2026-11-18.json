@@ -76,10 +76,12 @@
     "idare_turu": "sağlık",
     "il": "Örnek İl",
     "peer": {
-     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "label": "Örnek ilindeki sağlık idareleri (mal, açık ihale)",
      "records": 140,
      "tek_gecerli_teklif": 0.43
-    }
+    },
+    "usul_turu": "acik",
+    "usul_label": "açık ihale"
    },
    "indicators": {
     "elenen_orani": null,
@@ -140,7 +142,7 @@
     {
      "code": "bedel_orani",
      "value": 1.04,
-     "text": "Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)"
+     "text": "Sözleşme bedeli yaklaşık maliyetin 4.000,00 EUR üzerinde (%104,0)"
     }
    ],
    "score": 2,
@@ -158,7 +160,9 @@
      "label": "Tüm üniversiteler (mal)",
      "records": 60,
      "tek_gecerli_teklif": 0.35
-    }
+    },
+    "usul_turu": "pazarlik_21b",
+    "usul_label": "pazarlık (md. 21/b)"
    },
    "indicators": {
     "elenen_orani": 0.0,
@@ -437,6 +441,148 @@
    "idare_stats": {
     "records": 2,
     "tek_gecerli_teklif": 0.5,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
+  },
+  {
+   "id": "2026-11-18-mal-B-3",
+   "ikn": "2026/9000013",
+   "title": "ÖRNEK BOYA MALZEMESİ ALIMI 3",
+   "konu": "Örnek Boya Malzemesi Alımı 3",
+   "type": "mal",
+   "section": "B",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 202000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 200000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 1,
+   "gecerli_teklif": 1,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "tek_teklif",
+     "value": 1,
+     "text": "Tek teklif verildi"
+    },
+    {
+     "code": "bedel_orani",
+     "value": 0.99,
+     "text": "Sözleşme bedeli yaklaşık maliyetin %99'u"
+    }
+   ],
+   "score": 2,
+   "score_parts": [
+    "tek_teklif",
+    "bedel_orani"
+   ],
+   "idare_stats": {
+    "records": 15,
+    "tek_gecerli_teklif": 0.4,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
+  },
+  {
+   "id": "2026-11-18-mal-B-4",
+   "ikn": "2026/9000014",
+   "title": "ÖRNEK BOYA MALZEMESİ ALIMI 4",
+   "konu": "Örnek Boya Malzemesi Alımı 4",
+   "type": "mal",
+   "section": "B",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 101000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 100000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 1,
+   "gecerli_teklif": 1,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "tek_teklif",
+     "value": 1,
+     "text": "Tek teklif verildi"
+    },
+    {
+     "code": "bedel_orani",
+     "value": 0.99,
+     "text": "Sözleşme bedeli yaklaşık maliyetin %99'u"
+    }
+   ],
+   "score": 2,
+   "score_parts": [
+    "tek_teklif",
+    "bedel_orani"
+   ],
+   "idare_stats": {
+    "records": 15,
+    "tek_gecerli_teklif": 0.4,
     "window_days": 30,
     "idare_turu": "sağlık",
     "il": "Örnek İl",

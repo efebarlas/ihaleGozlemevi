@@ -8,12 +8,12 @@
  ],
  "counts": {
   "2026-11-18": {
-   "records": 6,
-   "flagged": 5,
-   "bedel_orani": 4,
+   "records": 8,
+   "flagged": 7,
+   "bedel_orani": 6,
    "tekrarlayan_yuklenici": 1,
    "unreadable": 1,
-   "tek_teklif": 2,
+   "tek_teklif": 4,
    "diger_teklifler_elendi": 1
   },
   "2026-11-17": {

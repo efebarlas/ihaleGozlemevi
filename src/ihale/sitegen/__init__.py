@@ -36,6 +36,7 @@ FLAG_TITLES = {
     "idare_orani": "İdarede tek teklif oranı yüksek",
 }
 MIN_SHOWN_SCORE = 2      # Bugün shows records with score >= this (contract §4.1)
+MAX_CARDS_PER_IDARE = 2  # Bugün: more from the same idare are folded into one line
 MIN_DETAIL_SCORE = 1     # detail pages only for score >= this (keeps the file count bounded)
 MAX_FILES = 19000        # Cloudflare free Workers static assets: 20,000 files per deploy
 MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
@@ -174,7 +175,8 @@ def peer_line(t: dict) -> str | None:
     n = st.get("records") or 0
     if n < MIN_IDARE_RECORDS or st.get("tek_gecerli_teklif") is None:
         return None
-    out = f"Bu idare (n={n}): {_pct(st['tek_gecerli_teklif'])} tek geçerli teklif"
+    who = f"Bu idarenin {st['usul_label']} alımları" if st.get("usul_label") else "Bu idare"
+    out = f"{who} (n={n}): {_pct(st['tek_gecerli_teklif'])} tek geçerli teklif"
     peer = st.get("peer") or {}
     if peer.get("label") and peer.get("records") and peer.get("tek_gecerli_teklif") is not None:
         label, pn = peer["label"], peer["records"]
@@ -207,6 +209,28 @@ _WS = re.compile(r"\s+")
 def _squeeze(html: str) -> str:
     """Collapse whitespace runs (no <pre>/<textarea> in our templates) to keep big day pages small."""
     return _WS.sub(" ", html)
+
+
+def fold_cards(flagged: list[dict]) -> list[dict]:
+    """Ranked cards with at most MAX_CARDS_PER_IDARE per idare; the rest fold into one entry after the last
+    kept card of that idare. Nothing is dropped. Entries: {'card': t} or {'fold': [t...], 'codes': [...]}."""
+    kept: dict[str, int] = {}
+    hidden: dict[str, list[dict]] = {}
+    last_idx: dict[str, int] = {}
+    items: list[dict] = []
+    for t in flagged:
+        key = (t.get("idare") or {}).get("key") or t["_idare"]
+        n = kept.get(key, 0)
+        if n < MAX_CARDS_PER_IDARE:
+            kept[key] = n + 1
+            items.append({"card": t})
+            last_idx[key] = len(items) - 1
+        else:
+            hidden.setdefault(key, []).append(t)
+    for key, hs in sorted(hidden.items(), key=lambda kv: -last_idx[kv[0]]):
+        codes = sorted({c for h in hs for c in h["_codes"]}, key=lambda c: FLAG_ORDER.index(c) if c in FLAG_ORDER else 99)
+        items.insert(last_idx[key] + 1, {"fold": hs, "codes": codes, "idare": hs[0]["_idare"]})
+    return items
 
 
 def _wipe(out_dir: Path) -> None:
@@ -283,7 +307,8 @@ def build(export_dir: Path, out_dir: Path) -> None:
             n = sum(1 for t in d["flagged"] if code in t["_codes"])
             if n:
                 chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
-    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips)
+    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips,
+          items=fold_cards(d["flagged"]) if d else [])
 
     # archive
     write("arsiv/index.html", "arsiv.html", page="arsiv", title="Arşiv", rows=[day_ctx[ds] for ds in dates])

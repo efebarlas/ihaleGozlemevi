@@ -99,13 +99,13 @@ def test_no_forbidden_words(dist):
 def test_bugun_heading_summary_and_order(dist):
     h = _read(dist, "index.html")
     assert "<h1>18 Kasım 2026</h1>" in h
-    assert "6 sonuç ilanı okundu · 4 tanesi gösteriliyor" in h
+    assert "8 sonuç ilanı okundu · 6 tanesi gösteriliyor" in h
     # 3 flags first; then one-flag cards by raw bedel amount (A-2 is 104.000 EUR, ranked below the TRY ones)
     pos = [h.index(f"/ihale/2026-11-18-mal-{x}/") for x in ("A-1", "A-3", "B-1", "A-2")]
     assert pos == sorted(pos)
     assert "/gun/2026-11-18/" in h
     # no-JS filter chips
-    assert 'type="radio"' in h and "Tek teklif (2)" in h
+    assert 'type="radio"' in h and "Tek teklif (4)" in h
     # unflagged record is not a card on Bugün
     for hidden in ("A-4", "B-2"):  # score 1 / 0
         assert f"/ihale/2026-11-18-mal-{hidden}/" not in h
@@ -224,11 +224,11 @@ def test_wrangler_config():
 
 def test_peer_comparison_line(dist):
     h = _read(dist, "index.html")
-    assert ("Bu idare (n=12): %80 tek geçerli teklif · "
-            "Örnek ilindeki sağlık idareleri (mal, n=140): %43") in h
-    assert "Bu idare (n=8): %75 tek geçerli teklif · Tüm üniversiteler (mal, n=60): %35" in h
+    assert ("Bu idarenin açık ihale alımları (n=12): %80 tek geçerli teklif · "
+            "Örnek ilindeki sağlık idareleri (mal, açık ihale, n=140): %43") in h
+    assert "Bu idarenin pazarlık (md. 21/b) alımları (n=8): %75 tek geçerli teklif · Tüm üniversiteler (mal, n=60): %35" in h
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
-    assert "Bu idare (n=12): %80" in d and "Puan: 4" in d
+    assert "Bu idarenin açık ihale alımları (n=12): %80" in d and "Puan: 4" in d
 
 
 def test_peer_line_hidden_when_sample_small(dist):
@@ -305,3 +305,32 @@ def test_no_raw_python_values_and_null_names(tmp_path):
     for p in out.rglob("*.html"):
         h = p.read_text(encoding="utf-8")
         assert not re.search(r"\bNone\b|\bTrue\b|\bFalse\b|\d\.\d{5,}|değer:", h), p
+
+
+def test_fold_at_most_two_cards_per_idare(dist):
+    h = _read(dist, "index.html")
+    # 3 records of ÖRNEK İL MÜDÜRLÜĞÜ at score >= 2 (A-1, A-3, B-3, B-4 -> two cards + 2 folded)
+    cards = re.findall(r'<li class="card [^"]*">\s*<h2><a href="/ihale/([^/]+)/', h)
+    assert cards == ["2026-11-18-mal-A-1", "2026-11-18-mal-A-3", "2026-11-18-mal-B-1", "2026-11-18-mal-A-2"]
+    assert "Bu idareden bugün 2 kayıt daha (puan ≥ 2)" in h
+    i = h.index("kayıt daha")
+    for hidden in ("B-3", "B-4"):                       # folded, linked, never dropped
+        assert f'href="/ihale/2026-11-18-mal-{hidden}/"' in h[i:]
+    # fold sits right after the idare's second card
+    assert h.index("/ihale/2026-11-18-mal-A-3/") < i < h.index("/ihale/2026-11-18-mal-B-1/")
+    # chips still count every record: tek_teklif = A-1, A-3, B-3, B-4
+    assert "Tek teklif (4)" in h
+    # every record keeps its detail page
+    assert (dist / "ihale/2026-11-18-mal-B-4/index.html").is_file()
+
+
+def test_fold_cards_unit():
+    mk = lambda i, k: {"id": i, "_idare": k, "idare": {"key": k}, "_codes": ["tek_teklif"]}
+    items = sitegen.fold_cards([mk("a", "X"), mk("b", "X"), mk("c", "X"), mk("d", "Y"), mk("e", "X")])
+    assert [("card", x["card"]["id"]) if "card" in x else ("fold", [h["id"] for h in x["fold"]]) for x in items] ==         [("card", "a"), ("card", "b"), ("fold", ["c", "e"]), ("card", "d")]
+
+
+def test_yontem_new_rules(dist):
+    y = _read(dist, "yontem/index.html")
+    for needle in ["406.700,00 TRY üzerinde (%100,9)", "aynı usul içinde", "en fazla 2 kart"]:
+        assert needle in y, needle
