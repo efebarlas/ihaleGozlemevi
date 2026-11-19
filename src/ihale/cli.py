@@ -86,6 +86,25 @@ def cmd_export(args) -> int:
     return 0
 
 
+def cmd_export_open(args) -> int:
+    """Private OCDS + FollowTheMoney files under <data>/exports/ (never deployed; not part of the daily run)."""
+    from . import openexport
+    from .store import Store
+    store = Store()
+    if args.all:
+        days = store.dates()
+    elif args.date:
+        days = [args.date]
+    else:
+        days = None          # latest stored day
+    paths = openexport.export_open(store, days)
+    for p in paths:
+        print(p)
+    if not paths:
+        print("nothing to export (no stored records for the requested day)", file=sys.stderr)
+    return 0
+
+
 def cmd_build(args) -> int:
     try:
         if getattr(args, "design_preview", False):   # never deployed: deploy() refuses this output
@@ -137,6 +156,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("flag", help="recompute flags for all stored records").set_defaults(func=cmd_flag)
     sub.add_parser("export", help="write export/meta.json and export/days/*.json").set_defaults(func=cmd_export)
+
+    eo = sub.add_parser("export-open", help="private OCDS 1.1 + FollowTheMoney exports under <data>/exports/")
+    g = eo.add_mutually_exclusive_group()
+    g.add_argument("--date", type=parse_day, help=day_help + " (default: the latest stored day)")
+    g.add_argument("--all", action="store_true", help="every stored day")
+    eo.set_defaults(func=cmd_export_open)
 
     b = sub.add_parser("build", help="build the static site from the export")
     b.add_argument("--out", type=Path, default=None,

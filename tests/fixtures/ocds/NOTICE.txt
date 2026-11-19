@@ -1,0 +1,4 @@
+OCDS 1.1.5 JSON Schemas (release-schema.json, release-package-schema.json), copied unmodified from
+https://standard.open-contracting.org/schema/1__1__5/ . Copyright (c) 2014-2017 Open Contracting Partnership,
+licensed under the Apache License, Version 2.0 (https://github.com/open-contracting/standard/blob/1.1/LICENSE).
+Used offline by tests/test_openexport.py to validate our private OCDS export. Not deployed.

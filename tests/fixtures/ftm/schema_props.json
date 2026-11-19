@@ -1,0 +1,277 @@
+{
+ "Asset": {
+  "extends": [
+   "Thing",
+   "Value"
+  ],
+  "properties": [],
+  "required": []
+ },
+ "Company": {
+  "extends": [
+   "Organization",
+   "Asset"
+  ],
+  "properties": [
+   "capital",
+   "voenCode",
+   "coatoCode",
+   "ipoCode",
+   "jibCode",
+   "mbsCode",
+   "caemCode",
+   "kppCode",
+   "okopfCode",
+   "fnsCode",
+   "fssCode",
+   "bikCode",
+   "pfrNumber",
+   "oksmCode",
+   "isinCode",
+   "ticker",
+   "ricCode"
+  ],
+  "required": [
+   "name"
+  ]
+ },
+ "Contract": {
+  "extends": [
+   "Asset"
+  ],
+  "properties": [
+   "start",
+   "title",
+   "authority",
+   "project",
+   "type",
+   "contractDate",
+   "procedureNumber",
+   "procedure",
+   "noticeId",
+   "numberAwards",
+   "status",
+   "method",
+   "criteria",
+   "classification",
+   "cancelled",
+   "language"
+  ],
+  "required": [
+   "title"
+  ]
+ },
+ "ContractAward": {
+  "extends": [
+   "Value",
+   "Interest"
+  ],
+  "properties": [
+   "caption",
+   "supplier",
+   "contract",
+   "callForTenders",
+   "lotNumber",
+   "documentNumber",
+   "documentType",
+   "decisionReason",
+   "cpvCode",
+   "nutsCode",
+   "amended"
+  ],
+  "required": [
+   "supplier",
+   "contract"
+  ]
+ },
+ "Interest": {
+  "extends": [
+   "Interval"
+  ],
+  "properties": [
+   "role",
+   "status"
+  ],
+  "required": []
+ },
+ "Interval": {
+  "extends": [],
+  "properties": [
+   "start",
+   "end",
+   "startDate",
+   "endDate",
+   "date",
+   "summary",
+   "description",
+   "recordId",
+   "sourceUrl",
+   "proof",
+   "publisher",
+   "publisherUrl",
+   "alephUrl",
+   "namesMentioned",
+   "indexText",
+   "modifiedAt",
+   "retrievedAt"
+  ],
+  "required": []
+ },
+ "LegalEntity": {
+  "extends": [
+   "Thing"
+  ],
+  "properties": [
+   "start",
+   "end",
+   "abbreviation",
+   "email",
+   "phone",
+   "website",
+   "legalForm",
+   "incorporationDate",
+   "dissolutionDate",
+   "taxStatus",
+   "status",
+   "sector",
+   "classification",
+   "registrationNumber",
+   "idNumber",
+   "taxNumber",
+   "licenseNumber",
+   "vatCode",
+   "jurisdiction",
+   "mainCountry",
+   "opencorporatesUrl",
+   "bvdId",
+   "sayariId",
+   "brightQueryId",
+   "brightQueryOrgId",
+   "uscCode",
+   "icijId",
+   "okpoCode",
+   "innCode",
+   "ogrnCode",
+   "okvedCode",
+   "leiCode",
+   "cikCode",
+   "dunsCode",
+   "uniqueEntityId",
+   "npiCode",
+   "swiftBic",
+   "parent"
+  ],
+  "required": [
+   "name"
+  ]
+ },
+ "Organization": {
+  "extends": [
+   "LegalEntity"
+  ],
+  "properties": [
+   "cageCode",
+   "permId",
+   "imoNumber",
+   "giiNumber",
+   "irsCode"
+  ],
+  "required": [
+   "name"
+  ]
+ },
+ "Person": {
+  "extends": [
+   "LegalEntity"
+  ],
+  "properties": [
+   "start",
+   "end",
+   "title",
+   "firstName",
+   "secondName",
+   "middleName",
+   "fatherName",
+   "motherName",
+   "lastName",
+   "nameSuffix",
+   "birthDate",
+   "birthPlace",
+   "birthCountry",
+   "deathDate",
+   "position",
+   "biography",
+   "nationality",
+   "citizenship",
+   "passportNumber",
+   "socialSecurityNumber",
+   "gender",
+   "ethnicity",
+   "height",
+   "weight",
+   "eyeColor",
+   "hairColor",
+   "appearance",
+   "religion",
+   "political",
+   "profession",
+   "education",
+   "spokenLanguage"
+  ],
+  "required": [
+   "name"
+  ]
+ },
+ "PublicBody": {
+  "extends": [
+   "Organization"
+  ],
+  "properties": [],
+  "required": [
+   "name"
+  ]
+ },
+ "Thing": {
+  "extends": [],
+  "properties": [
+   "name",
+   "alias",
+   "previousName",
+   "weakAlias",
+   "country",
+   "summary",
+   "notes",
+   "description",
+   "sourceUrl",
+   "publisher",
+   "publisherUrl",
+   "alephUrl",
+   "wikipediaUrl",
+   "wikidataId",
+   "keywords",
+   "topics",
+   "address",
+   "addressEntity",
+   "programId",
+   "proof",
+   "riskSource",
+   "indexText",
+   "createdAt",
+   "modifiedAt",
+   "retrievedAt"
+  ],
+  "required": [
+   "name"
+  ]
+ },
+ "Value": {
+  "extends": [],
+  "properties": [
+   "amount",
+   "currency",
+   "amountUsd",
+   "amountEur"
+  ],
+  "required": []
+ }
+}

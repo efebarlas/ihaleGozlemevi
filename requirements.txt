@@ -3,3 +3,4 @@ pdfplumber
 pypdf
 jinja2
 pytest
+jsonschema
