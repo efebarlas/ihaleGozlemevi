@@ -333,3 +333,43 @@ def test_identity_guard_treats_the_title_of_data_pages_as_data():
     assert len(v("/yontem/", page)) == 1                                    # authored page: the whole document counts
     assert len(v("/arsiv/", page.replace("<main>x</main>", "<main>x</main><footer>Barlas</footer>"))) >= 1
     assert len(v("/idare/x/", page.replace("</body>", "<footer>Efe</footer></body>"))) == 1
+
+# ---------------------------------------------------------------- usul share tables on idare pages (D15)
+def test_usul_share_table_renders_with_n_and_peer(dist):
+    t = read(dist, "idare/ornek-il-mudurlugu/index.html")
+    assert "<h2>Usul payı (Mal)</h2>" in t and "<h2>Usul payı (Hizmet)</h2>" in t
+    assert "Bu idare: 10 İKN" in t and "Karşılaştırma grubu: Türkiye&#39;deki diğer idareler (mal) (250 İKN)." in t
+    assert "<th>Bu idare: İKN payı (n)</th>" in t and "<th>Grup: İKN payı (n)</th>" in t
+    assert "%60 (6)" in t and "%40 (4)" not in t and "%30 (3)" in t                  # açık 6/10, istisna 3/10, n shown
+    assert "%40 (100)" in t                                                          # peer açık 100/250
+    assert "Pazarlık 21/b" in t and "Pazarlık (diğer)" in t                           # 21/b on its own row
+    assert "Usul dağılımı alım türüne ve idarenin görevine göre değişir; tek başına bir sonuç değildir." in t
+    assert all("data-label=" in tbl for tbl in re.findall(r'<table class="rules stack usul">.*?</table>', t, flags=re.S))
+
+
+def test_usul_share_peer_column_hidden_when_group_is_small_or_missing(dist, tmp_path):
+    t = read(dist, "idare/ornek-il-mudurlugu/index.html")
+    hizmet = t[t.index("<h2>Usul payı (Hizmet)</h2>"):t.index("<h2>Usul payı (Mal)</h2>")]
+    assert "Karşılaştırma grubu için yeterli kayıt yok." in hizmet and "Grup:" not in hizmet     # peer is null
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    f = exp / "idare" / "ornek-il-mudurlugu.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    d["usul_pay"]["mal"]["peer"]["n"] = 19                                           # below the minimum of 20
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "o"
+    _build(exp, out)
+    mal = read(out, "idare/ornek-il-mudurlugu/index.html")
+    mal = mal[mal.index("<h2>Usul payı (Mal)</h2>"):mal.index("<h2>Tek geçerli")]
+    assert "Grup:" not in mal and "yeterli kayıt yok" in mal
+
+
+def test_usul_tables_stay_neutral_and_small(dist):
+    t = read(dist, "idare/ornek-il-mudurlugu/index.html")
+    sec = t[t.index("<h2>Usul payı (Mal)</h2>"):t.index("<h2>Tek geçerli")]
+    assert 'class="flag' not in sec and "<mark" not in sec and "<strong" not in sec     # no flag or highlight
+    for p in dist.rglob("*.html"):
+        assert p.stat().st_size <= 150_000, p
+
+def test_tr_pct_handles_missing_shares():
+    assert sitegen.tr_pct(None) == "—" and sitegen.tr_pct(0.5) == "%50" and sitegen.tr_pct(0.045) == "%4,5"

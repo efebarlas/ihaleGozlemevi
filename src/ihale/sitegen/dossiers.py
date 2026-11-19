@@ -17,6 +17,8 @@ ROW_BYTES_NEXT = 100_000
 ROW_MAX = 50
 LIST_BYTES = 100_000
 MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # one entry per category slot (k); tones and hatch patterns live in the template, no hues
+USUL_NOTE = "Usul dağılımı alım türüne ve idarenin görevine göre değişir; tek başına bir sonuç değildir."
+PEER_MIN_N = 20        # same minimum as the export: a peer group below this is not shown
 IDARE_NOTE = "Bir idarenin tablosu tek başına bir sonuç değildir; usul ve alım türü farklılıkları rakamları etkiler."
 YUK_NOTE = "Bir firmanın sözleşme listesi tek başına bir sonuç değildir; firmanın faaliyet alanı ve idarelerin alım hacmi listeyi etkiler."
 
@@ -78,6 +80,25 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
     return rows, legend, peak
 
 
+def usul_tables(d: dict) -> list[dict]:
+    """One table per bulletin type from the export's `usul_pay` (facts only; the peer column only with a big enough n)."""
+    cats = d.get("usul_pay_categories") or []
+    out = []
+    for typ, u in sorted((d.get("usul_pay") or {}).items()):
+        peer = u.get("peer")
+        if peer and (peer.get("n") or 0) < PEER_MIN_N:
+            peer = None
+        rows = []
+        for c in cats:
+            s = (u.get("shares") or {}).get(c["code"]) or {}
+            ps = ((peer or {}).get("shares") or {}).get(c["code"]) or {}
+            rows.append(dict(label=c["label"], awards=s.get("awards") or 0, a_share=s.get("awards_share"),
+                             t_share=s.get("try_share"), p_awards=ps.get("awards") or 0,
+                             p_a_share=ps.get("awards_share"), p_t_share=ps.get("try_share")))
+        out.append(dict(type=typ, n=u.get("n") or 0, try_total=u.get("try_total"), peer=peer, rows=rows))
+    return out
+
+
 def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment, ctx_base: dict, href_by_id: dict,
                    idare_href: dict, yuk_href: dict, idare_parent: dict, src_by_id: dict, yk_label_by_id: dict, fmt: dict, paginate_list) -> None:
     """Write all dossier pages. `idare_href` / `yuk_href`: display name -> page path (for linking)."""
@@ -137,6 +158,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
 
         n = len(pages)
         base = dict(d=d, mix=mix, legend=legend, groups=groups, note=IDARE_NOTE, npages=n,
+                    usul_tables=usul_tables(d), usul_note=USUL_NOTE,
                     top_count=top(d.get("top_yuklenici_by_count")), top_try=top(d.get("top_yuklenici_by_try")),
                     parent=idare_parent.get(d["name"]), kind="idare", slug=slug, total_rows=len(rows))
         write(f"idare/{slug}/index.html", "idare.html", page="idare", title=d["name"], pn=1,

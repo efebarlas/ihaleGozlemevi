@@ -244,7 +244,11 @@ def tr_score(x) -> str:
 
 
 def tr_pct(p) -> str:
+    if p is None:
+        return "—"
     v = float(p) * 100
+    if v == 0:
+        return "%0"
     return "%" + (f"{v:.0f}" if v >= 10 else f"{v:.1f}".replace(".", ","))
 
 

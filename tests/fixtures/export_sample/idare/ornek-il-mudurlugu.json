@@ -270,5 +270,139 @@
    "try_total": 900000.0
   }
  ],
- "natural_person_awards": 2
+ "natural_person_awards": 2,
+ "usul_pay_categories": [
+  {
+   "code": "acik",
+   "label": "Açık"
+  },
+  {
+   "code": "pazarlik_21b",
+   "label": "Pazarlık 21/b"
+  },
+  {
+   "code": "pazarlik_diger",
+   "label": "Pazarlık (diğer)"
+  },
+  {
+   "code": "istisna",
+   "label": "İstisna"
+  },
+  {
+   "code": "diger",
+   "label": "Diğer"
+  }
+ ],
+ "usul_pay": {
+  "mal": {
+   "n": 10,
+   "try_total": 1000000.0,
+   "shares": {
+    "acik": {
+     "awards": 6,
+     "awards_share": 0.6,
+     "try": 500000.0,
+     "try_share": 0.5
+    },
+    "pazarlik_21b": {
+     "awards": 1,
+     "awards_share": 0.1,
+     "try": 100000.0,
+     "try_share": 0.1
+    },
+    "pazarlik_diger": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    },
+    "istisna": {
+     "awards": 3,
+     "awards_share": 0.3,
+     "try": 400000.0,
+     "try_share": 0.4
+    },
+    "diger": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    }
+   },
+   "peer": {
+    "label": "Türkiye'deki diğer idareler (mal)",
+    "n": 250,
+    "try_total": 90000000.0,
+    "shares": {
+     "acik": {
+      "awards": 100,
+      "awards_share": 0.4,
+      "try": 40000000.0,
+      "try_share": 0.4396
+     },
+     "pazarlik_21b": {
+      "awards": 10,
+      "awards_share": 0.04,
+      "try": 5000000.0,
+      "try_share": 0.0549
+     },
+     "pazarlik_diger": {
+      "awards": 40,
+      "awards_share": 0.16,
+      "try": 10000000.0,
+      "try_share": 0.1099
+     },
+     "istisna": {
+      "awards": 95,
+      "awards_share": 0.38,
+      "try": 35000000.0,
+      "try_share": 0.3846
+     },
+     "diger": {
+      "awards": 5,
+      "awards_share": 0.02,
+      "try": 1000000.0,
+      "try_share": 0.011
+     }
+    }
+   }
+  },
+  "hizmet": {
+   "n": 3,
+   "try_total": 90000.0,
+   "shares": {
+    "acik": {
+     "awards": 3,
+     "awards_share": 1.0,
+     "try": 90000.0,
+     "try_share": 1.0
+    },
+    "pazarlik_21b": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    },
+    "pazarlik_diger": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    },
+    "istisna": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    },
+    "diger": {
+     "awards": 0,
+     "awards_share": 0.0,
+     "try": 0.0,
+     "try_share": 0.0
+    }
+   },
+   "peer": null
+  }
+ }
 }
