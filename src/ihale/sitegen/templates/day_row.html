@@ -1,9 +1,9 @@
-{% from "_macros.html" import flags_list, srcline with context %}
+{% from "_macros.html" import flags_list, srcline, yk with context %}
 {% from "_record.html" import body with context %}
 {% if t._page %}
 <li class="row" id="{{ t.id }}">
   <a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
-  <span class="rm">{% if t._idare_href %}<a href="{{ t._idare_href }}">{{ t._idare }}</a>{% else %}{{ t._idare }}{% endif %} · {% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ t._yuklenici }}</a>{% else %}{{ t._yuklenici }}{% endif %}</span>
+  <span class="rm">{% if t._idare_href %}<a href="{{ t._idare_href }}">{{ t._idare }}</a>{% else %}{{ t._idare }}{% endif %} · {% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ yk(t._yuklenici) }}</a>{% else %}{{ yk(t._yuklenici) }}{% endif %}</span>
   <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
   {{ flags_list(t, true) }}
   {{ srcline(t) }}
@@ -12,7 +12,7 @@
 <li class="row" id="{{ t.id }}">
   <details>
     <summary><span class="rt">{{ t._name }}</span>
-      <span class="rm">{{ t._idare }} · {{ t._yuklenici }}</span>
+      <span class="rm">{{ t._idare }} · {{ yk(t._yuklenici) }}</span>
       <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span></summary>
     <div class="dbody">{{ body(t, true) }}</div>
   </details>

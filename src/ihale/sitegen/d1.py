@@ -9,6 +9,7 @@ The path classifier here is mirrored exactly by site/worker/index.js; keep both 
 from __future__ import annotations
 
 import hashlib
+import html as _html
 import json
 import re
 import sqlite3
@@ -248,3 +249,118 @@ def sync_pages(*, stage_db: Path, manifest_path: Path, batch_dir: Path, execute:
             save_manifest(manifest_path, manifest)
             n += 1
     return plan
+
+
+# ---- deploy-time masking guard (SPEC §6.1)
+_YK = re.compile(r'<span class="yk" data-yk(?:="(own)")?>([^<]*)</span>')
+_TITLE = re.compile(r"<title>(.*?) · İhale Gözlemevi</title>", re.S)
+_DETAIL = re.compile(r"^/ihale/[^/]+/$")
+
+
+def masking_violations(url: str, html: str) -> list[str]:
+    """Marked yüklenici elements that show a name `is_natural_person` would mask. Only a record's own detail page
+    may show such a name, and only in an element marked data-yk="own". Raw text is not scanned (company names can
+    contain a founder's name; item texts can too)."""
+    from .persons import PERSON_LABEL, is_natural_person
+    out = []
+    for m in _YK.finditer(html):
+        own, name = m.group(1), _html.unescape(m.group(2))
+        if own:
+            if not _DETAIL.match(url):
+                out.append(f"{url}: own-page marker outside a detail page ({name!r})")
+        elif name not in (PERSON_LABEL, "okunamadı") and is_natural_person(name):   # placeholders are not names
+            out.append(f"{url}: unmasked natural person {name!r}")
+    if re.match(r"^/yuklenici/(?!liste/)[^/]+/", url):          # a dossier page (not the index or its pages)
+        t = _TITLE.search(html)
+        if t and is_natural_person(_html.unescape(t.group(1))):
+            out.append(f"{url}: yüklenici page for a natural person ({_html.unescape(t.group(1))!r})")
+    return out
+
+
+def check_masking(dist: Path, stage_db: Path | None) -> None:
+    """Raise RuntimeError if any page in `dist` or in the staged bulk pages leaks a masked name."""
+    bad: list[str] = []
+    for f in sorted(Path(dist).rglob("*.html")):
+        rel = f.relative_to(dist).as_posix()
+        url = url_path(rel)
+        if url is not None:
+            bad += masking_violations(url, f.read_text(encoding="utf-8"))
+    if stage_db and Path(stage_db).is_file():
+        db = sqlite3.connect(stage_db)
+        try:
+            for url, html in db.execute("SELECT path, html FROM staged"):
+                bad += masking_violations(url, html)
+        finally:
+            db.close()
+    if bad:
+        raise RuntimeError("refusing to deploy: natural-person masking guard failed:\n  " + "\n  ".join(bad[:10])
+                           + (f"\n  ... and {len(bad) - 10} more" if len(bad) > 10 else ""))
+
+
+# ---- D1 free-tier usage warnings (80% of any limit)
+LIMITS = {
+    "rows written per day": 100_000,
+    "rows read per day": 5_000_000,
+    "total storage": 5_000_000_000,
+    "database size": 500_000_000,
+}
+WARN_FRACTION = 0.8
+
+
+def usage_warnings(*, rows_written_today: int | None, rows_read_today: int | None, db_bytes: int | None,
+                   stored_bytes: int | None = None) -> list[str]:
+    cur = {"rows written per day": rows_written_today, "rows read per day": rows_read_today,
+           "total storage": db_bytes, "database size": db_bytes if db_bytes is not None else stored_bytes}
+    out = []
+    for name, limit in LIMITS.items():
+        v = cur.get(name)
+        if v is not None and v >= WARN_FRACTION * limit:
+            out.append(f"D1 {name}: {v:,} is {100 * v / limit:.0f}% of the free limit ({limit:,})")
+    return out
+
+
+def add_rows_written(usage_path: Path, rows: int, today: str) -> int:
+    """Keep a per-UTC-day tally of rows we wrote (D1 resets its daily counters at 00:00 UTC); return today's total."""
+    data = {}
+    if usage_path.is_file():
+        data = json.loads(usage_path.read_text(encoding="utf-8"))
+    total = (data.get("rows_written", 0) if data.get("date") == today else 0) + rows
+    usage_path.parent.mkdir(parents=True, exist_ok=True)
+    usage_path.write_text(json.dumps({"date": today, "rows_written": total}), encoding="utf-8")
+    return total
+
+
+def _sum_keys(obj, names: set[str]) -> int | None:
+    found: list[int] = []
+
+    def walk(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k.lower().replace("_", "") in names and isinstance(v, (int, float)):
+                    found.append(int(v))
+                else:
+                    walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    walk(obj)
+    return sum(found) if found else None
+
+
+def parse_info_size(text: str) -> int | None:
+    """Database size in bytes from `wrangler d1 info --json` output (None if not present)."""
+    try:
+        data = json.loads(text[text.index("{"):text.rindex("}") + 1])
+    except ValueError:
+        return None
+    return _sum_keys(data, {"filesize", "databasesize", "size", "sizeafter"})
+
+
+def parse_rows_read(text: str) -> int | None:
+    """Rows read (last day) from `wrangler d1 insights --json` output (None if not present)."""
+    try:
+        start = min(i for i in (text.find("["), text.find("{")) if i >= 0)
+        data = json.loads(text[start:max(text.rfind("]"), text.rfind("}")) + 1])
+    except (ValueError, TypeError):
+        return None
+    return _sum_keys(data, {"rowsread", "sumrowsread", "totalrowsread"})

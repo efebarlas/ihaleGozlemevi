@@ -26,6 +26,14 @@ async function notFound(request, env) {
   return new Response(request.method === "HEAD" ? null : res.body, { status: 404, headers });
 }
 
+function unavailable(request) {
+  const body = "<!doctype html><html lang=\"tr\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex, nofollow\">"
+    + "<title>Geçici olarak ulaşılamıyor</title></head><body><h1>Bu sayfa şu anda yüklenemiyor</h1>"
+    + "<p>Biraz sonra tekrar deneyin. <a href=\"/\">Bugün sayfası</a> etkilenmez.</p></body></html>";
+  const headers = withRobots(new Headers({ "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "retry-after": "60" }));
+  return new Response(request.method === "HEAD" ? null : body, { status: 503, headers });
+}
+
 async function loadPage(env, path) {
   const { results } = await env.PAGES.prepare("SELECT html FROM pages WHERE path = ?1 ORDER BY part").bind(path).all();
   if (!results || results.length === 0) return null;
@@ -48,7 +56,13 @@ export default {
     }
 
     if (isBulk(path)) {
-      const html = await loadPage(env, path);
+      let html;
+      try {
+        html = await loadPage(env, path);
+      } catch (e) {
+        // D1 unavailable: only bulk pages fail; core pages never touch D1.
+        return unavailable(request);
+      }
       if (html === null) return notFound(request, env);
       const headers = withRobots(new Headers({
         "content-type": "text/html; charset=utf-8",

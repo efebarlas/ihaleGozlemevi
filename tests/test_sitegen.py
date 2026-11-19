@@ -12,7 +12,7 @@ import pytest
 from ihale import sitegen
 
 SAMPLE = Path(__file__).parent / "fixtures" / "export_sample"
-FORBIDDEN = ["şüphe", "yolsuz", "usulsüz", "rüşvet", "hile", "sahte", "kayırma", "kırmızı bayrak", "red flag", "redflag"]
+FORBIDDEN = ["belirgin biçimde", "şüphe", "yolsuz", "usulsüz", "rüşvet", "hile", "sahte", "kayırma", "kırmızı bayrak", "red flag", "redflag"]
 
 
 def _build_full(export_dir, out_dir, **kw):
@@ -256,7 +256,8 @@ def test_peer_line_hidden_when_sample_small(dist):
 
 def test_score_parts_and_idare_orani_shown(dist):
     h = _read(dist, "index.html")
-    assert sitegen.IDARE_ORANI_TEXT in h
+    assert ("Bu idarenin pazarlık (md. 21/b) alımlarında tek geçerli teklif payı %75 (n=8), "
+            "karşılaştırma grubunda %35 (n=60)") in h
     assert "Puan: 4,8" in h and "Puan: 3,5" in h and "Puan: 1,2" not in h and "Puan: 0,0" not in h
     assert "Bu yüklenici son 12 ayda" in h
 

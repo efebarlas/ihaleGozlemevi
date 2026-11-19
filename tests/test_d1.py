@@ -288,9 +288,11 @@ def test_deploy_remote_order_and_placeholder_guard(tmp_path, monkeypatch):
     monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
     url = sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
     assert url == "https://ihale-gozlemevi.example.workers.dev"
-    kinds = [c[0] + (":" + ("remote" if "--remote" in c else "local") if c[0] == "d1" else "") for c in calls]
-    assert kinds[0] == "d1:remote" and kinds[-1] == "deploy" or kinds == ["d1:remote", "deploy"]
-    assert kinds.index("deploy") > max(i for i, k in enumerate(kinds) if k.startswith("d1"))   # no deletions to run here
+    kinds = [("d1:" + ("remote" if "--remote" in c else "local") if c[:2] == ["d1", "execute"] else c[0] + (":" + c[1] if c[0] == "d1" else ""))
+             for c in calls]
+    assert kinds[0] == "d1:remote" and kinds.index("deploy") > max(i for i, k in enumerate(kinds) if k == "d1:remote")
+    assert "d1:local" not in kinds
+    assert kinds[kinds.index("deploy") + 1:] == ["d1:info", "d1:insights"]       # usage check runs after the deploy
 
 
 def test_deploy_refuses_without_staged_pages_and_keeps_old_guards(tmp_path, builds):
@@ -306,3 +308,139 @@ def test_deploy_refuses_without_staged_pages_and_keeps_old_guards(tmp_path, buil
     sitegen.build(SAMPLE, out, preview_design=True)
     with pytest.raises(RuntimeError, match="design preview"):
         sitegen.deploy(out)
+
+
+# ------------------------------------------------------------------ masking guard
+PERSON_PAGE = '<span class="yk" data-yk>Ayşe Örnekoğlu</span>'
+COMPANY = '<span class="yk" data-yk>Örnek Yapı Limited Şirketi</span>'
+LABEL = '<span class="yk" data-yk>Gerçek kişi yüklenici</span>'
+LEAK_RE = r'(<span class="yk" data-yk>)[^<]*(</span>)'
+
+
+def test_masking_guard_passes_clean_builds(builds):
+    full, split = builds
+    d1.check_masking(full, None)
+    d1.check_masking(split, d1.staging_path(split))          # static pages and the staged bulk pages
+
+
+def test_masking_guard_rules():
+    v = d1.masking_violations
+    assert v("/idare/x/", f"<td>{COMPANY}</td><td>{LABEL}</td>") == []
+    assert v("/gun/2026-11-18/1/", '<span class="yk" data-yk>okunamadı</span>') == []               # unreadable placeholder
+    assert len(v("/idare/x/", f"<td>{PERSON_PAGE}</td>")) == 1                      # planted leak
+    assert len(v("/gun/2026-11-18/1/", f"<li>{PERSON_PAGE}</li>")) == 1
+    assert v("/ihale/a/", '<dd><span class="yk" data-yk="own">Ayşe Örnekoğlu</span></dd>') == []   # own detail page
+    assert len(v("/idare/x/", '<dd><span class="yk" data-yk="own">Ayşe Örnekoğlu</span></dd>')) == 1
+    # raw text is not scanned: a founder's name inside a company name or an item text is fine
+    assert v("/idare/x/", "<p>İsmail Özdemir Huzurevi alımı</p><p>Ayşe Örnekoğlu</p>") == []
+    assert v("/ihale/a/", "<h1>Ayşe Örnekoğlu İnşaat Limited Şirketi</h1>") == []
+    assert len(v("/yuklenici/ayse/", "<html><head><title>Ayşe Örnekoğlu · İhale Gözlemevi</title></head></html>")) == 1
+
+
+def test_masking_guard_catches_planted_leak_on_idare_page_in_build_and_in_staged_pages(builds, tmp_path):
+    import shutil as _sh
+    full, split = builds
+    copy = tmp_path / "full"                                                          # (a) static / full tree
+    _sh.copytree(full, copy)
+    page = copy / "idare" / "ornek-il-mudurlugu" / "index.html"
+    html = page.read_text(encoding="utf-8")
+    assert "data-yk>" in html
+    page.write_text(re.sub(LEAK_RE, r"\1Ayşe Örnekoğlu\2", html, count=1), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="masking guard"):
+        d1.check_masking(copy, None)
+    stage = tmp_path / "stage.sqlite"                                                 # (b) staged bulk page
+    _sh.copyfile(d1.staging_path(split), stage)
+    db = sqlite3.connect(stage)
+    url, h = db.execute("SELECT path, html FROM staged WHERE path='/idare/ornek-il-mudurlugu/'").fetchone()
+    db.execute("UPDATE staged SET html=? WHERE path=?", (re.sub(LEAK_RE, r"\1Ayşe Örnekoğlu\2", h, count=1), url))
+    db.commit()
+    db.close()
+    with pytest.raises(RuntimeError, match="/idare/ornek-il-mudurlugu/"):
+        d1.check_masking(split, stage)
+
+
+def test_deploy_runs_the_masking_guard_before_any_wrangler_call(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    db = sqlite3.connect(d1.staging_path(dist))
+    db.execute("UPDATE staged SET html=? WHERE path='/idare/x/'", (f"<ul><li>{PERSON_PAGE}</li></ul>",))
+    db.commit()
+    db.close()
+    calls = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: calls.append(args) or "")
+    with pytest.raises(RuntimeError, match="masking guard"):
+        sitegen.deploy(dist, local=True, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+    assert calls == []
+
+
+def test_real_templates_mark_the_names(builds):
+    full, _ = builds
+    t = (full / "ihale" / "2026-11-18-mal-B-1" / "index.html").read_text(encoding="utf-8")
+    assert 'data-yk="own"' in t and "Ayşe ÖRNEK" in t                          # own page shows the name, marked as own
+    day = "".join(p.read_text(encoding="utf-8") for p in (full / "gun" / "2026-11-18").glob("*/index.html"))
+    assert "Ayşe ÖRNEK" not in day and "data-yk>Gerçek kişi yüklenici<" in day
+
+
+# ------------------------------------------------------------------ usage warnings and the stop rule
+def test_usage_warnings_at_80_percent():
+    assert d1.usage_warnings(rows_written_today=79_999, rows_read_today=3_999_999, db_bytes=399_999_999) == []
+    w = d1.usage_warnings(rows_written_today=80_000, rows_read_today=4_000_000, db_bytes=400_000_000)
+    assert len(w) == 3 and any("rows written" in x for x in w) and any("rows read" in x for x in w) and any("database size" in x for x in w)
+    assert any("total storage" in x for x in d1.usage_warnings(rows_written_today=0, rows_read_today=0, db_bytes=4_000_000_000))
+    assert d1.usage_warnings(rows_written_today=None, rows_read_today=None, db_bytes=None) == []
+
+
+def test_rows_written_tally_resets_each_day(tmp_path):
+    f = tmp_path / "u.json"
+    assert d1.add_rows_written(f, 30_000, "2026-11-19") == 30_000
+    assert d1.add_rows_written(f, 55_000, "2026-11-19") == 85_000
+    assert d1.add_rows_written(f, 1_000, "2026-11-20") == 1_000
+
+
+def test_wrangler_output_parsing():
+    assert d1.parse_info_size('{"name":"ihale-pages","file_size": 123456789, "num_tables": 2}') == 123456789
+    assert d1.parse_info_size("no json") is None
+    assert d1.parse_rows_read('[{"query":"x","rowsRead":10},{"query":"y","rowsRead":5}]') == 15
+    assert d1.parse_rows_read("[]") is None
+
+
+def test_report_d1_usage_writes_marker_and_clears_it(tmp_path, monkeypatch):
+    logs = []
+    monkeypatch.setattr(sitegen, "log", logs.append)
+    outputs = {"info": '{"file_size": 420000000}', "insights": "[]"}
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: outputs[args[1]])
+    w = sitegen.report_d1_usage(tmp_path, d1.Plan(rows=85_000, total_bytes=124_000_000), "2026-11-19")
+    assert len(w) == 2 and (tmp_path / "logs" / "d1-usage-warning.txt").is_file()
+    assert any(m.startswith("WARNING") for m in logs)
+    outputs["info"] = '{"file_size": 1000}'
+    assert sitegen.report_d1_usage(tmp_path, d1.Plan(rows=1, total_bytes=10), "2026-11-20") == []
+    assert not (tmp_path / "logs" / "d1-usage-warning.txt").exists()
+
+
+def test_usage_lookup_failures_do_not_break_the_report(tmp_path, monkeypatch):
+    def boom(args):
+        raise RuntimeError("no auth")
+    monkeypatch.setattr(sitegen, "_run_wrangler", boom)
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    assert sitegen.report_d1_usage(tmp_path, d1.Plan(rows=10, total_bytes=1), "2026-11-19") == []
+
+
+@pytest.mark.parametrize("text", ["Please add a credit card to continue", "This requires a paid plan",
+                                  "Upgrade to the Workers Paid plan", "To continue, create a new Cloudflare account"])
+def test_payment_or_account_request_stops_the_run(monkeypatch, text):
+    import subprocess as sp
+
+    class P:
+        returncode = 0
+        stdout = text
+        stderr = ""
+    monkeypatch.setattr(sp, "run", lambda *a, **k: P())
+    monkeypatch.setattr(sitegen, "_npx", lambda: "npx")
+    with pytest.raises(sitegen.PaymentRequired, match="STOP"):
+        sitegen._run_wrangler(["d1", "execute", "x"])
+    P.stdout = "Published ihale-gozlemevi https://x.workers.dev"
+    assert "Published" in sitegen._run_wrangler(["deploy"])
+
+
+def test_worker_returns_503_not_a_crash_when_d1_throws():
+    src = WORKER.read_text(encoding="utf-8")
+    assert "catch (e)" in src and "status: 503" in src and "unavailable(request)" in src

@@ -121,5 +121,47 @@ def main() -> int:
     return 1 if fails else 0
 
 
+def d1_down() -> int:
+    """Core pages must load with D1 unavailable: run the Worker against an EMPTY local D1 (no tables, so every query
+    throws) and check that static pages are 200 while bulk pages answer 503 (not a crash)."""
+    tmp = Path(tempfile.mkdtemp(prefix="d1down-"))
+    npx = sitegen._npx()
+    env = dict(os.environ, npm_config_registry="https://registry.npmjs.org/")
+    proc = subprocess.Popen([npx, "--yes", "wrangler@4", "dev", "--local", "--port", str(PORT), "--ip", "127.0.0.1",
+                             "--persist-to", str(tmp / "state")], cwd=SITE, env=env, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+    fails = []
+
+    def check(name, ok, detail=""):
+        print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""))
+        if not ok:
+            fails.append(name)
+    try:
+        for _ in range(120):
+            time.sleep(1)
+            try:
+                get("GET", "/robots.txt")
+                break
+            except OSError:
+                if proc.poll() is not None:
+                    raise RuntimeError("wrangler dev exited early")
+        for p, needle in (("/", b"<h1>"), ("/yontem/", b"Y\xc3\xb6ntem"), ("/arsiv/", b"Ar\xc5\x9fiv"), ("/idare/", b"\xc4\xb0dareler")):
+            st, h, body = get("GET", p)
+            check(f"D1 down: static {p}", st == 200 and needle in body, f"{st}, {len(body)} bytes")
+        day = next(p for p in sorted(Path(SITE / "dist" / "gun").iterdir()))
+        st, h, body = get("GET", f"/gun/{day.name}/")
+        check("D1 down: /gun/<date>/ summary", st == 200, str(st))
+        for p in ("/ihale/2026-10-21-mal-A-1/", "/idare/x/", "/yuklenici/x/", "/gun/2026-10-21/1/"):
+            st, h, body = get("GET", p)
+            check(f"D1 down: bulk {p} -> 503", st == 503 and h.get("x-robots-tag") == "noindex, nofollow"
+                  and "Bugün".encode() in body, f"{st}, {len(body)} bytes")
+    finally:
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+    print("\n%d failure(s) with D1 down" % len(fails))
+    return 1 if fails else 0
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    rc = main()
+    rc |= d1_down()
+    raise SystemExit(rc)

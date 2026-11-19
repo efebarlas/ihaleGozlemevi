@@ -1,3 +1,5 @@
+{% macro yk(name, own=false) %}<span class="yk" data-yk{% if own %}="own"{% endif %}>{{ name }}</span>{% endmacro %}
+
 {% macro flags_list(t, small=false) %}
 {% if t.flags or t._idare_orani %}
 <ul class="flags{% if small %} small{% endif %}">
@@ -5,7 +7,7 @@
   <li class="flag flag-{{ f.code }}">{{ f.text }}</li>
 {% endfor %}
 {% if t._idare_orani %}
-  <li class="flag flag-idare_orani">{{ idare_orani_text }}</li>
+  <li class="flag flag-idare_orani">{{ t._idare_orani_text }}</li>
 {% endif %}
 </ul>
 {% endif %}
@@ -22,7 +24,7 @@
 {% macro facts(t) %}
 <dl class="facts">
   <div><dt>İdare</dt><dd>{% if t._idare_href %}<a href="{{ t._idare_href }}">{{ t._idare }}</a>{% else %}{{ t._idare }}{% endif %}</dd></div>
-  <div><dt>Yüklenici</dt><dd>{% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ t._yuklenici }}</a>{% else %}{{ t._yuklenici }}{% endif %}</dd></div>
+  <div><dt>Yüklenici</dt><dd>{% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ yk(t._yuklenici) }}</a>{% else %}{{ yk(t._yuklenici) }}{% endif %}</dd></div>
   <div><dt>Sözleşme bedeli</dt><dd>{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</dd></div>
   <div><dt>Usul</dt><dd>{{ t.usul or 'okunamadı' }}</dd></div>
 </dl>

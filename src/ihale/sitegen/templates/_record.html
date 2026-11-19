@@ -1,3 +1,4 @@
+{% from "_macros.html" import yk %}
 {# Shared record body: used by detail pages (score >= 1) and by expandable blocks on day pages. Needs `with context`. #}
 {% macro body(t, compact=false) %}
 {% set c = t._c %}
@@ -10,7 +11,7 @@
       <span class="num">({{ flag_titles.get(f.code, f.code) }})</span>
       {% if not compact and innocent.get(f.code) %}<span class="why">{{ innocent[f.code] }}</span>{% endif %}{% if not compact and f.code == 'tek_teklif' and t._brand %}<span class="why">{{ innocent_brand }}</span>{% endif %}</li>
   {% endfor %}
-  {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ idare_orani_text }}{% if not compact %}<span class="why">{{ innocent.idare_orani }}</span>{% endif %}</li>{% endif %}
+  {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ t._idare_orani_text }}{% if not compact %}<span class="why">{{ innocent.idare_orani }}</span>{% endif %}</li>{% endif %}
   </ul>
   {% if t.structural %}<p class="note">{{ t.structural.text }} Bu nedenle tek teklif işaretleri gösterilir, ancak puana puan eklemez.</p>{% endif %}
   {% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
@@ -53,6 +54,7 @@
     {% elif r.value is none %}—
     {% elif r.key in money_fields %}{{ r.value | tr_money }}
     {% elif r.key in date_fields %}{{ r.value | tr_date_short }}
+    {% elif r.key == 'yuklenici' %}{% if r.href %}<a href="{{ r.href }}">{{ yk(r.value, not compact) }}</a>{% else %}{{ yk(r.value, not compact) }}{% endif %}
     {% elif r.href %}<a href="{{ r.href }}">{{ r.value }}</a>
     {% else %}{{ r.value }}{% endif %}
     {% if r.note %}<span class="reason">({{ r.note }}; bu alan işaret hesabında kullanılmadı)</span>{% endif %}

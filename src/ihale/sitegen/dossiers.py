@@ -103,7 +103,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
             ys = None if masked else a.get("yuklenici_slug")
             rows.append(dict(
                 href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
-                who=who, who_href=(f"/yuklenici/{ys}/" if ys and ys in yuks else None),
+                who=who, who_yk=True, who_href=(f"/yuklenici/{ys}/" if ys and ys in yuks else None),
                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı",
                 flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None))
         rendered = render_rows(rows)
@@ -165,7 +165,8 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
             ("idare", idx_i, idares, "İdareler", ("/yuklenici/", "Yükleniciler (şirketler)")),
             ("yuklenici", idx_y, yuks, "Yükleniciler", ("/idare/", "İdareler"))):
         items = [e for e in index if e["slug"] in built]
-        frags = [f'<li><a href="/{kind}/{e["slug"]}/">{_esc(e["name"])}</a> <span class="muted">{tr_int(e.get("records", 0))} kayıt</span></li>'
+        nm = (lambda n: f'<span class="yk" data-yk>{_esc(n)}</span>') if kind == "yuklenici" else _esc
+        frags = [f'<li><a href="/{kind}/{e["slug"]}/">{nm(e["name"])}</a> <span class="muted">{tr_int(e.get("records", 0))} kayıt</span></li>'
                  for e in items]
         pages = paginate_list([len(f.encode("utf-8")) for f in frags], LIST_BYTES)
         n = len(pages)

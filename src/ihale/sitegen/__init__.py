@@ -63,7 +63,6 @@ MAX_CARDS_PER_IDARE = 2  # Bugün: more from the same idare are folded into one 
 # detail pages only for records with score > 0 (keeps the file count bounded)
 MAX_FILES = 19000        # Cloudflare free Workers static assets: 20,000 files per deploy
 MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
-IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun payının belirgin biçimde üzerinde"
 # (export key, Turkish label) in display order for the detail page
 FIELD_LABELS = [
     ("ikn", "İhale kayıt no (İKN)"),
@@ -270,6 +269,20 @@ def weight_line(t: dict, part_rates: dict) -> str | None:
     return s
 
 
+def idare_orani_text(t: dict) -> str:
+    """The idare_orani note with the actual values: 'Bu idarede tek geçerli teklif payı %100 (n=114), karşılaştırma
+    grubunda %23 (n=2.005)', with the procedure label when the export has one."""
+    st = t.get("idare_stats") or {}
+    who = f"Bu idarenin {st['usul_label']} alımlarında" if st.get("usul_label") else "Bu idarede"
+    if st.get("tek_gecerli_teklif") is None or not st.get("records"):
+        return f"{who} tek geçerli teklif payı karşılaştırma grubunun payından yüksektir"
+    out = f"{who} tek geçerli teklif payı {_pct(st['tek_gecerli_teklif'])} (n={tr_int(st['records'])})"
+    peer = st.get("peer") or {}
+    if peer.get("tek_gecerli_teklif") is not None and peer.get("records"):
+        out += f", karşılaştırma grubunda {_pct(peer['tek_gecerli_teklif'])} (n={tr_int(peer['records'])})"
+    return out
+
+
 def _pct(x) -> str:
     return f"%{round(float(x) * 100)}"
 
@@ -468,7 +481,7 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(preview=preview_design, innocent=INNOCENT, idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(preview=preview_design, innocent=INNOCENT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
@@ -498,6 +511,7 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
         t["_peer"] = peer_line(t)
         t["_ind"] = indicators(t)
         t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
+        t["_idare_orani_text"] = idare_orani_text(t) if t["_idare_orani"] else None
         t["score"] = float(t.get("score", 0))
         t["_parts"] = part_lines(t)
         t["_brand"] = (any(f["code"] == "tek_teklif" for f in t["flags"])
@@ -668,12 +682,26 @@ def _npx() -> str:
     return npx
 
 
+class PaymentRequired(RuntimeError):
+    """wrangler asked for a card, a paid plan or a new account: stop and report (never proceed)."""
+
+
+_PAYMENT_RE = re.compile(
+    r"(credit card|debit card|payment (method|details|information|required)|add a (card|payment)|paid plan|workers paid|"
+    r"upgrade (to|your) (the )?(workers )?(paid|plan)|billing (information|details|required|plan)|requires a (paid|payment)|"
+    r"create (a|an) (new )?(cloudflare )?account|sign up for)", re.I)
+
+
 def _run_wrangler(args: list[str]) -> str:
     """Run `npx --yes wrangler@4 <args>` in site/ with the public npm registry; return stdout+stderr."""
     env = dict(os.environ, npm_config_registry="https://registry.npmjs.org/")
     proc = subprocess.run([_npx(), "--yes", "wrangler@4", *args], cwd=SITE_DIR, env=env, capture_output=True,
                           text=True, encoding="utf-8", errors="replace", timeout=900)
     out = (proc.stdout or "") + (proc.stderr or "")
+    m = _PAYMENT_RE.search(out)
+    if m:
+        raise PaymentRequired(f"STOP: wrangler output mentions {m.group(0)!r} (a card, paid plan or new account). "
+                              f"Do not proceed; report this to the owner.\n{out}")
     if proc.returncode != 0:
         raise RuntimeError(f"wrangler {' '.join(args[:2])} failed ({proc.returncode}):\n{out}")
     return out
@@ -705,6 +733,7 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
     stage_db = d1.staging_path(dist)
     if not stage_db.is_file():
         raise RuntimeError(f"nothing to deploy: staged bulk pages {stage_db.name} missing (run build first)")
+    d1.check_masking(dist, stage_db)
     if not local and _d1_id() in (None, PLACEHOLDER_D1_ID):
         raise RuntimeError("refusing to deploy: site/wrangler.jsonc still has the placeholder D1 database_id "
                            f"(create the database with `wrangler d1 create {D1_NAME}` and paste its id)")
@@ -733,7 +762,42 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
         url.append(m.group(0).rstrip(".,)"))
 
     from datetime import datetime, timezone
-    d1.sync_pages(stage_db=stage_db, manifest_path=manifest_path, batch_dir=batch_dir, execute=execute,
-                  between=between, updated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                  max_rows=max_rows, log=lambda m: log(m))
+    now = datetime.now(timezone.utc)
+    plan = d1.sync_pages(stage_db=stage_db, manifest_path=manifest_path, batch_dir=batch_dir, execute=execute,
+                         between=between, updated=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         max_rows=max_rows, log=lambda m: log(m))
+    if not local:
+        report_d1_usage(data, plan, now.strftime("%Y-%m-%d"))
     return url[0]
+
+
+def report_d1_usage(data: Path, plan, today: str) -> list[str]:
+    """Warn (log line + marker file in <data>/logs/) at 80% of any D1 free limit. Rows written are tracked here;
+    storage and rows read come from `wrangler d1 info` / `insights` when they are available without extra auth."""
+    written = d1.add_rows_written(data / "d1-usage.json", plan.rows, today)
+    size = reads = None
+    try:
+        size = d1.parse_info_size(_run_wrangler(["d1", "info", D1_NAME, "--json"]))
+    except PaymentRequired:
+        raise
+    except Exception as e:  # noqa: BLE001
+        log(f"D1 usage: storage size unavailable ({type(e).__name__})")
+    try:
+        reads = d1.parse_rows_read(_run_wrangler(["d1", "insights", D1_NAME, "--timePeriod", "1d", "--json"]))
+    except PaymentRequired:
+        raise
+    except Exception as e:  # noqa: BLE001
+        log(f"D1 usage: rows read unavailable ({type(e).__name__})")
+    log(f"D1 usage: {written:,} rows written today, {plan.total_bytes / 1e6:.0f} MB staged"
+        + (f", database {size / 1e6:.0f} MB" if size else "") + (f", {reads:,} rows read (1d)" if reads is not None else ""))
+    warnings = d1.usage_warnings(rows_written_today=written, rows_read_today=reads, db_bytes=size,
+                                 stored_bytes=plan.total_bytes)
+    marker = data / "logs" / "d1-usage-warning.txt"
+    if warnings:
+        for w in warnings:
+            log("WARNING: " + w)
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("\n".join([today] + warnings) + "\n", encoding="utf-8")
+    elif marker.exists():
+        marker.unlink()
+    return warnings

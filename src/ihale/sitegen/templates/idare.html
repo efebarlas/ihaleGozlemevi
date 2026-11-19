@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import yk %}
 {% block content %}
 <p class="crumbs"><a href="/idare/">İdareler</a></p>
 <h1>{{ d.name }}</h1>
@@ -51,11 +52,11 @@
 <h2>Bu idareden en çok iş alan yükleniciler</h2>
 <div class="tw"><table class="rules stack">
   <thead><tr><th>Sözleşme sayısına göre</th><th>Sayı</th></tr></thead>
-  <tbody>{% for y in top_count %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td data-label="Sayı">{{ y.count | tr_int }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for y in top_count %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ yk(y.name) }}</a>{% else %}{{ yk(y.name) }}{% endif %}</td><td data-label="Sayı">{{ y.count | tr_int }}</td></tr>{% endfor %}</tbody>
 </table></div>
 <div class="tw"><table class="rules stack">
   <thead><tr><th>TRY toplamına göre</th><th>Toplam (TRY)</th></tr></thead>
-  <tbody>{% for y in top_try %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td data-label="Toplam (TRY)">{{ y.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for y in top_try %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ yk(y.name) }}</a>{% else %}{{ yk(y.name) }}{% endif %}</td><td data-label="Toplam (TRY)">{{ y.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
 </table></div>
 
 <h2>Sözleşme dökümü (yeniden eskiye)</h2>
