@@ -16,6 +16,15 @@ A public-interest **watchdog over Turkish public procurement**. Every day it rea
 - **Tekrarlayan yüklenici:** the same contractor keeps winning at the same idare.
 - Later: share of pazarlık usulü (negotiated) procurement per idare, and price trends.
 
+**Base rates (2026-11-19).** On their own, these flags fire on a large share of all tenders. İhaleGlobal reports that about 43% close with a single valid bid, and that 67% of contracts go to a firm that has won from that idare before. These are their numbers and are unverified. A flag that fires on half of everything isn't a signal.
+- **Rank Bugün by how unusual a tender is, not by whether a flag fired.**
+- **What counts as unusual:**
+  - several flags stacking on one tender;
+  - the same idare–yüklenici pair repeating in tenders that also show those flags;
+  - an idare whose rates are far above its peers in the same sector and province.
+- **Show the peer comparison next to each figure**, e.g. "this idare: 80% tek teklif; peers in the same sector and province: 35%".
+- **Measure the real base rates from our own data** before choosing thresholds.
+
 ## 2. Non-goals
 - Lead finding or alerts for bidders.
 - Accusations. The site states facts and never gives verdicts.
