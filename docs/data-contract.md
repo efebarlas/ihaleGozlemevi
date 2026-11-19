@@ -9,7 +9,8 @@ Owner: the orchestrator. Updated 2026-11-19 for SPEC §4.1 (build on ihalent) an
   - Fix shortfalls in the adapter, using the notice's raw `(part, label, value)` fields. Fork ihalent only if a wrapper can't fix them.
   - A notice ihalent rejects still becomes a `Record`, with whatever is recoverable, low confidence and a warning, so the day's count stays honest.
   - Map ihalent's `section` ("4734" → `A`; "istisna"/"kapsam-disi" → `B`) and derive `seq` from document order within the section. Document the mapping in `parse.py`.
-- One `Record` per `SONUÇ İLANI`, in document order. Field semantics are in `model.py`; the layout facts are in `docs/bulletin-layout.md`.
+- One `Record` per `SONUÇ İLANI`, in document order.
+- `raw_fields` keeps every printed `(part, label, value)` triple verbatim. M5/M6 need fields we don't model yet, such as `niteliği, türü ve miktarı` and the pazarlık gerekçesi, and re-parsing years of bulletins later would be wasteful. `ihale_usulu` stays verbatim (e.g. `Pazarlık (MD 21 B)`), so 21/b can be counted later. Field semantics are in `model.py`; the layout facts are in `docs/bulletin-layout.md`.
 - **Confidence** is per field, in [0, 1]:
   - Use ≥ `CONFIDENT` (0.9) only when the label was found in the right group and the value matched its expected shape. Shapes: `YYYY/NNNNNNN[-n]` for ikn; `1.234,56 CUR` for money; an integer for counts; `DD.MM.YYYY` for dates; non-empty text for names.
   - An empty value after the colon means the field is `None` with confidence 1.0 for "known empty". Downstream treats `None` as unusable either way.
@@ -18,6 +19,7 @@ Owner: the orchestrator. Updated 2026-11-19 for SPEC §4.1 (build on ihalent) an
 ## 2. Store (M2)
 - SQLite at `ihale.config.db_path()`. One table of records, holding every `Record` field plus the confidence as JSON. Money is stored as an integer kuruş amount and a currency.
 - Re-running the same bulletin is idempotent: the natural key is `(bulletin_date, bulletin_type, section, seq)`.
+- `raw_fields` is stored as JSON alongside each record.
 - Keep a `runs` table: date, type, record count, warning count, and parse accuracy where known.
 
 ## 3. Normalized keys
@@ -50,11 +52,19 @@ Flags alone fire on roughly half of all tenders, so Bugün ranks by a transparen
 - +1 `tek_gecerli_teklif`
 - +1 `bedel_orani`
 - +2 `tekrarlayan_yuklenici` when this record also has at least one of the two flags above (a repeat pair inside flagged tenders). A bare repeat adds +0, but the flag is still shown.
-- +1 `idare_orani`: the idare has ≥ 5 records in the loaded history and its share of `tek_gecerli_teklif` is ≥ 2× the share across all idares in the same history window.
+- +1 `idare_orani`: the idare has ≥ 5 records in the window, and its share of `tek_gecerli_teklif` is ≥ 2× its peer group's share (see Peer comparison below).
 
 Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli (TRY). Thresholds are provisional. `scripts/base_rates.py` prints the measured base rates from the DB (share of tek teklif, bedel ≥ 0.97, repeat pairs, per usul and section). Revisit the thresholds once ~30 days are loaded.
 
-**Peer comparison.** Every record carries `idare_stats` so the site can show the figure next to its peers, e.g. `Bu idare: 12 ihalenin %80'i tek geçerli teklif · Tüm idareler: %43`. The bulletin has no sector or province field, so v1 peers are "all idares in the loaded history". Sector/province peers are M4 work.
+**Peer comparison.** Every record carries `idare_stats` so the site can show the figure next to its peers, e.g. `Bu idare: 12 ihalenin %80'i tek geçerli teklif · Antalya'daki sağlık idareleri (mal, n=140): %43`.
+- **Minimum sample:** no idare-level rate counts (for the score or for display) unless that idare has ≥ 5 awards in the window. Always show n next to every rate.
+- **Peer group (cheap proxy).** The bulletin has no sector or province field, so:
+  - `idare_turu` comes from keywords in the idare name, checked in order: `BELEDİYE` → belediye, `ÜNİVERSİTE` → üniversite, `HASTANE`/`SAĞLIK` → sağlık, `SU VE KANALİZASYON` → su-kanalizasyon, `JANDARMA`/`EMNİYET`/`POLİS` → güvenlik, `MİLLÎ EĞİTİM`/`MİLLİ EĞİTİM`/`OKUL` → eğitim, `KARAYOLLARI` → karayolları, `DSİ`/`DEVLET SU İŞLERİ` → dsi, else `diğer`.
+  - `il` is one of Turkey's 81 province names when exactly one appears in the idare name. Otherwise it is unknown. The yüklenici address is the contractor's province, so never use it.
+  - `sector` is the bulletin type (mal/hizmet/yapım).
+  - Peers are tried in this order, taking the first group with ≥ 20 awards in the window (excluding the idare itself): same `idare_turu` + `il` + sector, then same `idare_turu` + sector nationwide, then all idares in that sector.
+  - The group's Turkish label is exported, so the site never guesses it.
+- The Yöntem page explains this proxy and its limits.
 
 `tekrarlayan_yuklenici` needs history, so it becomes meaningful once ~30 days of bulletins are loaded (a small backfill in M2/M3, full backfill in M5).
 
@@ -87,7 +97,8 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
    "score": 1, "score_parts": ["bedel_orani"],
-   "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "peers_tek_gecerli_teklif": 0.43, "window_days": 30}}
+   "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
+                   "peer": {"label": "Antalya'daki sağlık idareleri (mal)", "records": 140, "tek_gecerli_teklif": 0.43}}}
  ]}
 ```
 - `id` = `<date>-<type>-<section>-<seq>`. It is URL-safe and stable for that bulletin.

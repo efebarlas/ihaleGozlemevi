@@ -70,5 +70,11 @@ class Record:
     confidence: dict[str, float] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
 
+    # Every (part, label, value) triple the notice printed, verbatim, in order
+    # (from ihalent's BulletinNotice.fields; part "0".."4"). Kept so later
+    # milestones can read fields we don't model yet (e.g. "niteliği, türü ve
+    # miktarı", pazarlık gerekçesi) without re-parsing old bulletins.
+    raw_fields: list[tuple[str, str, str]] = field(default_factory=list)
+
     def confident(self, name: str) -> bool:
         return getattr(self, name) is not None and self.confidence.get(name, 0.0) >= CONFIDENT
