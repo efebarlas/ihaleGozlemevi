@@ -49,8 +49,8 @@ def part_rate_tables(part_rates: dict, rows: list[dict]) -> None:
     short = {"tek_teklif": "tek", "diger_teklifler_elendi": "diğer", "bedel_orani": "bedel",
              "tekrarlayan_eslesik": "tekrar", "idare_orani": "idare"}
     print(f"\nPart base rates p by usul_turu (ln(1/p) points; groups with n < 100 use 'hepsi')")
-    print(f"  {'usul_turu':<20}{'n':>7}  " + "  ".join(f"{short[c]:>7}" for c in PART_CODES)
-          + f"  {'score>=' + str(BUGUN_CUTOFF):>9}")
+    print(f"  {'group':<20}{'n':>7}  " + "  ".join(f"{short[c]:>7}" for c in PART_CODES)
+          + f"  {'tek share*':>10}  {'bedel med.':>11}  {'score>=' + str(BUGUN_CUTOFF):>9}")
     by_group: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
         by_group[r["usul_turu"]].append(r)
@@ -58,8 +58,11 @@ def part_rate_tables(part_rates: dict, rows: list[dict]) -> None:
     for g in sorted(part_rates, key=lambda k: (k != "hepsi", -part_rates[k]["n"])):
         rs = by_group.get(g, [])
         over = pct(sum(1 for r in rs if r["score"] >= BUGUN_CUTOFF), len(rs)) if rs else "    - "
+        direct = pct(sum(r["tek_teklif"] for r in rs), len(rs)) if rs else "    - "
+        med = part_rates[g].get("bedel_median_try")
         print(f"  {g:<20}{part_rates[g]['n']:>7}  " + "  ".join(f"{part_rates[g][c]:>7.4f}" for c in PART_CODES)
-              + f"  {over:>9}")
+              + f"  {direct:>10}  {('%.0f' % med) if med else '-':>11}  {over:>9}")
+    print("  (* direct share of tek_teklif flags among the rows shown; p for tek should match it when no --date is set)")
 
 
 def indicator_tables(rows: list[dict]) -> None:

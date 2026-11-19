@@ -131,7 +131,8 @@ def flag_all(store: Store | None = None) -> dict[str, int]:
     store.set_meta("part_rates", part_rates)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
                          "score_parts": r.score_parts, "idare_stats": r.idare_stats, "indicators": r.indicators,
-                         "structural": r.structural} for i, r in results.items()})
+                         "structural": r.structural,
+                         "score_raw": r.score_raw, "value_weight": r.value_weight} for i, r in results.items()})
     counts: dict[str, int] = {}
     for r in results.values():
         for f in r.flags:

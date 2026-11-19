@@ -57,7 +57,8 @@ def load_all(day=date(2026, 11, 18)):
     store.set_meta("part_rates", rates)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
                          "score_parts": r.score_parts, "idare_stats": r.idare_stats,
-                         "indicators": r.indicators, "structural": r.structural} for i, r in res.items()})
+                         "indicators": r.indicators, "structural": r.structural,
+                         "score_raw": r.score_raw, "value_weight": r.value_weight} for i, r in res.items()})
     return store
 
 
@@ -80,6 +81,8 @@ def test_export_matches_contract_shape():
     # idare_stats: a lone record has no peer group, so compare that block's keys separately
     stats, c_stats = d["tenders"][0].pop("idare_stats"), CONTRACT_DAY["tenders"][0].pop("idare_stats")
     assert d["tenders"][0].pop("structural") is None            # §4.1.1: null unless a rule matches
+    assert {"score_raw", "value_weight"} <= set(d["tenders"][0])        # §4.1 materiality weight: score = raw x w
+    d["tenders"][0].pop("score_raw"), d["tenders"][0].pop("value_weight")
     sc, sp = d["tenders"][0].pop("score"), d["tenders"][0].pop("score_parts")
     c_sc, c_sp = CONTRACT_DAY["tenders"][0].pop("score"), CONTRACT_DAY["tenders"][0].pop("score_parts")
     assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group"}
@@ -100,7 +103,7 @@ def test_export_matches_contract_shape():
     assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates"}
     assert meta["bugun_cutoff"] == 3.0
     assert set(meta["part_rates"]["hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
-                                                "tekrarlayan_eslesik", "idare_orani", "n"}
+                                                "tekrarlayan_eslesik", "idare_orani", "n", "n_computable", "bedel_median_try"}
     t = d["tenders"][0]
     expected = CONTRACT_DAY["tenders"][0]
     expected["flags"][0]["value"] = t["flags"][0]["value"]

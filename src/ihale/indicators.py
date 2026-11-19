@@ -31,6 +31,18 @@ def usul_turu(usul: str | None) -> str | None:
     return "diger"
 
 
+DMO_PREFIX = "devlet malzeme ofisi"
+DMO_3G = "istisna_3g_dmo"
+
+
+def usul_group(idare: str | None, code: str | None) -> str | None:
+    """Group used for base rates, bedel medians and the peer chain: usul_turu, except that 4734/3-g is split into
+    DMO (idare name starts with DEVLET MALZEME OFİSİ) and everyone else (`istisna_3g`)."""
+    if code == "istisna_3g" and idare and " ".join(turkish_lower(idare).split()).startswith(DMO_PREFIX):
+        return DMO_3G
+    return code
+
+
 def usul_label(code: str | None) -> str | None:
     """Short human label for a usul_turu code: 'Açık', 'Pazarlık 21/b', '4734/3-g', ..."""
     if code is None:
@@ -41,6 +53,10 @@ def usul_label(code: str | None) -> str | None:
         return "Belli istekliler"
     if code.startswith("pazarlik_21"):
         return f"Pazarlık 21/{code[-1]}"
+    if code == DMO_3G:
+        return "4734/3-g (DMO)"
+    if code == "istisna_3g":
+        return "4734/3-g (diğer idareler)"
     if code.startswith("istisna_3"):
         return f"4734/3-{code[-1]}"
     if code.startswith("dogrudan_temin_22"):

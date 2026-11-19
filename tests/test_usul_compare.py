@@ -37,10 +37,10 @@ def test_dmo_3g_is_not_unusual_against_other_3g_buyers():
     others_acik = group(40, 4, "Açık", "KONYA BELEDİYESİ {}", 500)           # open tenders: 10% tek
     a = run(*dmo, *others_3g, *others_acik)[0]
     st = a.idare_stats
-    assert st["usul_turu"] == "istisna_3g" and st["usul_label"] == "4734/3-g"
+    assert st["usul_turu"] == "istisna_3g" and st["usul_label"] == "4734/3-g (diğer idareler)"
     assert st["records"] == 6 and st["tek_gecerli_teklif"] == 1.0
     assert st["peer"]["records"] == 25 and st["peer"]["tek_gecerli_teklif"] == 1.0
-    assert st["peer"]["label"] == "Türkiye'deki diğer idareler (mal, 4734/3-g)"
+    assert st["peer"]["label"] == "Türkiye'deki diğer idareler (mal, 4734/3-g (diğer idareler))"
     assert "idare_orani" not in a.part_codes
 
 
@@ -72,7 +72,7 @@ def test_fallback_chain_stays_within_the_procedure():
     national = group(15, 3, G, "MUĞLA İL SAĞLIK MÜDÜRLÜĞÜ {}", 300)          # 15 more 3-g nationwide
     noise = group(50, 0, "Açık", SUBE, 700)                                  # lots of open-tender peers: ignored
     st = run(*own, *local, *national, *noise)[0].idare_stats
-    assert st["peer"]["records"] == 25 and st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, 4734/3-g)"
+    assert st["peer"]["records"] == 25 and st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, 4734/3-g (diğer idareler))"
     st2 = run(*own, *local, *noise)[0].idare_stats                           # only 10 same-procedure peers
     assert st2["peer"] is None
 

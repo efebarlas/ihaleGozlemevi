@@ -84,7 +84,7 @@ def test_peer_chain_falls_back_from_il_to_turu():
 
 def test_dmo_is_scored_like_any_idare_with_a_peer_median():
     dmo = mk(1, "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ", 0.99, usul="4734 / 3-g")
-    peers = peers_ratio(30, lambda i: 0.5, usul="4734 / 3-g")
+    peers = peers_ratio(30, lambda i: 0.5, usul="4734 / 3-g", fmt="DEVLET MALZEME OFİSİ ŞUBE {}")   # DMO group peers
     i = run(dmo, *peers)[0].indicators
     assert i["bedel_orani"] == 0.99 and i["bedel_orani_peer_median"] == 0.5 and i["bedel_orani_peer_n"] == 30
 

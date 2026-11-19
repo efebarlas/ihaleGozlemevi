@@ -114,11 +114,16 @@ class FlagResult:
     unreadable: list = field(default_factory=list)   # field names and {"field", "reason"} objects
     kisim_n: int = 1
     score: float = 0.0
+    score_raw: float = 0.0
+    value_weight: float = 1.0
     score_parts: list = field(default_factory=list)
     idare_stats: dict | None = None
     indicators: dict | None = None
     structural: dict | None = None     # {"id", "text"} of the matching structural rule (§4.1.1)
-    usul_group: str | None = None      # usul_turu used for the base rates (None = unknown)
+    usul_group: str | None = None      # usul group used for the base rates (None = unknown)
+    bedel_try: float | None = None     # this record's TRY bedel in major units (materiality weight)
+    cond: set = field(default_factory=set)         # parts whose condition holds, ignoring structural exclusions
+    computable: set = field(default_factory=set)   # parts whose inputs are all confident
 
     @property
     def part_codes(self) -> list[str]:
@@ -192,7 +197,7 @@ def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender
         counts_ok = r.confident("gecerli_teklif") and r.confident("toplam_teklif")
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
-        usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+        usul = ind.usul_group(r.idare, ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None)
         ratio = _ratio(r, list(groups[r.ikn].values()) if r.confident("ikn") else [s])
         t = by_id.get(tid)
         if t is None:
@@ -355,26 +360,54 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
 
 
 def _score_all(results: dict[int, FlagResult]) -> dict:
-    """Rarity-weighted score (§4.1): each part earns ln(1/p), p = the part's rate among records with the same
-    usul_turu (all-records rate when that group has n < 100; p floored at 0.001). Returns the part_rates table."""
-    counts: dict[str, dict[str, int]] = {}
+    """Rarity-weighted, value-weighted score (§4.1).
+
+    p(part, group) = records in the group where the part's condition holds (ignoring structural exclusions)
+    / records in the group where the part is computable. A part whose computable count in the group is < 100 uses
+    the all-records rate ("hepsi"); p is floored at 0.001. points = ln(1/p); score_raw = sum of points;
+    score = score_raw x w, w = clamp(1 + 0.5 log10(bedel_TRY / group median TRY bedel), 0.5, 1.5), 1 when the
+    bedel is missing or not TRY. Returns the part_rates table for meta.json.
+    """
+    cond: dict[str, dict[str, int]] = {}
+    comp: dict[str, dict[str, int]] = {}
     sizes: dict[str, int] = {}
+    bedels: dict[str, list[float]] = {}
     for res in results.values():
         for g in {ALL_GROUP, res.usul_group} - {None}:
             sizes[g] = sizes.get(g, 0) + 1
-            c = counts.setdefault(g, dict.fromkeys(PART_CODES, 0))
-            for code in res.score_parts:
-                c[code] += 1
+            c1 = cond.setdefault(g, dict.fromkeys(PART_CODES, 0))
+            c2 = comp.setdefault(g, dict.fromkeys(PART_CODES, 0))
+            for code in res.cond:
+                c1[code] += 1
+            for code in res.computable:
+                c2[code] += 1
+            if res.bedel_try is not None:
+                bedels.setdefault(g, []).append(res.bedel_try)
+
+    def rate(g: str, code: str) -> float:
+        return cond[g][code] / comp[g][code] if comp[g][code] else 0.0
+
+    medians = {g: statistics.median(v) for g, v in bedels.items()}
     for res in results.values():
-        g = res.usul_group if res.usul_group and sizes.get(res.usul_group, 0) >= MIN_GROUP_N else ALL_GROUP
         parts, total = [], 0.0
         for code in res.score_parts:
-            p = max(counts[g][code] / sizes[g], P_FLOOR)
+            g = res.usul_group if res.usul_group and comp[res.usul_group][code] >= MIN_GROUP_N else ALL_GROUP
+            p = max(rate(g, code), P_FLOOR)
             points = round(math.log(1 / p), 2)
             total += points
             parts.append({"code": code, "points": points, "p": round(p, 4), "p_group": g})
-        res.score_parts, res.score = parts, round(total, 2)
-    return {g: {**{c: round(counts[g][c] / sizes[g], 4) for c in PART_CODES}, "n": sizes[g]}
+        w = 1.0
+        if res.bedel_try is not None:
+            g = res.usul_group if res.usul_group and len(bedels.get(res.usul_group, ())) >= MIN_GROUP_N else ALL_GROUP
+            med = medians.get(g)
+            if med and med > 0:
+                w = min(1.5, max(0.5, 1 + 0.5 * math.log10(res.bedel_try / med)))
+        res.score_parts, res.score_raw = parts, round(total, 2)
+        res.value_weight = round(w, 3)
+        res.score = round(total * w, 2)
+    return {g: {**{c: round(rate(g, c), 4) for c in PART_CODES}, "n": sizes[g],
+                "n_computable": dict(comp[g]),
+                "bedel_median_try": round(medians[g], 2) if g in medians else None}
             for g in sorted(sizes)}
 
 
@@ -483,24 +516,29 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
 
         # --- idare_orani + score (§4.1) and indicators (§4.2)
         idare_fires = False
+        idare_raw = False
         elen_peer = {"peer": None, "n": 0}
         bedel_peer = (None, 0)
-        usul = None
+        idare_computable = False
+        usul_code = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+        usul = ind.usul_group(r.idare if r.confident("idare") else None, usul_code)   # DMO 3-g split off
+        rule = None
         ik = normalize_key(r.idare) if r.confident("idare") else None
         if ik:
             wkey = (r.bulletin_type, r.bulletin_date, None)
             if wkey not in windows:
                 windows[wkey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date)
             elen_peer = _elenen_peer(windows[wkey], r.idare)
-            usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
-            rule = structural.match(r.idare, usul)
+            rule = structural.match(r.idare, usul_code)
             if rule:
                 res.structural = {"id": rule.id, "text": rule.reason_tr}
-            if usul:     # idare comparison runs within the record's procedure (usul_turu)
+            if usul:     # idare comparison runs within the record's procedure group
                 ukey = (r.bulletin_type, r.bulletin_date, usul)
                 if ukey not in windows:
                     windows[ukey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date, usul)
                 res.idare_stats, idare_fires = idare_stats(windows[ukey], r.idare, r.bulletin_type, usul)
+                idare_computable = res.idare_stats["records"] >= IDARE_MIN_N and res.idare_stats["peer"] is not None
+                idare_raw = idare_fires
                 if rule and structural.OWN_PEER_GROUP in rule.effects:
                     res.idare_stats["peer"] = None
                     res.idare_stats["peer_note"] = structural.PEER_NOTE
@@ -508,6 +546,24 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                 elif ratio_val is not None:     # per-procedure peer chain, like idare_stats
                     bedel_peer = windows[ukey].peer_ratio_median(ik, peers.idare_turu(r.idare), peers.il_of(r.idare))
         have = {f["code"] for f in res.flags}
+        # conditions and computability, ignoring structural exclusions (the base rates must not lose them)
+        cond = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
+        if idare_raw:
+            cond.add("idare_orani")
+        if "tekrarlayan_yuklenici" in have and cond:
+            cond.add("tekrarlayan_eslesik")
+        comp = set()
+        if counts_ok:
+            comp |= {"tek_teklif", "diger_teklifler_elendi"}
+        if ratio_val is not None:
+            comp.add("bedel_orani")
+        if idare_computable:
+            comp.add("idare_orani")
+        if inputs_ok:
+            comp.add("tekrarlayan_eslesik")
+        res.cond, res.computable = cond, comp
+        b = r.sozlesme_bedeli
+        res.bedel_try = b.kurus / 100 if r.confident("sozlesme_bedeli") and b.currency == "TRY" and b.kurus > 0 else None
         if res.structural and structural.NO_SINGLE_BID_POINTS in rule.effects:
             have -= {"tek_teklif", "diger_teklifler_elendi"}      # still shown as flags, but no points
         parts = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
@@ -516,7 +572,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         if "tekrarlayan_yuklenici" in have and parts:     # a bare repeat earns nothing (the flag is still shown)
             parts.add("tekrarlayan_eslesik")
         res.score_parts = [c for c in PART_CODES if c in parts]      # codes for now; _score_all adds the points
-        res.usul_group = usul if ik else None
+        res.usul_group = usul
         res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer)
         results[s.id] = res
     return results, _score_all(results)

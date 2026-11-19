@@ -74,7 +74,8 @@ def test_score_is_the_sum_of_part_points():
     res, _ = run(*recs)
     a = res[1]                                               # tek_teklif and bedel_orani
     assert [p["code"] for p in a.score_parts] == ["tek_teklif", "bedel_orani"]
-    assert a.score == round(sum(p["points"] for p in a.score_parts), 2)
+    assert a.score_raw == round(sum(p["points"] for p in a.score_parts), 2)
+    assert a.score == pytest.approx(a.score_raw * a.value_weight, abs=0.01)
 
 
 def test_bare_repeat_earns_nothing_but_paired_repeat_is_a_part():
@@ -95,7 +96,7 @@ def test_part_rates_table():
     assert rates["acik"]["n"] == 150 and rates["acik"]["tek_teklif"] == 0.1
     assert rates["hepsi"]["n"] == 155 and rates["hepsi"]["tek_teklif"] == round(20 / 155, 4)
     assert set(rates["hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik",
-                                   "idare_orani", "n"}
+                                   "idare_orani", "n", "n_computable", "bedel_median_try"}
 
 
 def test_rates_are_recomputed_from_the_whole_history():

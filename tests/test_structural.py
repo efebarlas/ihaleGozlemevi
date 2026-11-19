@@ -64,9 +64,10 @@ def test_dmo_3g_is_scored_like_any_idare():
 
 def test_dmo_gets_a_peer_group_and_can_fire_idare_orani():
     own = [mk(i, DMO, G) for i in range(6)]
-    peers = [mk(100 + i, f"KONYA BELEDİYESİ {i}", G, toplam=3, gecerli=3, yuklenici=f"P{i}") for i in range(30)]
+    peers = [mk(100 + i, f"DEVLET MALZEME OFİSİ ŞUBE {i}", G, toplam=3, gecerli=3, yuklenici=f"P{i}") for i in range(30)]
     a = run(*own, *peers)[0]
     st = a.idare_stats
+    assert st["usul_turu"] == "istisna_3g_dmo" and st["usul_label"] == "4734/3-g (DMO)"
     assert st["peer"] is not None and "peer_note" not in st and st["records"] == 6
     assert "idare_orani" in a.part_codes
 
