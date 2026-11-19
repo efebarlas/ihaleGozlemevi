@@ -26,6 +26,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - none
 
 ## Human checks queued
+- **Cloudflare login for the daily job (one-time, about 1 minute).** Double-click `scripts\cloudflare_login.cmd` in the repo folder (outside the Claude app), then click "Allow" in the browser. Why: the Claude app keeps its own private copy of the Cloudflare login, and Windows Task Scheduler can't see it. Until this is done, the daily job still downloads and processes bulletins, but the site only updates when a session deploys it.
 - (after M1) Spot-check 5 hand-labeled records against the bulletin PDF; the labeler will name them.
 
 ## Non-converging issues
