@@ -68,6 +68,43 @@ We apply the same measures to every idare regardless of party, join the public s
 - **Ticaret Sicili** (company founders and partners) is person-level enrichment, which goes against §6. Revisit only with Efe, after G-Public.
 - **Automated social posting** (a bot) counts as going public, so it is a hard stop.
 
+### Borrowed from abroad (2026-11-19)
+All the code named below is permissive; licenses were checked on GitHub.
+
+**Indicators: split "tek geçerli teklif" now (M2).** It follows the Open Contracting Partnership's red flags, as implemented in its Cardinal library.
+- **"Tek teklif"** (Cardinal R018): only one bid was submitted.
+- **"Diğer teklifler elendi"** (R035): more than one bid came in, but only the winner was valid. This is the stronger, more specific signal, because it can point to tailored specs or selective disqualification. It weighs more in the score than R018.
+- **"Çok sayıda teklif elendi"** (R038): a high share of bids were disqualified, measured against peers.
+- These come from the bulletin's total and valid bid counts, which we already parse.
+
+**More GTI risk indicators (M2 if the fields exist, else M5).** These are the Government Transparency Institute's corruption risk indicators (Fazekas & Kocsis 2020, *British Journal of Political Science*), validated against price outcomes across many countries.
+- **Non-open procedure** (pazarlık, 21/b).
+- **Decision period:** the days from ihale tarihi to sözleşme tarihi. Unusually short or long periods stand out.
+- **The winner's share of the idare's spending** in the window.
+- **Advertisement period**, from the ilan date to the deadline. This one needs the ilan reader (M6).
+
+**Validate weights with data, not guesses (M5).** Once history is loaded, follow GTI's method: keep and weight the indicators that actually predict worse outcomes in Turkish data, such as a higher bedel/yaklaşık maliyet ratio. Replace the hand-set +1/+2 weights with them, and publish the regression on the Yöntem page.
+
+**An idare scorecard (M5, on İdare pages).** Follows IMCO's Índice de Riesgos de Corrupción (Mexico):
+- a 0–100 score per idare, built from three sub-indices: competition, transparency and compliance with the rules;
+- always shown with its components and n;
+- framed as IMCO frames it: it measures risk, not cases.
+
+**Standards and journalists' tools (M4):**
+- Export our records as **OCDS**, the Open Contracting Data Standard, using `ocdskit` (BSD-3).
+- Run OCP's **Cardinal** (`cardinal-rs`, MIT) on that export. Our flags are then computed by the international reference implementation, not only our own code.
+- Also export **FollowTheMoney** entities with `followthemoney` and `followthemoney-ocds` (MIT). Journalists can load them into OCCRP's Aleph and cross-reference our data with company records and leaks.
+- Publish the exports as downloadable files only after G-Public.
+
+**Scraping more sources (M5).** For Sayıştay reports and municipal sources, follow the structure of Querido Diário (Open Knowledge Brasil, MIT): one Scrapy scraper per source, plus a shared pipeline.
+
+**Fairness, after G-Public:**
+- **Right of reply**, following DOZORRO (Ukraine): an idare or firm can send an explanation, shown next to the flag.
+- **Ask the reader to verify**, following Serenata (Brazil): every Kart asks the reader to help check it rather than accusing anyone. A Kart might say "Bu bedel sizce makul mü? Kaynağa bakın." ("Does this price look reasonable to you? Check the source.")
+- Both mean receiving inbound contact, so they are part of the G-Public decision.
+
+**Watch, don't act:** KİK and the Rekabet Kurumu (competition authority) signed a protocol on AI-assisted competition analysis in procurement. The state may become a source of data or of legitimacy. Any contact with them is Efe's call.
+
 ## 2. Non-goals
 - Lead finding or alerts for bidders.
 - Accusations. The site states facts and never gives verdicts.
