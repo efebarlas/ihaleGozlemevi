@@ -20,8 +20,8 @@ h2{font-size:1.1rem;margin:1.5rem 0 .5rem}
 .fin{position:absolute;opacity:0;pointer-events:none}
 .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}
 .chip{padding:.4rem .75rem;border-radius:999px;background:var(--chip);border:1px solid var(--line);cursor:pointer;font-size:.9rem}
-#f-all:checked~.chips [for=f-all],#f-tek_gecerli_teklif:checked~.chips [for=f-tek_gecerli_teklif],#f-bedel_orani:checked~.chips [for=f-bedel_orani],#f-tekrarlayan_yuklenici:checked~.chips [for=f-tekrarlayan_yuklenici]{background:var(--chipon);color:var(--chipfg);border-color:var(--chipon);font-weight:700}
-#f-tek_gecerli_teklif:checked~.cards .card:not(.c-tek_gecerli_teklif),#f-bedel_orani:checked~.cards .card:not(.c-bedel_orani),#f-tekrarlayan_yuklenici:checked~.cards .card:not(.c-tekrarlayan_yuklenici){display:none}
+#f-all:checked~.chips [for=f-all],#f-tek_teklif:checked~.chips [for=f-tek_teklif],#f-diger_teklifler_elendi:checked~.chips [for=f-diger_teklifler_elendi],#f-idare_orani:checked~.chips [for=f-idare_orani],#f-bedel_orani:checked~.chips [for=f-bedel_orani],#f-tekrarlayan_yuklenici:checked~.chips [for=f-tekrarlayan_yuklenici]{background:var(--chipon);color:var(--chipfg);border-color:var(--chipon);font-weight:700}
+#f-tek_teklif:checked~.cards .card:not(.c-tek_teklif),#f-diger_teklifler_elendi:checked~.cards .card:not(.c-diger_teklifler_elendi),#f-idare_orani:checked~.cards .card:not(.c-idare_orani),#f-bedel_orani:checked~.cards .card:not(.c-bedel_orani),#f-tekrarlayan_yuklenici:checked~.cards .card:not(.c-tekrarlayan_yuklenici){display:none}
 .cards,.rows,.archive{list-style:none;margin:0;padding:0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:.6rem;padding:.8rem .9rem;margin:0 0 .8rem}
 .card h2{margin:0 0 .4rem;font-size:1.05rem;line-height:1.3}

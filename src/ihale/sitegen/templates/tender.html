@@ -23,6 +23,18 @@
 {{ peer(t) }}
 {% endif %}
 
+{% if t._ind %}
+<section aria-labelledby="h-gosterge">
+  <h2 id="h-gosterge">Göstergeler</h2>
+  <p class="muted">Bunlar puana dahil değildir; kaydı başka rakamlarla birlikte okumak için verilir. <a href="/yontem/#gostergeler">Ne anlama geliyor?</a></p>
+  <dl class="detail">
+  {% for label, text in t._ind %}
+    <dt>{{ label }}</dt><dd>{{ text }}</dd>
+  {% endfor %}
+  </dl>
+</section>
+{% endif %}
+
 {% if n_ikn > 1 %}
 <p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ n_ikn }} kayıt var. Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.
 {% if siblings %}Diğer kayıtlar:

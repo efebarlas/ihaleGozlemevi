@@ -15,8 +15,10 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 <h2>İşaretler ve kuralları</h2>
 <p>İşaret, bir kaydın belirli bir rakamsal koşulu sağladığını söyler. Hiçbir işaret bir değerlendirme değildir; birçok olağan ihalede de görülür.</p>
 <dl class="method">
-  <dt>Tek geçerli teklif</dt>
-  <dd>Kural: geçerli teklif sayısı tam olarak 1. Toplam teklif sayısı 1'den büyükse metne eklenir (örn. «2 teklif, 1 geçerli»).</dd>
+  <dt>Tek teklif</dt>
+  <dd>Kural: toplam teklif sayısı tam olarak 1. Metin: «Tek teklif verildi». (OCP kırmızı bayrak R018.)</dd>
+  <dt>Diğer teklifler elendi</dt>
+  <dd>Kural: toplam teklif sayısı 1'den büyük ve geçerli teklif sayısı tam olarak 1. Metin, rakamlarla birlikte: «4 teklif verildi, yalnızca kazananınki geçerli sayıldı». (OCP kırmızı bayrak R035.)</dd>
   <dt>Bedel / yaklaşık maliyet</dt>
   <dd>Kural: sözleşme bedeli ÷ yaklaşık maliyet ≥ 0,97 (yani indirim, kırım, %3'ten az). Yaklaşık maliyet olarak, okunabiliyorsa «esas kısım yaklaşık maliyeti», yoksa «yaklaşık maliyet» kullanılır. Oran 1'i aşıyorsa «yaklaşık maliyetin üzerinde» yazılır. Gösterilen yüzde aşağı yuvarlanır: 0,999 oranı %99 olarak görünür, %100 olarak değil.</dd>
   <dt>Tekrarlayan yüklenici</dt>
@@ -26,7 +28,8 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 <h2 id="puan">Puan ve Bugün sayfasındaki sıralama</h2>
 <p>Bu işaretler tek başlarına çok sayıda olağan ihalede görülür; ölçümlere göre tüm ihalelerin yaklaşık yarısında en az bir işaret vardır. Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; aşağıdaki parçaların toplamı olan bir <strong>puan</strong> hesaplar ve puanı 2 veya daha yüksek kayıtları, puana ve ardından TRY sözleşme bedeline göre sıralı gösterir. Tüm kayıtlar «günün tümü» sayfasında yer alır.</p>
 <ul>
-  <li><strong>+1 Tek geçerli teklif.</strong></li>
+  <li><strong>+1 Tek teklif.</strong></li>
+  <li><strong>+2 Diğer teklifler elendi</strong> (başka teklifler de verilmiş ve elenmiş olduğundan tek teklifin üstünde ağırlık alır).</li>
   <li><strong>+1 Bedel / yaklaşık maliyet</strong> işareti.</li>
   <li><strong>+2 Tekrarlayan yüklenici</strong>, yalnızca aynı kayıtta yukarıdaki iki işaretten en az biri de varsa. Tek başına tekrar 0 puandır ama işaret yine gösterilir.</li>
   <li><strong>+1 İdarede tek teklif oranı yüksek:</strong> idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının en az 2 katıysa.</li>
@@ -43,6 +46,19 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
   <li>Sırayla şu gruplar denenir ve en az 20 kaydı olan ilk grup alınır (idarenin kendisi hariç): aynı tür + il + sektör; aynı tür + sektör (ülke geneli); aynı sektördeki tüm idareler. Grubun adı veriden gelir ve satırda olduğu gibi yazılır.</li>
 </ul>
 <p>Sınırlar: anahtar sözcükler idare türünü yanlış belirleyebilir (ör. adında «sağlık» geçen bir il müdürlüğü ile hastane aynı grupta olur) ve karşılaştırma yalnızca yüklenmiş geçmişe dayanır. Gruptan farklı olmak tek başına bir anlam taşımaz.</p>
+
+<h2 id="gostergeler">Göstergeler</h2>
+<p>Kayıt sayfasındaki «Göstergeler» bölümü, puana <strong>dahil olmayan</strong> ek rakamları gösterir. Bir değer okunamıyorsa ya da hesaplanamıyorsa ilgili gösterge hiç görünmez. Eşikler, yeterli gün yüklenince ölçülen dağılımlara göre belirlenecektir.</p>
+<dl class="method">
+  <dt>Elenen teklif oranı</dt>
+  <dd>(Toplam teklif − geçerli teklif) ÷ toplam teklif; yalnızca toplam teklif sayısı 2 veya daha fazlaysa. Benzer idarelerin ortalamasıyla (en az 5 kayıt) yan yana gösterilir. Kaynak: OCP kırmızı bayrak R038.</dd>
+  <dt>Karar süresi</dt>
+  <dd>İhale tarihi ile sözleşme tarihi arasındaki gün sayısı; iki tarih de güvenle okunmuşsa ve fark negatif değilse. Kaynak: Government Transparency Institute (GTI) göstergeleri.</dd>
+  <dt>Usul türü</dt>
+  <dd>Bültende yazılan usulün sınıfı (açık, belli istekliler, pazarlık, istisna…). Açık ve belli istekliler dışındaki usuller «açık olmayan usul» diye belirtilir; bu bir hüküm değil, kanundaki ihale usulünün tanımıdır. Kaynak: OCP / GTI.</dd>
+  <dt>Yüklenicinin payı</dt>
+  <dd>Bu yüklenicinin, aynı idarenin son 365 gündeki TRY sözleşme bedelleri toplamı içindeki payı; yalnızca idarenin en az 5 kaydı varsa, n ile birlikte. Kaynak: GTI «kazanan payı».</dd>
+</dl>
 
 <h2>Sınırlar</h2>
 <ul>

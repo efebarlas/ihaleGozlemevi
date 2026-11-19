@@ -27,9 +27,10 @@ TYPE_LABELS_LOWER = {"mal": "mal alımı", "hizmet": "hizmet alımı", "yapim": 
                      "danismanlik": "danışmanlık"}
 SECTION_LABELS = {"A": "4734 sayılı Kanun kapsamında", "B": "Kanun kapsamı dışı / diğer"}
 
-FLAG_ORDER = ["tek_gecerli_teklif", "bedel_orani", "tekrarlayan_yuklenici", "idare_orani"]
+FLAG_ORDER = ["tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_yuklenici", "idare_orani"]
 FLAG_TITLES = {
-    "tek_gecerli_teklif": "Tek geçerli teklif",
+    "tek_teklif": "Tek teklif",
+    "diger_teklifler_elendi": "Diğer teklifler elendi",
     "bedel_orani": "Bedel ≥ %97 yaklaşık maliyet",
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
     "idare_orani": "İdarede tek teklif oranı yüksek",
@@ -113,6 +114,50 @@ def _flag_codes(t: dict) -> list[str]:
     return [c for c in FLAG_ORDER if c in codes] + sorted(codes - set(FLAG_ORDER))
 
 
+USUL_TURU_LABELS = {
+    "acik": "Açık ihale usulü", "belli_istekliler": "Belli istekliler arasında ihale usulü",
+    "diger": "Diğer",
+}
+
+
+def _usul_turu_label(code: str) -> str:
+    if code in USUL_TURU_LABELS:
+        return USUL_TURU_LABELS[code]
+    m = re.fullmatch(r"pazarlik_21([a-z])", code)
+    if m:
+        return f"Pazarlık usulü (md. 21/{m.group(1)})"
+    m = re.fullmatch(r"istisna_3([a-z])", code)
+    if m:
+        return f"İstisna (4734 / 3-{m.group(1)})"
+    m = re.fullmatch(r"dogrudan_temin_22([a-z])", code)
+    if m:
+        return f"Doğrudan temin (md. 22/{m.group(1)})"
+    return code
+
+
+def indicators(t: dict) -> list[tuple[str, str]]:
+    """(label, text) pairs for the neutral 'Göstergeler' block; null indicators are skipped."""
+    ind = t.get("indicators") or {}
+    out: list[tuple[str, str]] = []
+    if ind.get("elenen_orani") is not None:
+        s = f"{_pct(ind['elenen_orani'])} (teklif verenlerin elenen payı)"
+        if ind.get("elenen_orani_peer") is not None:
+            s += f" · benzer idarelerin ortalaması: {_pct(ind['elenen_orani_peer'])}"
+        out.append(("Elenen teklif oranı", s))
+    if ind.get("karar_suresi_gun") is not None:
+        out.append(("Karar süresi", f"{ind['karar_suresi_gun']} gün (ihale tarihinden sözleşme tarihine)"))
+    if ind.get("usul_turu"):
+        s = _usul_turu_label(ind["usul_turu"])
+        if ind.get("acik_olmayan"):
+            s += " · açık olmayan usul"
+        out.append(("Usul türü", s))
+    if ind.get("yuklenici_payi") is not None:
+        s = f"{_pct(ind['yuklenici_payi'])} (idarenin son 365 gündeki TRY sözleşme bedelleri toplamı içinde"
+        s += f", n={ind['yuklenici_payi_n']})" if ind.get("yuklenici_payi_n") else ")"
+        out.append(("Yüklenicinin payı", s))
+    return out
+
+
 def _pct(x) -> str:
     return f"%{round(float(x) * 100)}"
 
@@ -193,6 +238,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_codes"] = _flag_codes(t)
         t["_name"] = t.get("konu") or t.get("title") or "(adsız ilan)"
         t["_peer"] = peer_line(t)
+        t["_ind"] = indicators(t)
         t["_idare_orani"] = "idare_orani" in t.get("score_parts", [])
         t["score"] = int(t.get("score", 0))
         return t

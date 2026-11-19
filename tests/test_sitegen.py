@@ -87,15 +87,15 @@ def test_no_forbidden_words(dist):
 def test_bugun_heading_summary_and_order(dist):
     h = _read(dist, "index.html")
     assert "<h1>18 Kasım 2026</h1>" in h
-    assert "6 sonuç ilanı okundu · 3 tanesi gösteriliyor" in h
+    assert "6 sonuç ilanı okundu · 4 tanesi gösteriliyor" in h
     # 3 flags first; then one-flag cards by raw bedel amount (A-2 is 104.000 EUR, ranked below the TRY ones)
-    pos = [h.index(f"/ihale/2026-11-18-mal-{x}/") for x in ("A-1", "A-3", "A-2")]
+    pos = [h.index(f"/ihale/2026-11-18-mal-{x}/") for x in ("A-1", "A-3", "B-1", "A-2")]
     assert pos == sorted(pos)
     assert "/gun/2026-11-18/" in h
     # no-JS filter chips
-    assert 'type="radio"' in h and "Tek geçerli teklif (2)" in h
+    assert 'type="radio"' in h and "Tek teklif (2)" in h
     # unflagged record is not a card on Bugün
-    for hidden in ("A-4", "B-1", "B-2"):  # score 1 / 1 / 0
+    for hidden in ("A-4", "B-2"):  # score 1 / 0
         assert f"/ihale/2026-11-18-mal-{hidden}/" not in h
 
 
@@ -114,7 +114,7 @@ def test_money_and_date_formatting(dist):
 
 def test_detail_flags_source_and_labels(dist):
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
-    assert "Tek geçerli teklif" in d
+    assert "Tek teklif verildi" in d
     assert "Sözleşme bedeli yaklaşık maliyetin %97&#39;si" in d
     assert "Kaynak: Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18" in d
     assert 'href="https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx"' in d
@@ -135,12 +135,12 @@ def test_kismi_note(dist):
 
 def test_person_name_as_printed_and_escaped(dist):
     assert "Ayşe ÖRNEK" in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
-    assert "3 teklif, 1 geçerli" in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
+    assert "3 teklif verildi, yalnızca kazananınki geçerli sayıldı" in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
 
 
 def test_yontem_content(dist):
     y = _read(dist, "yontem/index.html")
-    for needle in ["0,97", "365 gün", "en az 3 farklı", "tam olarak 1", "Kısmi", "okunamadı", "3-g",
+    for needle in ["0,97", "365 gün", "en az 3 farklı", "toplam teklif sayısı tam olarak 1", "Kısmi", "okunamadı", "3-g",
                    "ihalent", "mal alımı", "17 Kasım 2026", "yargı bildirmez"]:
         assert needle in y, needle
 
@@ -229,12 +229,29 @@ def test_peer_line_hidden_when_sample_small(dist):
 def test_score_parts_and_idare_orani_shown(dist):
     h = _read(dist, "index.html")
     assert sitegen.IDARE_ORANI_TEXT in h
-    assert "Puan: 4" in h and "Puan: 2" in h and "Puan: 1" not in h
+    assert "Puan: 4" in h and "Puan: 2" in h and "Puan: 1" not in h and "Puan: 0" not in h
     assert "Bu yüklenici son 12 ayda" in h
 
 
 def test_yontem_score_and_peer(dist):
     y = _read(dist, "yontem/index.html")
-    for needle in ['id="puan"', "+2 Tekrarlayan yüklenici", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
+    for needle in ['id="puan"', "+2 Tekrarlayan yüklenici", "+2 Diğer teklifler elendi", "R018", "R035", "R038", "GTI", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
                    "github.com/gulmezeren2-byte/ihalent", "yarısında"]:
         assert needle in y, needle
+
+
+def test_indicators_block(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "Göstergeler" in d
+    assert "Karar süresi" in d and "20 gün" in d
+    assert "%42" in d and "n=12" in d       # yüklenici payı
+    assert "Açık ihale usulü" in d and "açık olmayan" not in d
+    assert "Elenen teklif oranı" not in d                        # null -> hidden
+    e = _read(dist, "ihale/2026-11-18-mal-A-2/index.html")
+    assert "%0 (teklif verenlerin elenen payı) · benzer idarelerin ortalaması: %18" in e
+    assert "Pazarlık usulü (md. 21/b) · açık olmayan usul" in e and "Yüklenicinin payı" not in e
+    g = _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
+    assert "İstisna (4734 / 3-g) · açık olmayan usul" in g and "Karar süresi" not in g
+    # no indicators at all -> no block, and indicators are not styled as flags
+    assert "Göstergeler" not in _read(dist, "ihale/2026-11-17-mal-A-1/index.html")
+    assert 'class="flag' not in d.split("Göstergeler")[1].split("Kaynak")[0]

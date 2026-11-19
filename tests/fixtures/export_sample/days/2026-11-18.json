@@ -48,9 +48,9 @@
    "unreadable": [],
    "flags": [
     {
-     "code": "tek_gecerli_teklif",
+     "code": "tek_teklif",
      "value": 1,
-     "text": "Tek geçerli teklif"
+     "text": "Tek teklif verildi"
     },
     {
      "code": "bedel_orani",
@@ -65,7 +65,7 @@
    ],
    "score": 4,
    "score_parts": [
-    "tek_gecerli_teklif",
+    "tek_teklif",
     "bedel_orani",
     "tekrarlayan_yuklenici"
    ],
@@ -80,6 +80,15 @@
      "records": 140,
      "tek_gecerli_teklif": 0.43
     }
+   },
+   "indicators": {
+    "elenen_orani": null,
+    "elenen_orani_peer": 0.18,
+    "karar_suresi_gun": 20,
+    "usul_turu": "acik",
+    "acik_olmayan": false,
+    "yuklenici_payi": 0.42,
+    "yuklenici_payi_n": 12
    }
   },
   {
@@ -150,6 +159,15 @@
      "records": 60,
      "tek_gecerli_teklif": 0.35
     }
+   },
+   "indicators": {
+    "elenen_orani": 0.0,
+    "elenen_orani_peer": 0.18,
+    "karar_suresi_gun": 41,
+    "usul_turu": "pazarlik_21b",
+    "acik_olmayan": true,
+    "yuklenici_payi": null,
+    "yuklenici_payi_n": null
    }
   },
   {
@@ -198,9 +216,9 @@
    "unreadable": [],
    "flags": [
     {
-     "code": "tek_gecerli_teklif",
+     "code": "tek_teklif",
      "value": 1,
-     "text": "Tek geçerli teklif"
+     "text": "Tek teklif verildi"
     },
     {
      "code": "bedel_orani",
@@ -210,7 +228,7 @@
    ],
    "score": 2,
    "score_parts": [
-    "tek_gecerli_teklif",
+    "tek_teklif",
     "bedel_orani"
    ],
    "idare_stats": {
@@ -337,14 +355,14 @@
    "unreadable": [],
    "flags": [
     {
-     "code": "tek_gecerli_teklif",
-     "value": 1,
-     "text": "3 teklif, 1 geçerli"
+     "code": "diger_teklifler_elendi",
+     "value": 3,
+     "text": "3 teklif verildi, yalnızca kazananınki geçerli sayıldı"
     }
    ],
-   "score": 1,
+   "score": 2,
    "score_parts": [
-    "tek_gecerli_teklif"
+    "diger_teklifler_elendi"
    ],
    "idare_stats": {
     "records": 3,
@@ -357,6 +375,15 @@
      "records": 140,
      "tek_gecerli_teklif": 0.43
     }
+   },
+   "indicators": {
+    "elenen_orani": 0.67,
+    "elenen_orani_peer": null,
+    "karar_suresi_gun": null,
+    "usul_turu": "istisna_3g",
+    "acik_olmayan": true,
+    "yuklenici_payi": null,
+    "yuklenici_payi_n": null
    }
   },
   {

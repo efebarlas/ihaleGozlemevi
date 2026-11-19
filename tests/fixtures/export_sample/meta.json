@@ -10,10 +10,11 @@
   "2026-11-18": {
    "records": 6,
    "flagged": 5,
-   "tek_gecerli_teklif": 3,
    "bedel_orani": 4,
    "tekrarlayan_yuklenici": 1,
-   "unreadable": 1
+   "unreadable": 1,
+   "tek_teklif": 2,
+   "diger_teklifler_elendi": 1
   },
   "2026-11-17": {
    "records": 2,
