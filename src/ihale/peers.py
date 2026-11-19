@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 
+from . import classify
 from .keys import turkish_lower, _tokens
 
 # (keywords, turu) checked in order; a keyword is a lowercase substring unless listed in _TOKEN_ONLY.
@@ -30,6 +31,8 @@ TURU_PLURAL = {
     OTHER: "diğer idareler",
 }
 
+TURU_PLURAL = {**TURU_PLURAL, **classify.TURU_PLURAL}      # the new taxonomy's codes (classify.py)
+
 PROVINCES = (
     "Adana Adıyaman Afyonkarahisar Ağrı Aksaray Amasya Ankara Antalya Ardahan Artvin Aydın Balıkesir Bartın Batman "
     "Bayburt Bilecik Bingöl Bitlis Bolu Burdur Bursa Çanakkale Çankırı Çorum Denizli Diyarbakır Düzce Edirne Elazığ "
@@ -44,7 +47,7 @@ _ALIASES = {"afyon": "Afyonkarahisar", "maraş": "Kahramanmaraş", "antep": "Gaz
 _PROV_BY_TOKEN = {turkish_lower(p): p for p in PROVINCES} | _ALIASES
 
 
-def idare_turu(name: str | None) -> str:
+def _legacy_idare_turu(name: str | None) -> str:
     if not name:
         return OTHER
     low = turkish_lower(name)
@@ -56,12 +59,28 @@ def idare_turu(name: str | None) -> str:
     return OTHER
 
 
-def il_of(name: str | None) -> str | None:
+def _legacy_il_of(name: str | None) -> str | None:
     """The one province named in the idare name (whole-word match), else None (none or several)."""
     if not name:
         return None
     found = {_PROV_BY_TOKEN[t] for t in _tokens(turkish_lower(name)) if t in _PROV_BY_TOKEN}
     return next(iter(found)) if len(found) == 1 else None
+
+
+def idare_turu(name: str | None) -> str:
+    """Peer type of an idare. `legacy` (default) = today's rules; otherwise the classifier named by
+    $IHALE_PEER_CLASSIFIER (keywords | table | hybrid), see classify.py."""
+    impl = classify.peer_classifier()
+    if impl == "legacy":
+        return _legacy_idare_turu(name)
+    return classify.classify(name, impl).turu or "diger"
+
+
+def il_of(name: str | None) -> str | None:
+    impl = classify.peer_classifier()
+    if impl == "legacy":
+        return _legacy_il_of(name)
+    return classify.classify(name, impl).il
 
 
 def locative_ki(place: str) -> str:

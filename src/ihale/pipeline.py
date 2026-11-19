@@ -138,6 +138,12 @@ def flag_all(store: Store | None = None) -> dict[str, int]:
         for f in r.flags:
             counts[f["code"]] = counts.get(f["code"], 0) + 1
     log.info("flagged %d records: %s", len(stored), counts or "none")
+    try:  # shadow mode: log idare classifier disagreements (keywords vs table); never fails the run
+        from . import classify
+        path = classify.shadow_log((x.record.idare for x in stored if x.record.confident("idare")), today_istanbul())
+        log.info("classifier shadow log: %s", path)
+    except Exception as e:  # noqa: BLE001
+        _log_exc("classifier shadow log failed (continuing)", e)
     return counts
 
 

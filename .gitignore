@@ -1,5 +1,6 @@
 # local data (bulletins, sqlite) normally lives outside the repo; belt and braces
-/data/
+/data/*
+!/data/idare_table.jsonl
 /ihaleGozlemevi-data/
 *.zip
 *.db
