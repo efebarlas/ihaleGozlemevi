@@ -12,9 +12,9 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
-| M1 | Parse result bulletins (mal) | not started |
-| M2 | Store and flag | not started |
-| M3 | Site v1, unlisted, with the daily run | not started |
+| M1 | Parse result bulletins (mal) | in progress (parser builder + independent labeler) |
+| M2 | Store and flag | in progress |
+| M3 | Site v1, unlisted, with the daily run | in progress (site generator; deploy and scheduling after M1/M2 land) |
 | M4 | Breadth | not started |
 | M5 | History | not started |
 
@@ -22,7 +22,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - none
 
 ## Human checks queued
-- none
+- (after M1) Spot-check 5 hand-labeled records against the bulletin PDF; the labeler will name them.
 
 ## Non-converging issues
 - none
