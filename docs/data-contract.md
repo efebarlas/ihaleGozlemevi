@@ -188,7 +188,7 @@ Each `run` writes `<data>/oracle/candidates.json`. It is local only and never de
 ## 6. Site (M3)
 - **Generator:** `ihale.sitegen.build(export_dir: Path, out_dir: Path)`, plain Python with Jinja2. It writes static HTML to `site/dist/`, which is gitignored. Wrangler config is `site/wrangler.jsonc`: an assets-only Worker named `ihale-gozlemevi`.
 - **Pages:**
-  - `/`: **Bugün**. The latest date's records with `score ≥ 2`, ranked by score (§4.1), with a one-line summary of counts and the peer comparison on each card.
+  - `/`: **Bugün**. The latest date's records with `score ≥ 3.0`, ranked by score (§4.1), max 2 per idare, with a one-line summary of counts and the peer comparison on each card.
   - `/gun/<date>/`: every record of that day.
   - `/ihale/<id>/`: **İhale detayı**. All fields, the flags with their numbers, `okunamadı` for unreadable fields, and the source block: `Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18`, with a link to `https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx` and how to download it.
   - `/yontem/`: **Yöntem**. How each flag and the score are computed, and their limits. It credits **ihalent** (MIT, link to github.com/gulmezeren2-byte/ihalent) as the bulletin reader.
