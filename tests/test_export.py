@@ -32,7 +32,7 @@ CONTRACT_DAY = json.loads("""
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
-   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "mal/acik"}],
+   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "mal/acik", "k": 8, "n": 100}],
    "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
                   "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
@@ -83,9 +83,10 @@ def test_export_matches_contract_shape():
     assert d["tenders"][0].pop("structural") is None            # §4.1.1: null unless a rule matches
     assert {"score_raw", "value_weight"} <= set(d["tenders"][0])        # §4.1 materiality weight: score = raw x w
     d["tenders"][0].pop("score_raw"), d["tenders"][0].pop("value_weight")
+    assert d["tenders"][0]["idare"].pop("parent") is None            # no alias matches this idare
     sc, sp = d["tenders"][0].pop("score"), d["tenders"][0].pop("score_parts")
     c_sc, c_sp = CONTRACT_DAY["tenders"][0].pop("score"), CONTRACT_DAY["tenders"][0].pop("score_parts")
-    assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group"}
+    assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group", "k", "n"}
     assert [x["code"] for x in sp] == ["bedel_orani"]
     indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)
@@ -102,7 +103,7 @@ def test_export_matches_contract_shape():
     got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
     assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates",
-                                                        "idare_index", "yuklenici_index"}
+                                                        "idare_index", "yuklenici_index", "parent_aliases"}
     assert meta["bugun_cutoff"] == 3.0
     assert set(meta["part_rates"]["mal/hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
                                                 "tekrarlayan_eslesik", "idare_orani", "n", "n_computable", "bedel_median_try"}

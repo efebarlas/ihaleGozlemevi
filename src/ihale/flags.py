@@ -22,8 +22,8 @@ from .store import StoredRecord
 
 CURRENCY_MISMATCH = "para birimi farklı"
 PART_CODES = ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik", "idare_orani")
-MIN_GROUP_N = 100                 # a usul_turu group needs >= 100 records, else the all-records rate is used
-P_FLOOR = 0.001                   # no part exceeds ln(1000) = 6.9 points
+MIN_GROUP_N = 100                 # bedel medians: a group needs >= 100 TRY bedels, else the type-wide median is used
+SMOOTH_M = 50                     # p = (k + m p_parent) / (n + m): shrink toward the type-wide rate
 BUGUN_CUTOFF = 3.0                # Bugün shows score >= 3.0 (about ln 20); the site applies it
 
 
@@ -394,8 +394,9 @@ def _score_all(results: dict[int, FlagResult]) -> dict:
     """Rarity-weighted, value-weighted score (§4.1).
 
     p(part, group) = records in the group where the part's condition holds (ignoring structural exclusions)
-    / records in the group where the part is computable. A part whose computable count in the group is < 100 uses
-    the all-records rate ("hepsi"); p is floored at 0.001. points = ln(1/p); score_raw = sum of points;
+    / records in the group where the part is computable, smoothed toward the type-wide rate:
+    p = (k + m p_parent) / (n + m), m = 50, p_parent = the part's rate in `<type>/hepsi`. points = ln(1/p);
+    score_raw = sum of points;
     score = score_raw x w, w = clamp(1 + 0.5 log10(bedel_TRY / group median TRY bedel), 0.5, 1.5), 1 when the
     bedel is missing or not TRY. Returns the part_rates table for meta.json.
     """
@@ -422,11 +423,13 @@ def _score_all(results: dict[int, FlagResult]) -> dict:
     for res in results.values():
         parts, total = [], 0.0
         for code in res.score_parts:
-            g = res.usul_group if res.usul_group and comp[res.usul_group][code] >= MIN_GROUP_N else all_group(res.btype)
-            p = max(rate(g, code), P_FLOOR)
+            hg = all_group(res.btype)
+            g = res.usul_group or hg
+            k, n = cond[g][code], comp[g][code]
+            p = max((k + SMOOTH_M * rate(hg, code)) / (n + SMOOTH_M), 1e-12)
             points = round(math.log(1 / p), 2)
             total += points
-            parts.append({"code": code, "points": points, "p": round(p, 4), "p_group": g})
+            parts.append({"code": code, "points": points, "p": float(f"{p:.4g}"), "p_group": g, "k": k, "n": n})
         w = 1.0
         if res.bedel_try is not None:
             g = (res.usul_group if res.usul_group and len(bedels.get(res.usul_group, ())) >= MIN_GROUP_N

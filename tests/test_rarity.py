@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import pytest
 
 from ihale import structural
-from ihale.flags import BUGUN_CUTOFF, MIN_GROUP_N, P_FLOOR, compute_flags, compute_flags_full
+from ihale.flags import BUGUN_CUTOFF, SMOOTH_M, compute_flags, compute_flags_full
 from ihale.store import StoredRecord
 
 from rec_helpers import rec
@@ -32,41 +32,50 @@ def population(n, tek_n, usul="Açık", start=0, bedel_n=0):
 
 
 def test_points_are_ln_of_inverse_rate_within_the_usul_group():
-    recs = population(200, 10)                               # p(tek_teklif) = 10/200 = 0.05 in acik (n >= 100)
+    recs = population(200, 10)                               # one group: p = (10 + 50 * 0.05) / 250 = 0.05
     res, stored = run(*recs)
     a = res[1]
     (part,) = a.score_parts
-    assert part == {"code": "tek_teklif", "points": round(math.log(20), 2), "p": 0.05, "p_group": "mal/acik"}
+    assert part == {"code": "tek_teklif", "points": round(math.log(20), 2), "p": 0.05, "p_group": "mal/acik",
+                    "k": 10, "n": 200}
     assert a.score == 3.0 and a.score >= BUGUN_CUTOFF            # ln 20 ≈ 3.00 is exactly the cut-off
     assert res[200].score == 0.0 and res[200].score_parts == []
 
 
-def test_small_group_falls_back_to_all_records_rate():
+def test_small_group_is_smoothed_toward_the_type_wide_rate():
     big = population(300, 3, usul="Açık")                    # tek rate 1% in acik
-    small = [mk(1000 + i, usul="Pazarlık (MD 21 B)", tek=i < 5) for i in range(10)]   # n=10 < 100, 50% locally
+    small = [mk(1000 + i, usul="Pazarlık (MD 21 B)", tek=i < 5) for i in range(10)]   # k=5 of n=10 locally
     res, stored = run(*big, *small)
+    parent = 8 / 310
     sid = next(s.id for s in stored if s.record.ikn == "2026/1000")
     part = res[sid].score_parts[0]
-    assert part["p_group"] == "mal/hepsi" and part["p"] == round(8 / 310, 4)
-    assert part["points"] == round(math.log(310 / 8), 2)
+    assert SMOOTH_M == 50 and part["p_group"] == "mal/pazarlik_21b" and (part["k"], part["n"]) == (5, 10)
+    assert part["p"] == pytest.approx((5 + 50 * parent) / 60, rel=1e-3) and 0.5 > part["p"] > parent   # between local and parent
+    assert part["points"] == round(math.log(1 / ((5 + 50 * parent) / 60)), 2)
     big_id = next(s.id for s in stored if s.record.ikn == "2026/0")
-    assert res[big_id].score_parts[0]["p_group"] == "mal/acik" and res[big_id].score_parts[0]["p"] == 0.01
+    bp = res[big_id].score_parts[0]
+    assert bp["p_group"] == "mal/acik" and bp["p"] == pytest.approx((3 + 50 * parent) / 350, rel=1e-3)
 
 
-def test_group_threshold_is_100_records():
-    assert MIN_GROUP_N == 100
-    for n, expected in ((99, "mal/hepsi"), (100, "mal/acik")):
-        recs = population(n, 5)
-        recs += [mk(5000 + i, usul="Pazarlık (MD 21 B)") for i in range(150 - n)] if n < 100 else []
-        res, _ = run(*recs)
-        assert res[1].score_parts[0]["p_group"] == expected
-
-
-def test_p_is_floored_at_one_in_a_thousand():
-    recs = population(3000, 1)                               # raw p = 1/3000
+def test_no_fallback_rule_and_no_floor_any_more():
+    import ihale.flags as f
+    assert not hasattr(f, "P_FLOOR") and not hasattr(f, "ALL_GROUP")
+    recs = population(3000, 1)                               # raw p = 1/3000: not floored at 0.001 any more
     res, _ = run(*recs)
     part = res[1].score_parts[0]
-    assert P_FLOOR == 0.001 and part["p"] == 0.001 and part["points"] == round(math.log(1000), 2) == 6.91
+    assert part["p"] < 0.001 and part["points"] > round(math.log(1000), 2)
+
+
+def test_single_event_in_a_huge_group_versus_stacked_pattern():
+    # an 8,308-record group (like DMO 3-g) with exactly one single-bid record, inside a type with a 5% single-bid rate
+    big = population(8308, 1, usul="4734 / 3-g", start=0)
+    rest = population(2000, 100, usul="Açık", start=20_000)
+    res, stored = run(*big, *rest)
+    single = res[1].score_parts[0]
+    parent = (1 + 100) / 10308
+    assert (single["k"], single["n"]) == (1, 8308)
+    assert single["p"] == pytest.approx((1 + 50 * parent) / 8358, rel=1e-3)
+    assert single["p"] > 1 / 8308                            # smoothing pulls it toward the parent: never rarer than raw
 
 
 def test_score_is_the_sum_of_part_points():

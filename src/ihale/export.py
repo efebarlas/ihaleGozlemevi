@@ -6,7 +6,7 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import config, dosyalar, structural
+from . import aliases, config, dosyalar, structural
 from .flags import BUGUN_CUTOFF
 from .keys import normalize_key
 from .model import Money
@@ -46,7 +46,7 @@ def tender_json(s: StoredRecord) -> dict:
         "id": f"{day}-{r.bulletin_type}-{r.section}-{r.seq}",
         "ikn": r.ikn, "title": r.title, "konu": r.konu,
         "type": r.bulletin_type, "section": r.section, "usul": r.ihale_usulu, "tur": r.ihale_turu,
-        "idare": {"name": r.idare, "key": normalize_key(r.idare)},
+        "idare": {"name": r.idare, "key": normalize_key(r.idare), "parent": aliases.parent_of(r.idare)},
         "yuklenici": {"name": r.yuklenici, "key": normalize_key(r.yuklenici)},
         "ihale_tarihi": _iso(r.ihale_tarihi), "sozlesme_tarihi": _iso(r.sozlesme_tarihi),
         "sozlesme_suresi": r.sozlesme_suresi,
@@ -110,7 +110,7 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
     _write_json(out / "meta.json", {
         "schema": SCHEMA, "generated_at": (now or istanbul_now()).isoformat(timespec="seconds"),
         "latest_date": dates[0] if dates else None, "dates": dates, "counts": counts,
-        "structural_rules": structural.rules_meta(), "bugun_cutoff": BUGUN_CUTOFF,
+        "structural_rules": structural.rules_meta(), "parent_aliases": aliases.table_meta(), "bugun_cutoff": BUGUN_CUTOFF,
         "part_rates": store.get_meta("part_rates", {}),
         "idare_index": idare_index, "yuklenici_index": yuklenici_index})
     return out

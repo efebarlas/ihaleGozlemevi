@@ -66,13 +66,17 @@ def test_p_denominator_counts_only_computable_records():
     assert rates["mal/acik"]["bedel_orani"] == 0.1                                               # 20 / 200, not 20 / 300
 
 
-def test_part_with_a_small_computable_base_falls_back_to_all_records():
+def test_part_with_a_small_computable_base_is_pulled_toward_the_type_rate():
     recs = [mk(i, toplam=1, gecerli=1) if i < 10 else mk(i) for i in range(150)]             # acik: 10/150 tek
     recs += [mk(1000 + i, "Pazarlık (MD 21 B)", toplam=1 if i < 5 else 3, gecerli=1 if i < 5 else 3)
              for i in range(60)]                                                             # < 100 in its group
     results, rates = full(recs)
-    part = results[150].score_parts[0]
-    assert part["code"] == "tek_teklif" and part["p_group"] == "mal/hepsi" and part["p"] == round(15 / 210, 4)
+    part = results[0].score_parts[0]
+    parent = 15 / 210
+    assert part["code"] == "tek_teklif" and part["p_group"] == "mal/acik" and (part["k"], part["n"]) == (10, 150)
+    assert part["p"] == pytest.approx((10 + 50 * parent) / 200, rel=1e-3)
+    small = results[150]
+    assert (small.score_parts[0]["k"], small.score_parts[0]["n"]) == (5, 60)
 
 
 # ---------------------------------------------------------------- 3-g split
@@ -96,8 +100,10 @@ def test_dmo_and_other_3g_have_separate_rates_and_peer_chains():
     assert rates["mal/istisna_3g"]["n"] == 200 and rates["mal/istisna_3g"]["tek_teklif"] == 0.1
     assert results[0].usul_group == "mal/istisna_3g_dmo" and results[300].usul_group == "mal/istisna_3g"
     # DMO single bids are ordinary within DMO (p = 1 → 0 points); other buyers are rare against their own norm
-    assert results[0].score_parts[0]["p"] == 1.0 and results[0].score_parts[0]["points"] == 0.0
-    assert results[300].score_parts[0]["p"] == 0.1 and results[300].score_parts[0]["p_group"] == "mal/istisna_3g"
+    assert results[0].score_parts[0]["p"] == pytest.approx((300 + 50 * 0.64) / 350, rel=1e-3)   # parent: 320 / 500
+    assert results[0].score_parts[0]["points"] < 0.1
+    assert results[300].score_parts[0]["p"] == pytest.approx((20 + 50 * 0.64) / 250, rel=1e-3)
+    assert results[300].score_parts[0]["p_group"] == "mal/istisna_3g"
     # idare_stats of another idare: peers exclude DMO
     st = results[300].idare_stats
     assert st["usul_turu"] == "istisna_3g" and st["usul_label"] == "4734/3-g (diğer idareler)"

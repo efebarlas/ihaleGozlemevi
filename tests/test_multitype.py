@@ -1,6 +1,8 @@
 """Scoring is per bulletin type: group key = <type>/<usul group>, each type has its own <type>/hepsi fallback."""
 from datetime import date
 
+import pytest
+
 from ihale import cli
 from ihale.flags import compute_flags_full
 from ihale.store import StoredRecord
@@ -44,15 +46,15 @@ def test_same_usul_in_two_types_does_not_mix():
     assert res[0].score > res[200].score                                 # a mal single bid is far rarer than a hizmet one
 
 
-def test_each_type_has_its_own_fallback():
-    recs = (pop("mal", 150, 15, 0) + pop("mal", 40, 20, 500, usul="Pazarlık (MD 21 B)")        # mal 21/b: n < 100
+def test_each_type_is_smoothed_toward_its_own_parent_rate():
+    recs = (pop("mal", 150, 15, 0) + pop("mal", 40, 20, 500, usul="Pazarlık (MD 21 B)")
             + pop("yapim", 150, 75, 1000) + pop("yapim", 40, 4, 2000, usul="Pazarlık (MD 21 B)"))
     res, rates = full(recs)
     mal_b = next(r for r, s in zip(res, recs) if s.ikn == "2026/500")
     yap_b = next(r for r, s in zip(res, recs) if s.ikn == "2026/2000")
-    assert mal_b.score_parts[0]["p_group"] == "mal/hepsi"
-    assert mal_b.score_parts[0]["p"] == round(35 / 190, 4)                  # all mal records, not hizmet/yapim
-    assert yap_b.score_parts[0]["p_group"] == "yapim/hepsi" and yap_b.score_parts[0]["p"] == round(79 / 190, 4)
+    assert mal_b.score_parts[0]["p_group"] == "mal/pazarlik_21b" and yap_b.score_parts[0]["p_group"] == "yapim/pazarlik_21b"
+    assert mal_b.score_parts[0]["p"] == pytest.approx((20 + 50 * 35 / 190) / 90, rel=1e-3)      # parent: all mal records
+    assert yap_b.score_parts[0]["p"] == pytest.approx((4 + 50 * 79 / 190) / 90, rel=1e-3)       # parent: all yapim records
 
 
 def test_bedel_median_fallback_is_per_type():
