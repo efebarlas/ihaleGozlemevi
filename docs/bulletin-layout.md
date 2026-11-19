@@ -199,3 +199,28 @@ The fixture pages keep their original header/footer, so the footer page numbers 
 ## 7. Source of the "old" knowledge
 
 From the 2022 code (deleted in M0, still in git history): it parsed the same two-column table with pdfplumber using `explicit_vertical_lines=[0, 243]` (the `:` column at x≈242–243, confirmed above), matched labels fuzzily (thefuzz) after ASCII-folding, and detected result bulletins by the word `sonuc` in the page-2 header. It also assumed the table groups `ihalenin / ihale konusu malın / teklifler / sözleşmenin`, which matches §3. Its field names: `ikn`, `idare adi`, `ihale tarihi`, `ihale turu`, `ihale usulu`, `ihale yaklasik maliyeti`, `esas kisimlarin yaklasik maliyeti`, `mal adi`, `toplam teklif sayisi`, `toplam gecerli teklif sayisi`, `sozlesme tarihi`, `sozlesme bedeli`, `sozlesme suresi`, `yuklenici`, `yuklenici uyruğu`, `yuklenici adresi`. The new parser is free to use better names.
+
+## 8. Hizmet and yapım result bulletins (measured 2026-11-18)
+
+`BULTEN_18112026_HIZMET_SONUC.pdf` (60 pages) and `BULTEN_18112026_YAPIM_SONUC.pdf` (48 pages) have the same frame as mal: one record per `SONUÇ İLANI`, the same two-column form and colon column, the same header/footer rules, and the `A-` / `B-` sections with the numbering restarting. The adapter (`ihale.parse`) reads both without changes; ihalent's own check against the table of contents is complete for both.
+
+| | records | distinct ikn | section A / B | ihalent read / rejected / missing / unlisted | parse time |
+|---|---|---|---|---|---|
+| hizmet | 65 | 57 | 55 / 10 | 65 / 0 / 0 / 0 (`complete=True`) | ~16 s |
+| yapım | 55 | 55 | 51 / 4 | 55 / 0 / 0 / 0 (`complete=True`) | ~16 s |
+
+### What differs from mal
+- **Group 2 heading:** `2- İhale konusu hizmetin` (hizmet), `2- İhale konusu yapım işinin` (yapım), instead of `... malın`. Parts stay numbered 1–4, so the adapter keys on the part number and the label.
+- **`Türü`:** `Hizmet alımı` / `Yapım işi`.
+- **Group 2 fields:** `Adı`, `Yapılacağı yer`, `Süresi` (no `Teslim tarihi`). `Süresi` here is free text: `12 aydır`, `45 gündür` in hizmet, a bare day count (`45`, `300`) in yapım. It is *not* the contract `Süresi` in group 4. Both land in `raw_fields` only.
+- **Group 3 (section A):** `Dokümanı EKAP üzerinden e-imza kullanarak indiren sayısı`, `Toplam Teklif Sayısı`, `Toplam Geçerli Teklif Sayısı`, then `Yerli istekli lehine fiyat avantajı uygulaması` (mal says `Yerli malı teklif eden istekli ...`). Section B has only the two counts.
+- **Yüklenici label:** hizmet always prints `Yüklenici` (also in section A, unlike mal's `Yüklenicisi`). Yapım prints `Yüklenicisi` in section A (51 records) and `Yüklenici` in section B (4). The adapter accepts both. `Yüklenicinin uyruğu` exists only in the long (section A) layout.
+- **Section B** is the short layout (no gerekçe, no document count, no uyruk) and is headed `B- 4734 SAYILI KANUN KAPSAMINDA OLMAYAN İLANLAR (DİĞER İLANLAR)` / `1. İSTİSNA SONUÇLARININ İLANLARI`; yapım continues with `2. KAPSAM DIŞI SONUÇLARININ İLANLARI` and the line `Bu sayıda "Kapsam Dışı Sonuçlarının İlanı" bulunmamaktadır.` (no records), which the parser must not read as a record.
+- **Usul values seen:** hizmet `Açık` (38), `Pazarlık (MD 21 F)` (13), `Pazarlık (MD 21 B)` (4), `4734 / 3-g` (9), `4734 / 3-i` (1); yapım `Açık` (45), `Pazarlık (MD 21 B)` (6), `4734 / 3-i` (3), `4734 / 3-k (5737/79 md.)` (1; the parenthesis is part of the value). The `Pazarlık Usulünün Seçilme Gerekçesi` text is printed for every pazarlık record.
+- **Estimate:** printed as in mal (`Yaklaşık Maliyeti : 1.391.000,00 TRY`), always present on these two days (no empty or "bulunmamaktadır" case). In yapım, `Pazarlık (MD 21 B)` records print a stray ` -->` after the amount in the PDF text (`229.985.668,10 TRY -->`); ihalent removes it before the value reaches us.
+- **Kısmi lots:** `Sözleşmeye Esas Kısımlarının Yaklaşık Maliyeti` appears in 17 of 65 hizmet records and 2 of 55 yapım records, with the same repeated-header structure as mal §4 (hizmet ikns repeat up to 5 times, e.g. `2026/1765500`).
+- **Currency:** hizmet has one `USD` bedel (B-5, `138.107,00 USD`, TRY estimate); no EUR, no dual-currency estimate, in either type that day. Bedel above the estimate occurs in 2 hizmet and 2 yapım records.
+- **Empty `Süresi` (contract, group 4):** 15 of 65 hizmet and 32 of 55 yapım records (yapım prints it empty far more often than mal).
+- **Joint ventures (yapım):** the contractor is one cell with the partners separated by a comma and a final `İş Ortaklığı`, e.g. `MAŞ İnşaat Sanayi ve Ticaret Anonim Şirketi, Ersin Başak İş Ortaklığı`, or two companies, or a company plus a person (`Mehmet Özen, ASN ... Şirketi İş Ortaklığı`). 4 of 55 yapım records; none in hizmet. `Record.yuklenici` keeps the full string. Do not split on the comma: company names themselves contain commas (`Genç Grup Danışmanlık, Çevre, Mühendislik, ... Limited Şirketi`). ihalent's `Award` splits JVs, and that cuts the name to the first partner; the adapter does not use `Award`.
+- **Odd identifiers:** a six-digit ikn (`2026/763412`, yapım B-2); a contractor name starting with digits (`111 İnşaat ...`) or containing initials (`Osman Kutanoğlu HG Yapı İnşaat Taahhüt`); a typo printed in the source (hizmet A-17: `Fresenıus` with a dotless ı), so text must be compared verbatim, not "corrected".
+- **Heading block above the record:** the first page of a section has the section lines directly above the record number (hizmet p.5, p.51; yapım p.4, p.44), and some records have 3–4 line titles; the title/idare split by the repeated title still works.

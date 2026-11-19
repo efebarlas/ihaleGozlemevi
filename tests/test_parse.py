@@ -203,3 +203,126 @@ def test_fixture_accuracy_against_labels(by_key):
                 assert not (got != exp and r.confidence.get(f, 0) >= CONFIDENT), (lab["section"], lab["seq"], f)
     for f in CORE_FIELDS:
         assert good[f] / len(labels) >= 0.95, (f, good[f], len(labels))
+
+
+# ------------------------------------------------------------------ hizmet / yapım (M4)
+
+def _fixture(kind):
+    return parse_bulletin(Path(__file__).parent / "fixtures" / f"{kind}_sonuc_excerpt.pdf", date(2026, 11, 18), kind)
+
+
+@pytest.fixture(scope="module")
+def hizmet():
+    return {(r.section, r.seq): r for r in _fixture("hizmet")}
+
+
+@pytest.fixture(scope="module")
+def yapim():
+    return {(r.section, r.seq): r for r in _fixture("yapim")}
+
+
+def test_hizmet_yapim_fixture_counts(hizmet, yapim):
+    assert len(hizmet) == 15 and len(yapim) == 15
+    assert {k[0] for k in hizmet} == {"A", "B"} and {k[0] for k in yapim} == {"A", "B"}
+    for recs in (hizmet, yapim):
+        for r in recs.values():
+            assert not r.warnings, (r.section, r.seq, r.warnings)
+            assert r.raw_fields and r.raw_fields[0][1] == "İhale kayıt numarası"
+
+
+def test_hizmet_labels_and_raw_fields(hizmet):
+    r = hizmet["A", 1]
+    assert r.ihale_turu == "Hizmet alımı"
+    assert r.ihale_usulu == "Pazarlık (MD 21 F)"
+    assert r.yuklenici == "Mustafa Öz" and r.confident("yuklenici")
+    assert r.sozlesme_bedeli == Money(130000000, "TRY") and r.yaklasik_maliyet == Money(139100000, "TRY")
+    raw = {(p, lab) for p, lab, _ in r.raw_fields}
+    # hizmet-specific labels live in raw_fields (part 2 = "İhale konusu hizmetin")
+    assert ("2", "Yapılacağı yer") in raw and ("2", "Süresi") in raw and ("1", "Pazarlık Usulünün Seçilme Gerekçesi") in raw
+    assert ("4", "Yüklenici") in raw           # hizmet prints "Yüklenici", mal long layout "Yüklenicisi"
+    assert r.page_start == r.page_end == 5
+
+
+def test_hizmet_kismi_and_empty_sure(hizmet):
+    a2, a3 = hizmet["A", 2], hizmet["A", 3]
+    assert a2.ikn == a3.ikn == "2026/2023399"
+    assert a2.esas_kisim_yaklasik_maliyet == Money(198299676, "TRY")
+    assert a2.sozlesme_bedeli == Money(37828756, "TRY") and a3.sozlesme_bedeli == Money(57609956, "TRY")
+    a16 = hizmet["A", 16]
+    assert a16.sozlesme_suresi is None and a16.confidence["sozlesme_suresi"] == 1.0
+    assert a16.sozlesme_bedeli.kurus > a16.yaklasik_maliyet.kurus          # bedel above the estimate
+    assert a16.yuklenici.startswith("Selim Tepe Hafriyat")
+
+
+def test_hizmet_usd_bedel_in_section_b(hizmet):
+    r = hizmet["B", 5]
+    assert r.sozlesme_bedeli.currency == "USD" and r.yaklasik_maliyet.currency == "TRY"
+    assert r.confident("sozlesme_bedeli")
+    assert r.ihale_usulu == "4734 / 3-g"
+    assert hizmet["B", 7].ihale_usulu == "4734 / 3-i"   # a usul the mal day never showed
+
+
+def test_hizmet_split_page_numbers(hizmet):
+    assert (hizmet["A", 6].page_start, hizmet["A", 6].page_end) == (9, 10)
+    assert (hizmet["A", 15].page_start, hizmet["A", 15].page_end) == (16, 17)
+    assert hizmet["A", 15].sozlesme_bedeli == Money(3593460000, "TRY")
+
+
+def test_yapim_labels_and_joint_ventures(yapim):
+    a1 = yapim["A", 1]
+    assert a1.ihale_turu == "Yapım işi" and a1.yuklenici == "Yusuf Bilgiç"
+    assert a1.sozlesme_suresi is None
+    jv = yapim["A", 32]
+    assert jv.yuklenici == "MAŞ İnşaat Sanayi ve Ticaret Anonim Şirketi, Ersin Başak İş Ortaklığı"
+    assert jv.confident("yuklenici") and (jv.page_start, jv.page_end) == (27, 28)
+    assert {("4", "Yüklenicisi")} <= {(p, lab) for p, lab, _ in jv.raw_fields}
+
+
+def test_yapim_estimate_with_trailing_arrow(yapim):
+    r = yapim["A", 34]
+    assert r.ihale_usulu == "Pazarlık (MD 21 B)"
+    assert r.yaklasik_maliyet == Money(22998566810, "TRY") and r.confident("yaklasik_maliyet")
+    assert dict(((p, lab), v) for p, lab, v in r.raw_fields)[("1", "Yaklaşık Maliyeti")] == "229.985.668,10 TRY"
+
+
+def test_yapim_odd_identifiers(yapim):
+    assert yapim["A", 4].yuklenici == "111 İnşaat Taahhüt Sanayi ve Ticaret Anonim Şirketi"
+    r = yapim["B", 2]
+    assert r.ikn == "2026/763412"                      # six digits
+    assert r.ihale_usulu == "4734 / 3-k (5737/79 md.)"
+    assert yapim["B", 1].yaklasik_maliyet == Money(64067519800, "TRY")
+
+
+@pytest.mark.parametrize("kind", ["mal", "hizmet", "yapim"])
+def test_fixture_accuracy_per_type(kind, by_key, hizmet, yapim):
+    """>=95% correct-and-confident per core field on the in-fixture labels, and never confidently wrong."""
+    import json
+    from decimal import Decimal
+
+    path = Path(__file__).parent / "labels" / f"{kind}_2026-11-18.json"
+    if not path.exists():
+        pytest.skip("labels not present")
+    recs = {"mal": by_key, "hizmet": hizmet, "yapim": yapim}[kind]
+
+    def money(v):
+        if v is None:
+            return None
+        alt = money(v["alt"]) if v.get("alt") else None
+        return Money(int((Decimal(v["amount"]) * 100).to_integral_exact()), v["currency"], alt)
+
+    labels = [x for x in json.loads(path.read_text(encoding="utf-8")) if x["in_fixture"]]
+    assert len(labels) >= 10
+    good = {f: 0 for f in CORE_FIELDS}
+    for lab in labels:
+        r = recs[lab["section"], lab["seq"]]
+        for f in CORE_FIELDS:
+            exp = money(lab[f]) if f in ("sozlesme_bedeli", "yaklasik_maliyet") else lab[f]
+            got = getattr(r, f)
+            if isinstance(got, str):
+                got = " ".join(got.split())
+            confident = r.confidence.get(f, 0) >= CONFIDENT
+            if got == exp and confident:
+                good[f] += 1
+            assert not (got != exp and confident), (kind, lab["section"], lab["seq"], f, got, exp)
+    for f in CORE_FIELDS:
+        assert good[f] / len(labels) >= 0.95, (kind, f, good[f], len(labels))

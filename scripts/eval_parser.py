@@ -1,4 +1,4 @@
-"""Evaluate the mal sonuç parser on the full local PDF against the hand labels.
+"""Evaluate the sonuç parser (--type mal|hizmet|yapim) on the full local PDF against the hand labels.
 
     .venv\\Scripts\\python.exe scripts\\eval_parser.py [--labels PATH] [--pdf PATH] [--show N]
 
@@ -145,14 +145,17 @@ def raw_ihalent_table(read, recs, labels) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--labels", type=Path, default=DEFAULT_LABELS)
+    ap.add_argument("--type", choices=("mal", "hizmet", "yapim"), default="mal")
+    ap.add_argument("--labels", type=Path, default=None)
     ap.add_argument("--pdf", type=Path, default=None)
     ap.add_argument("--show", type=int, default=60, help="max mismatches to print")
     args = ap.parse_args()
 
-    pdf = args.pdf or config.bulletins_dir() / "2026-11-18" / "BULTEN_18112026_MAL_SONUC.pdf"
+    btype = args.type
+    labels_path = args.labels or ROOT / "tests" / "labels" / f"{btype}_2026-11-18.json"
+    pdf = args.pdf or config.bulletins_dir() / "2026-11-18" / f"BULTEN_18112026_{btype.upper()}_SONUC.pdf"
     t0 = time.time()
-    recs, read = parse_bulletin_read(pdf, BULLETIN_DATE, "mal")
+    recs, read = parse_bulletin_read(pdf, BULLETIN_DATE, btype)
     dt = time.time() - t0
     print(f"parsed {pdf.name}: {len(recs)} records, {len({r.ikn for r in recs})} distinct ikn, {dt:.1f}s")
 
@@ -192,10 +195,10 @@ def main() -> int:
     print(f"warnings: {sum(warn.values())} {warn.most_common(6)}")
 
     # --------------------------------------------------------------- labels
-    if not args.labels.exists():
-        print(f"\nno labels at {args.labels}; accuracy not computed")
+    if not labels_path.exists():
+        print(f"\nno labels at {labels_path}; accuracy not computed")
         return 0
-    labels = load_labels(args.labels)
+    labels = load_labels(labels_path)
     by_key = {(r.section, r.seq): r for r in recs}
     stats = {f: collections.Counter() for f in CORE_FIELDS}
     mism = []
