@@ -383,6 +383,8 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
         t["score"] = float(t.get("score", 0))
         t["_parts"] = part_lines(t)
+        has_check = any(f.get("source_check") for f in t["flags"])
+        t["_typo_note"] = ((t.get("indicators") or {}).get("source_check") == "typo" and not has_check)
         wl = weight_line(t, meta.get("part_rates"))
         if wl:
             t["_parts"].append(wl)

@@ -465,3 +465,20 @@ def test_value_weight_line_and_group_labels(dist):
     assert "Tutar katsayısı." in y and "log10" in y
     assert "<td>4734/3-g (DMO)</td>" in y                    # label exactly as exported
     assert "bedel_median_try" not in y and "3000000" not in y   # median is not a rate column
+
+
+def test_source_check_typo_note(tmp_path):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    f = exp / "days" / "2026-11-18.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    by = {t["id"]: t for t in d["tenders"]}
+    by["2026-11-18-mal-A-3"]["indicators"] = {"source_check": "typo"}                 # no flag carries it -> note
+    by["2026-11-18-mal-A-1"]["indicators"]["source_check"] = "typo"
+    by["2026-11-18-mal-A-1"]["flags"][1]["source_check"] = "typo"                     # flag text already says it
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    sitegen.build(exp, tmp_path / "o")
+    note = "Bültendeki iki rakam arasındaki fark tam bir 10'un katı; kaynakta yazım hatası olabilir."
+    assert note in (tmp_path / "o/ihale/2026-11-18-mal-A-3/index.html").read_text(encoding="utf-8")
+    assert note not in (tmp_path / "o/ihale/2026-11-18-mal-A-1/index.html").read_text(encoding="utf-8")
+    assert note not in (tmp_path / "o/ihale/2026-11-18-mal-A-4/index.html").read_text(encoding="utf-8")
