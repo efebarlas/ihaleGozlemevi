@@ -138,6 +138,18 @@ def flag_all(store: Store | None = None) -> dict[str, int]:
     return counts
 
 
+def export_step(store: Store | None = None) -> Path:
+    """Export JSON for the site, then the local-only oracle candidates (a failure there never stops the run)."""
+    from .oracle import write_candidates
+    store = store or Store()
+    out = export_all(store)
+    try:
+        log.info("oracle candidates: %s", write_candidates(store))
+    except Exception as e:  # noqa: BLE001
+        _log_exc("oracle candidates failed (continuing)", e)
+    return out
+
+
 def build_site(out_dir: Path | None = None) -> None:
     out_dir = out_dir or repo_root() / "site" / "dist"
     sitegen_module().build(export_dir(), out_dir)
@@ -174,7 +186,7 @@ def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> i
                 continue
             parse_and_store(day, t, store)
         flag_all(store)
-        export_all(store)
+        export_step(store)
         build_site()
         if deploy:
             deploy_site()

@@ -81,8 +81,7 @@ def cmd_flag(args) -> int:
 
 
 def cmd_export(args) -> int:
-    from .export import export_all
-    print(export_all())
+    print(pipeline.export_step())
     return 0
 
 

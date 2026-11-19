@@ -270,3 +270,20 @@ def test_fetch_parser_keeps_date_string():
 
 def test_parse_day_formats():
     assert cli.parse_day("18.11.2026") == D == cli.parse_day("2026-11-18")
+
+
+# ------------------------------------------------------------------ oracle candidates
+def test_run_and_export_write_oracle_candidates_never_log(env, data_dir):
+    assert run("run") == 0
+    cand = data_dir / "oracle" / "candidates.json"
+    assert cand.exists() and json.loads(cand.read_text(encoding="utf-8"))["date"] == "2026-11-18"
+    cand.unlink()
+    assert run("export") == 0 and cand.exists()
+    assert not (data_dir / "oracle" / "log.jsonl").exists()
+    assert not (data_dir / "export" / "candidates.json").exists()     # never part of the deployed export
+
+
+def test_oracle_failure_does_not_stop_the_run(env, monkeypatch):
+    import ihale.oracle
+    monkeypatch.setattr(ihale.oracle, "write_candidates", lambda store=None: (_ for _ in ()).throw(OSError("disk")))
+    assert run("run") == 0 and env.deployed == [True]
