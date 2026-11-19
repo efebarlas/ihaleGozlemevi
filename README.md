@@ -37,3 +37,19 @@ Tests are fully offline (any network attempt fails the test) and use the small f
 - `scripts/make_fixture.py`: cuts the fixture PDF from a full bulletin
 
 Lisans / License: see [`LICENSE`](LICENSE).
+
+## Yayın / Deploy (Cloudflare Worker + D1)
+
+The site is one Cloudflare Worker (`site/wrangler.jsonc`, `site/worker/index.js`) with static assets and a D1 database, because the free plan allows only 20,000 asset files per deploy.
+
+- **Core pages** (`/`, `/arsiv/`, `/yontem/`, `/gun/<date>/` summaries, the `/idare/` and `/yuklenici/` index pages, 404, `robots.txt`, `_headers`, CSS) are static assets in `site/dist` (about 45 files).
+- **Bulk pages** (`/ihale/<id>/`, `/idare/<slug>/…`, `/yuklenici/<slug>/…`, `/gun/<date>/<n>/`) live in D1 (database `ihale-pages`, binding `PAGES`; tables `pages(path, part, html)` in chunks of 16,000 characters and `page_meta(path, sha, parts, updated)`). The Worker looks the page up, joins its chunks and adds `X-Robots-Tag: noindex, nofollow`; unknown paths get the 404 page with status 404. The path rules live in `src/ihale/sitegen/d1.py` and are mirrored in `worker/index.js` (a test compares them).
+- `ihale build` writes the core pages to `site/dist` and stages the bulk pages, with a sha each, in `site/dist-pages.sqlite` (gitignored). `ihale build --design-preview` stays fully static and is never deployable.
+- `sitegen.deploy()`:
+  1. diffs the staged shas against the manifest of what is already in D1 (`<data>/d1-manifest-remote.json`, or `-local.json` for `--local`),
+  2. writes only new or changed pages as SQL batch files (`<data>/d1-batches/`, every statement under 90 KB) and runs `wrangler d1 execute ihale-pages --remote --file=…` per batch,
+  3. runs `wrangler deploy` (Worker and assets),
+  4. then deletes pages that no longer exist, and updates the manifest after each successful batch, so a failed run can simply be repeated.
+  It logs the row count and the stored bytes, and refuses a run that would write more than 90,000 rows (D1 free tier: 100,000 rows written per day; the first full upload is about 30,000 rows and 124 MB, and the free limit per database is 500 MB).
+- **One-time setup:** `npx wrangler@4 d1 create ihale-pages`, then paste the printed `database_id` into `site/wrangler.jsonc`. `deploy()` refuses while the placeholder id (all zeros) is still there, and still refuses preview builds and the test sample.
+- **Local test:** `deploy(local=True)` fills the local D1 only; `python tests/worker_check.py` loads a subset of the real staged pages into it, starts `wrangler dev --local` and checks routing, bodies, status codes and headers.

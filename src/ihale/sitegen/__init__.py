@@ -17,6 +17,7 @@ from markupsafe import Markup
 
 from ihale.indicators import usul_label
 
+from . import d1
 from .brands import is_series_brand_purchase
 from .persons import PERSON_LABEL, is_natural_person
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -447,10 +448,19 @@ def _load(export_dir: Path):
     return meta, days
 
 
-def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None:
+def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_bulk: bool | None = None) -> None:
+    """Build the site. Live builds (default) keep core pages in `out_dir` and stage the bulk pages (see d1.is_bulk)
+    in `<out_dir>-pages.sqlite` for D1; `split_bulk=False` (and preview builds) write every page to `out_dir`."""
     export_dir, out_dir = Path(export_dir), Path(out_dir)
     meta, days = _load(export_dir)
     _wipe(out_dir)
+    split = (not preview_design) if split_bulk is None else split_bulk
+    stage = d1.Stage(d1.staging_path(out_dir)) if split else None
+    if not split:
+        for suffix in ("", "-journal"):
+            old = Path(str(d1.staging_path(out_dir)) + suffix)
+            if old.exists():
+                old.unlink()
     env = _env()
 
     cutoff = float(meta.get("bugun_cutoff", DEFAULT_CUTOFF))
@@ -462,6 +472,9 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
+        if stage is not None and d1.is_bulk(d1.url_path(rel) or ""):
+            stage.add(d1.url_path(rel), html)
+            return
         path = out_dir / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(html, encoding="utf-8", newline="\n")
@@ -627,9 +640,13 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
     (out_dir / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8", newline="\n")
     (out_dir / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8", newline="\n")
 
+    if stage is not None:
+        stage.close()
     n_files = sum(1 for p in out_dir.rglob("*") if p.is_file())
     if n_files > MAX_FILES:
         _wipe(out_dir)  # never leave a dist that deploy could pick up
+        if split:
+            d1.staging_path(out_dir).unlink(missing_ok=True)
         raise SiteTooLargeError(
             f"site has {n_files} files, over the limit of {MAX_FILES} (Cloudflare free tier allows 20,000 "
             f"per deploy). Reduce the number of pages (MIN_DETAIL_SCORE) or move to JSON-backed pages.")
@@ -638,8 +655,43 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
 _URL_RE = re.compile(r"https://[A-Za-z0-9.-]+\.workers\.dev\S*")
 
 
-def deploy(dist_dir: Path | None = None) -> str:
-    """Deploy with wrangler (assets-only Worker). Returns the URL; raises RuntimeError with wrangler's output on failure."""
+PLACEHOLDER_D1_ID = "00000000-0000-0000-0000-000000000000"
+D1_NAME = "ihale-pages"
+log = print
+
+
+def _npx() -> str:
+    npx = shutil.which("npx.cmd") if os.name == "nt" else None
+    npx = npx or shutil.which("npx")
+    if not npx:
+        raise RuntimeError("npx not found on PATH (install Node.js)")
+    return npx
+
+
+def _run_wrangler(args: list[str]) -> str:
+    """Run `npx --yes wrangler@4 <args>` in site/ with the public npm registry; return stdout+stderr."""
+    env = dict(os.environ, npm_config_registry="https://registry.npmjs.org/")
+    proc = subprocess.run([_npx(), "--yes", "wrangler@4", *args], cwd=SITE_DIR, env=env, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace", timeout=900)
+    out = (proc.stdout or "") + (proc.stderr or "")
+    if proc.returncode != 0:
+        raise RuntimeError(f"wrangler {' '.join(args[:2])} failed ({proc.returncode}):\n{out}")
+    return out
+
+
+def _d1_id() -> str | None:
+    cfg = re.sub(r"^\s*//.*$", "", (SITE_DIR / "wrangler.jsonc").read_text(encoding="utf-8"), flags=re.M)
+    dbs = json.loads(cfg).get("d1_databases") or []
+    return dbs[0].get("database_id") if dbs else None
+
+
+def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: Path | None = None,
+           batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN) -> str:
+    """Deploy: changed bulk pages to D1, then the Worker + static assets, then D1 deletions.
+
+    Returns the Worker URL (or "local" with local=True, which only fills the local D1 used by `wrangler dev --local`
+    and skips `wrangler deploy`). Raises RuntimeError with wrangler's output on failure. The manifest of what is in
+    D1 (separate for local and remote) is updated only after each batch succeeds."""
     dist = Path(dist_dir) if dist_dir else SITE_DIR / "dist"
     index = dist / "index.html"
     if not index.is_file():
@@ -650,20 +702,38 @@ def deploy(dist_dir: Path | None = None) -> str:
         raise RuntimeError("refusing to deploy: dist is a design preview build (token files / data-direction)")
     if "ÖRNEK İL MÜDÜRLÜĞÜ" in index.read_text(encoding="utf-8"):
         raise RuntimeError("refusing to deploy: dist was built from the test sample export")
-    npx = shutil.which("npx.cmd") if os.name == "nt" else None
-    npx = npx or shutil.which("npx")
-    if not npx:
-        raise RuntimeError("npx not found on PATH (install Node.js)")
-    cmd = [npx, "--yes", "wrangler@4", "deploy"]
-    if dist.resolve() != (SITE_DIR / "dist").resolve():
-        cmd += ["--assets", str(dist.resolve())]
-    env = dict(os.environ, npm_config_registry="https://registry.npmjs.org/")
-    proc = subprocess.run(cmd, cwd=SITE_DIR, env=env, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=600)
-    out = (proc.stdout or "") + (proc.stderr or "")
-    if proc.returncode != 0:
-        raise RuntimeError(f"wrangler deploy failed ({proc.returncode}):\n{out}")
-    m = _URL_RE.search(out)
-    if not m:
-        raise RuntimeError(f"wrangler deploy succeeded but no URL found in output:\n{out}")
-    return m.group(0).rstrip(".,)")
+    stage_db = d1.staging_path(dist)
+    if not stage_db.is_file():
+        raise RuntimeError(f"nothing to deploy: staged bulk pages {stage_db.name} missing (run build first)")
+    if not local and _d1_id() in (None, PLACEHOLDER_D1_ID):
+        raise RuntimeError("refusing to deploy: site/wrangler.jsonc still has the placeholder D1 database_id "
+                           f"(create the database with `wrangler d1 create {D1_NAME}` and paste its id)")
+
+    from ihale import config
+    data = config.data_dir()
+    manifest_path = manifest_path or data / f"d1-manifest-{'local' if local else 'remote'}.json"
+    batch_dir = batch_dir or data / "d1-batches"
+    where = ["--local"] if local else ["--remote"]
+    url: list[str] = []
+
+    def execute(f: Path) -> None:
+        _run_wrangler(["d1", "execute", D1_NAME, *where, f"--file={f}"])
+
+    def between() -> None:
+        if local:
+            url.append("local")
+            return
+        cmd = ["deploy"]
+        if dist.resolve() != (SITE_DIR / "dist").resolve():
+            cmd += ["--assets", str(dist.resolve())]
+        out = _run_wrangler(cmd)
+        m = _URL_RE.search(out)
+        if not m:
+            raise RuntimeError(f"wrangler deploy succeeded but no URL found in output:\n{out}")
+        url.append(m.group(0).rstrip(".,)"))
+
+    from datetime import datetime, timezone
+    d1.sync_pages(stage_db=stage_db, manifest_path=manifest_path, batch_dir=batch_dir, execute=execute,
+                  between=between, updated=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  max_rows=max_rows, log=lambda m: log(m))
+    return url[0]

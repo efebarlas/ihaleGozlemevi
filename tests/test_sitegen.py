@@ -15,6 +15,13 @@ SAMPLE = Path(__file__).parent / "fixtures" / "export_sample"
 FORBIDDEN = ["şüphe", "yolsuz", "usulsüz", "rüşvet", "hile", "sahte", "kayırma", "kırmızı bayrak", "red flag", "redflag"]
 
 
+def _build_full(export_dir, out_dir, **kw):
+    """Every page in out_dir (the content tests below read bulk pages from disk). The split build is tested in
+    test_d1.py and proven equivalent to this one."""
+    kw.setdefault("split_bulk", False)
+    return sitegen.build(export_dir, out_dir, **kw)
+
+
 def _lower_tr(s: str) -> str:
     return s.replace("İ", "i").replace("I", "ı").lower()
 
@@ -22,7 +29,7 @@ def _lower_tr(s: str) -> str:
 @pytest.fixture(scope="module")
 def dist(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("site") / "dist"
-    sitegen.build(SAMPLE, out)
+    _build_full(SAMPLE, out)
     return out
 
 
@@ -177,7 +184,7 @@ def test_escaping(tmp_path):
     (exp / "days" / "2026-11-17.json").write_text(json.dumps(t, ensure_ascii=False), encoding="utf-8")
     (exp / "meta.json").write_text(json.dumps({"schema": 1, "latest_date": "2026-11-17", "dates": ["2026-11-17"],
                                                "counts": {}}), encoding="utf-8")
-    sitegen.build(exp, tmp_path / "o")
+    _build_full(exp, tmp_path / "o")
     for p in (tmp_path / "o").rglob("*.html"):
         assert "<script>alert" not in p.read_text(encoding="utf-8")
 
@@ -191,7 +198,7 @@ def test_unsafe_id_rejected(tmp_path):
     (exp / "meta.json").write_text(json.dumps({"schema": 1, "latest_date": "2026-11-17", "dates": [], "counts": {}}),
                                    encoding="utf-8")
     with pytest.raises(ValueError):
-        sitegen.build(exp, tmp_path / "o")
+        _build_full(exp, tmp_path / "o")
 
 
 def _digest(root: Path) -> str:
@@ -205,10 +212,10 @@ def _digest(root: Path) -> str:
 
 def test_deterministic_and_wipes(tmp_path):
     out = tmp_path / "dist"
-    sitegen.build(SAMPLE, out)
+    _build_full(SAMPLE, out)
     first = _digest(out)
     (out / "stale.txt").write_text("x")
-    sitegen.build(SAMPLE, out)
+    _build_full(SAMPLE, out)
     assert not (out / "stale.txt").exists()
     assert _digest(out) == first
 
@@ -225,7 +232,9 @@ def test_wrangler_config():
     cfg = re.sub(r"^\s*//.*$", "", cfg, flags=re.M)
     c = json.loads(cfg)
     assert c["name"] == "ihale-gozlemevi" and c["workers_dev"] is True
-    assert c["assets"] == {"directory": "./dist", "not_found_handling": "404-page"}
+    assert c["assets"]["directory"] == "./dist" and c["assets"]["not_found_handling"] == "404-page"
+    assert c["assets"]["binding"] == "ASSETS" and c["main"] == "worker/index.js"
+    assert c["d1_databases"][0]["binding"] == "PAGES" and c["d1_databases"][0]["database_name"] == "ihale-pages"
     assert "routes" not in c and "route" not in c
 
 
@@ -292,10 +301,10 @@ def test_file_count_limit(tmp_path, monkeypatch):
     monkeypatch.setattr(sitegen, "MAX_FILES", 10)
     out = tmp_path / "dist"
     with pytest.raises(sitegen.SiteTooLargeError, match="over the limit"):
-        sitegen.build(SAMPLE, out)
+        _build_full(SAMPLE, out)
     assert not (out / "index.html").exists()   # deploy can't pick up a half-valid dist
     monkeypatch.setattr(sitegen, "MAX_FILES", 10_000)
-    sitegen.build(SAMPLE, out)
+    _build_full(SAMPLE, out)
     assert (out / "index.html").is_file()
 
 
@@ -308,7 +317,7 @@ def test_no_raw_python_values_and_null_names(tmp_path):
     d["tenders"][0]["flags"][1]["value"] = 1.0093869731800766
     f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
     out = tmp_path / "o"
-    sitegen.build(exp, out)
+    _build_full(exp, out)
     for p in out.rglob("*.html"):
         h = p.read_text(encoding="utf-8")
         assert not re.search(r"\bNone\b|\bTrue\b|\bFalse\b|\d\.\d{5,}|değer:", h), p
@@ -428,7 +437,7 @@ def test_score_formatting_and_cutoff(dist, tmp_path):
     m = json.loads((exp / "meta.json").read_text(encoding="utf-8"))
     m["bugun_cutoff"] = 4.0
     (exp / "meta.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
-    sitegen.build(exp, tmp_path / "o")
+    _build_full(exp, tmp_path / "o")
     h2 = (tmp_path / "o" / "index.html").read_text(encoding="utf-8")
     assert "1 tanesi gösteriliyor" in h2 and "2026-11-18-mal-A-3" not in h2
     assert (tmp_path / "o" / "ihale/2026-11-18-mal-A-3/index.html").is_file()   # page still exists (score > 0)
@@ -459,7 +468,7 @@ def test_old_integer_shape_still_builds(tmp_path):
             t["score_parts"] = [pt["code"] for pt in t["score_parts"]]
             t["score"] = int(t["score"])
         f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-    sitegen.build(exp, tmp_path / "o")
+    _build_full(exp, tmp_path / "o")
     assert (tmp_path / "o" / "index.html").is_file()
 
 
@@ -484,7 +493,7 @@ def test_source_check_typo_note(tmp_path):
     by["2026-11-18-mal-A-1"]["indicators"]["source_check"] = "typo"
     by["2026-11-18-mal-A-1"]["flags"][1]["source_check"] = "typo"                     # flag text already says it
     f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-    sitegen.build(exp, tmp_path / "o")
+    _build_full(exp, tmp_path / "o")
     note = "Bültendeki iki rakam arasındaki fark tam bir 10'un katı; kaynakta yazım hatası olabilir."
     assert note in (tmp_path / "o/ihale/2026-11-18-mal-A-3/index.html").read_text(encoding="utf-8")
     assert note not in (tmp_path / "o/ihale/2026-11-18-mal-A-1/index.html").read_text(encoding="utf-8")
@@ -519,7 +528,7 @@ def test_brand_innocent_line(tmp_path):
         for t in d["tenders"]:
             if t["id"] == "2026-11-18-mal-A-1":
                 t["konu"] = "20 Adet Iveco Daily 35C21D Kamyonet"
-    sitegen.build(_tmp_export(tmp_path, edit), tmp_path / "o")
+    _build_full(_tmp_export(tmp_path, edit), tmp_path / "o")
     assert sitegen.INNOCENT_BRAND in (tmp_path / "o/ihale/2026-11-18-mal-A-1/index.html").read_text(encoding="utf-8")
     # sample: no brand in konu -> no line; and never on records without a tek_teklif flag
     other = (tmp_path / "o/ihale/2026-11-18-mal-A-3/index.html").read_text(encoding="utf-8")
@@ -535,7 +544,7 @@ def test_cluster_card_on_bugun(tmp_path):
         for t in d["tenders"]:
             if t["id"] in ("2026-11-18-mal-A-3", "2026-11-18-mal-B-3", "2026-11-18-mal-B-4"):
                 _parent(t)
-    sitegen.build(_tmp_export(tmp_path, edit), tmp_path / "o")
+    _build_full(_tmp_export(tmp_path, edit), tmp_path / "o")
     h = (tmp_path / "o/index.html").read_text(encoding="utf-8")
     assert "3 DHMİ ihalesi" in h and "Ortak ifade: «Malzemesi Alımı»" in h
     assert "Hepsinde: Tek teklif, Yaklaşık maliyete yakın" in h
@@ -596,7 +605,7 @@ def _big_export(tmp_path, n=300):
 
 def test_day_pages_paginated_small_and_anchors_resolve(tmp_path):
     out = tmp_path / "o"
-    sitegen.build(_big_export(tmp_path), out)
+    _build_full(_big_export(tmp_path), out)
     pages = sorted((out / "gun/2026-11-17").glob("*/index.html"))
     assert len(pages) > 1
     assert "/gun/2026-11-17/2/" in (out / "gun/2026-11-17/index.html").read_text(encoding="utf-8")
@@ -663,7 +672,7 @@ def test_live_build_has_no_design_direction_or_switch(dist):
 
 def test_design_preview_build_and_deploy_refuses_it(tmp_path):
     out = tmp_path / "preview"
-    sitegen.build(SAMPLE, out, preview_design=True)
+    _build_full(SAMPLE, out, preview_design=True)
     for n in ("defter", "gazete", "evrak"):
         css = out / "tokens" / f"{n}.css"
         assert css.is_file() and css.stat().st_size < 8000
@@ -679,7 +688,7 @@ def test_design_preview_build_and_deploy_refuses_it(tmp_path):
 
 def test_deploy_refuses_data_direction_without_tokens(tmp_path):
     out = tmp_path / "d"
-    sitegen.build(SAMPLE, out)
+    _build_full(SAMPLE, out)
     idx = out / "index.html"
     idx.write_text(idx.read_text(encoding="utf-8").replace('<html lang="tr">', '<html lang="tr" data-direction="defter">'),
                    encoding="utf-8")
@@ -778,7 +787,7 @@ def _big_dossier_export(tmp_path, n=400):
 
 def test_dossier_timelines_paginate_under_150kb(tmp_path):
     out = tmp_path / "o"
-    sitegen.build(_big_dossier_export(tmp_path), out)
+    _build_full(_big_dossier_export(tmp_path), out)
     for kind, slug in (("idare", "ornek-il-mudurlugu"), ("yuklenici", "ornek-yapi-ltd")):
         more = sorted((out / kind / slug).glob("*/index.html"))
         assert len(more) >= 3, kind
@@ -801,7 +810,7 @@ def test_index_pages_paginate_and_sort(tmp_path):
         (exp / "idare" / f"{e['slug']}.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
     (exp / "meta.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
     out = tmp_path / "o"
-    sitegen.build(exp, out)
+    _build_full(exp, out)
     lists = sorted((out / "idare" / "liste").glob("*/index.html"))
     assert lists and (out / "idare" / "index.html").stat().st_size <= 150_000
     for p in lists:

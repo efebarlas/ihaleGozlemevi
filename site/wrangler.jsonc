@@ -1,10 +1,24 @@
 {
-  // Assets-only Worker for İhale Gözlemevi. Unlisted: no routes, no custom domain.
+  // Worker for İhale Gözlemevi: core pages are static assets, bulk pages are served from D1.
+  // Unlisted: no routes, no custom domain.
   "name": "ihale-gozlemevi",
+  "main": "worker/index.js",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "404-page"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // Only the bulk prefixes reach the Worker first; everything else is served by the asset layer
+    // (the Worker still wraps unknown paths via the 404 page).
+    "run_worker_first": ["/ihale/*", "/idare/*", "/yuklenici/*", "/gun/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "PAGES",
+      "database_name": "ihale-pages",
+      // PLACEHOLDER: `wrangler d1 create ihale-pages` prints the real id; deploy() refuses until it is replaced.
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ]
 }
