@@ -1,0 +1,1449 @@
+[
+  {
+    "section": "A",
+    "seq": 1,
+    "page_start": 17,
+    "in_fixture": true,
+    "ikn": "2026/1880594",
+    "idare": "CEZA VE TEVKİFEVLERİ GENEL MÜDÜRLÜĞÜ SİVEREK AÇIK CEZA İNFAZ KURUMU MÜDÜRLÜĞÜ",
+    "yuklenici": "Emir Sosyal Hizmetler İş Sağlığı ve Güvenliği Gıda İnşaat Turizm Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2767200.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "2894258.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "first record of section A; idare wraps over 2 lines; wrapped yuklenici"
+  },
+  {
+    "section": "A",
+    "seq": 2,
+    "page_start": 18,
+    "in_fixture": true,
+    "ikn": "2026/2055179",
+    "idare": "PURSAKLAR BELEDİYE BAŞKANLIĞI DESTEK HİZMETLERİ MÜDÜRLÜĞÜ",
+    "yuklenici": "Duranoğlu Nakliyat Emlak İnşaat Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3259000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3311166.67",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "single valid bid"
+  },
+  {
+    "section": "A",
+    "seq": 3,
+    "page_start": 18,
+    "in_fixture": true,
+    "ikn": "2026/1766844",
+    "idare": "ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ ANTALYA MANAVGAT DEVLET HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Mustafa Öz",
+    "sozlesme_bedeli": {
+      "amount": "155280.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1015419.40",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p18-19; person contractor; empty Süresi; kısmi lot (esas kısım estimate present)"
+  },
+  {
+    "section": "A",
+    "seq": 4,
+    "page_start": 19,
+    "in_fixture": true,
+    "ikn": "2026/1766844",
+    "idare": "ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ ANTALYA MANAVGAT DEVLET HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Hastem Gül Ürünleri Temizlik Gıda Sanayi ve Dış Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "310835.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1015419.40",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p19-20; kısmi lot of repeated ikn; empty Süresi"
+  },
+  {
+    "section": "A",
+    "seq": 5,
+    "page_start": 20,
+    "in_fixture": true,
+    "ikn": "2026/1833735",
+    "idare": "SAKARYA İL SAĞLIK MÜDÜRLÜĞÜ SAKARYA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Yurdakul Bostancı",
+    "sozlesme_bedeli": {
+      "amount": "83000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10946227.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 12,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p20-21; person contractor; kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 6,
+    "page_start": 21,
+    "in_fixture": true,
+    "ikn": "2026/1833735",
+    "idare": "SAKARYA İL SAĞLIK MÜDÜRLÜĞÜ SAKARYA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Bioart Medikal Sağlık Hizmetleri Pazarlama Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "250000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10946227.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 12,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p21-22; kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 7,
+    "page_start": 22,
+    "in_fixture": false,
+    "ikn": "2026/1833735",
+    "idare": "SAKARYA İL SAĞLIK MÜDÜRLÜĞÜ SAKARYA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "MATEK Medikal Analitik Teknik Sistemler Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "446700.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10946227.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 12,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p22-23 (tail outside fixture); kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 8,
+    "page_start": 23,
+    "in_fixture": false,
+    "ikn": "2026/1833735",
+    "idare": "SAKARYA İL SAĞLIK MÜDÜRLÜĞÜ SAKARYA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Medicall Biomedikal Mühendislik Sağlık Hizmetleri Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2917000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10946227.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 12,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p23-24; kısmi lot; visible only in full PDF"
+  },
+  {
+    "section": "A",
+    "seq": 9,
+    "page_start": 24,
+    "in_fixture": false,
+    "ikn": "2026/1833735",
+    "idare": "SAKARYA İL SAĞLIK MÜDÜRLÜĞÜ SAKARYA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Endomed Grup Medikal Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1280000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10946227.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 12,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "split across p24-25; kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 14,
+    "page_start": 29,
+    "in_fixture": false,
+    "ikn": "2026/2079696",
+    "idare": "BALIKESİR İL SAĞLIK MÜDÜRLÜĞÜ BANDIRMA EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Ankara Beşer Ecza Deposu ve İlaç Pazarlama Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "23640.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "137930.16",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "single valid bid; price 17% of estimate"
+  },
+  {
+    "section": "A",
+    "seq": 25,
+    "page_start": 40,
+    "in_fixture": false,
+    "ikn": "2026/1845975",
+    "idare": "AVCILAR BELEDİYE BAŞKANLIĞI PARK VE BAHÇELER MÜDÜRLÜĞÜ",
+    "yuklenici": "MEK Grup Alüminyum Peyzaj Besicilik Otomotiv İnşaat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "14435000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "26782333.33",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 6,
+    "toplam_teklif": 6,
+    "ihale_usulu": "Açık",
+    "notes": "açık (tender); price 54% of estimate"
+  },
+  {
+    "section": "A",
+    "seq": 26,
+    "page_start": 40,
+    "in_fixture": false,
+    "ikn": "2026/1826372",
+    "idare": "YAYLADÜZÜ BELEDİYE BAŞKANLIĞI",
+    "yuklenici": "Aslanoğlu İth.İhr.Ticaret ve Sanayi Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3301696.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3386901.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "split across p40-41; single valid bid; empty Süresi; price 97.5% of estimate"
+  },
+  {
+    "section": "A",
+    "seq": 37,
+    "page_start": 50,
+    "in_fixture": false,
+    "ikn": "2023/949122",
+    "idare": "AKÇADAĞ BELEDİYE BAŞKANLIĞI MALİ HİZMETLER MÜDÜRLÜĞÜ",
+    "yuklenici": "LİV Otomotiv Petrol İnşaat Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3238800.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "4224000.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "old ikn year 2023; 3-line title above idare; idare is only the last printed line"
+  },
+  {
+    "section": "A",
+    "seq": 48,
+    "page_start": 60,
+    "in_fixture": false,
+    "ikn": "2026/1878251",
+    "idare": "VAN BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI DESTEK HİZMETLERİ DAİRESİ BAŞKANLIĞI",
+    "yuklenici": "HM Can Kurtarma Makina Ekipmanları İmalat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "4958050.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "5406040.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "valid < total (2 of 3)"
+  },
+  {
+    "section": "A",
+    "seq": 75,
+    "page_start": 84,
+    "in_fixture": true,
+    "ikn": "2026/1744696",
+    "idare": "ADANA DEFTERDARLIĞI",
+    "yuklenici": "Aycan Toptan Elektrik Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "7034379.94",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "7227438.46",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 4,
+    "ihale_usulu": "Açık",
+    "notes": "empty Süresi"
+  },
+  {
+    "section": "A",
+    "seq": 76,
+    "page_start": 84,
+    "in_fixture": true,
+    "ikn": "2026/1772339-1",
+    "idare": "AFYONKARAHİSAR SAĞLIK BİLİMLERİ ÜNİVERSİTESİ REKTÖRLÜĞÜ SAĞLIK UYGULAMA VE ARAŞTIRMA MERKEZİ MÜDÜRLÜĞÜ",
+    "yuklenici": "Dicle Elektrik Perakende Satış Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "194812450.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": null,
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "split across p84-85; ikn suffix -1; EMPTY Yaklaşık Maliyeti; short layout; idare wraps over 2 lines"
+  },
+  {
+    "section": "A",
+    "seq": 77,
+    "page_start": 85,
+    "in_fixture": false,
+    "ikn": "2026/1882532",
+    "idare": "DEVLET HAVA MEYDANLARI İŞLETMESİ GENEL MÜDÜRLÜĞÜ SAMSUN ÇARŞAMBA HAVALİMANI MÜDÜRLÜĞÜ",
+    "yuklenici": "Yeşilırmak Elektrik Perakende Satış Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "19182112.50",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "20137500.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "split across p85-86 (tail outside fixture)"
+  },
+  {
+    "section": "A",
+    "seq": 78,
+    "page_start": 86,
+    "in_fixture": false,
+    "ikn": "2026/1503891",
+    "idare": "ETİ MADEN İŞLETMELERİ KIRKA BOR İŞLETME MÜDÜRLÜĞÜ",
+    "yuklenici": "Uçar İş Güvenliği ve Hırdavat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "9988000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "11191666.64",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 7,
+    "ihale_usulu": "Açık",
+    "notes": "7 bids, only 1 valid; empty Süresi"
+  },
+  {
+    "section": "A",
+    "seq": 92,
+    "page_start": 99,
+    "in_fixture": false,
+    "ikn": "2026/2112187",
+    "idare": "HAKKARİ İL ÖZEL İDARESİ MALİ HİZMETLER MÜDÜRLÜĞÜ",
+    "yuklenici": "Xray Center Güvenlik Sistemleri Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1575000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1758333.33",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 C)",
+    "notes": "only MD 21 C record; single valid bid; empty Süresi; title wraps over 2 lines"
+  },
+  {
+    "section": "A",
+    "seq": 93,
+    "page_start": 100,
+    "in_fixture": false,
+    "ikn": "2026/1726918",
+    "idare": "İSTANBUL İL SAĞLIK MÜDÜRLÜĞÜ BAŞAKŞEHİR ÇAM VE SAKURA ŞEHİR HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Medar Sağlık Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1399000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "9579094.72",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 8,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "kısmi lot of repeated ikn (lot far below estimate); 8 bids, 4 valid"
+  },
+  {
+    "section": "A",
+    "seq": 99,
+    "page_start": 106,
+    "in_fixture": false,
+    "ikn": "2026/1927928",
+    "idare": "BİLECİK BELEDİYE BAŞKANLIĞI İTFAİYE MÜDÜRLÜĞÜ",
+    "yuklenici": "CR Uluslararası Kurtarma ve Emniyet Ekipmanları İthalat İhracat Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2720000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3152675.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "wrapped yuklenici"
+  },
+  {
+    "section": "A",
+    "seq": 100,
+    "page_start": 106,
+    "in_fixture": false,
+    "ikn": "2026/1891613",
+    "idare": "MİLLİ SARAYLAR İDARESİ BAŞKANLIĞI MÜZECİLİK VE TANITIM DAİRESİ BAŞKANLIĞI",
+    "yuklenici": "BEP Hologram Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2925000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3090000.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "split across p106-107; single valid bid; price 94.7% of estimate"
+  },
+  {
+    "section": "A",
+    "seq": 132,
+    "page_start": 135,
+    "in_fixture": false,
+    "ikn": "2025/353442",
+    "idare": "MARDİN BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI DESTEK HİZMETLERİ DAİRESİ BAŞKANLIĞI",
+    "yuklenici": "Eliz Creative Reklam Organizasyon İnşaat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2188900.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "2332333.33",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "ikn year 2025; idare wraps to 2 lines under a 3-line title; tail of previous record at page top"
+  },
+  {
+    "section": "A",
+    "seq": 133,
+    "page_start": 136,
+    "in_fixture": false,
+    "ikn": "2026/1454976",
+    "idare": "DÜZCE İL SAĞLIK MÜDÜRLÜĞÜ",
+    "yuklenici": "Asu Beşer Karpuz",
+    "sozlesme_bedeli": {
+      "amount": "8500.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "50564387.14",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 49,
+    "toplam_teklif": 51,
+    "ihale_usulu": "Açık",
+    "notes": "kısmi lot of repeated ikn (bedel tiny vs estimate); person contractor; 51 bids/49 valid"
+  },
+  {
+    "section": "A",
+    "seq": 148,
+    "page_start": 150,
+    "in_fixture": false,
+    "ikn": "2026/1995495",
+    "idare": "BEYKOZ BELEDİYE BAŞKANLIĞI TARIMSAL HİZMETLER MÜDÜRLÜĞÜ",
+    "yuklenici": "Kaya Tohumculuk İç ve Dış Ticaret Sanayi Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1560900.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1585221.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "price 98.5% of estimate"
+  },
+  {
+    "section": "A",
+    "seq": 149,
+    "page_start": 150,
+    "in_fixture": false,
+    "ikn": "2026/1886763",
+    "idare": "BURDUR İL ÖZEL İDARESİ GENEL SEKRETERLİK",
+    "yuklenici": "Naturelgaz Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "6862500.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "12312500.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Açık",
+    "notes": "split across p150-151; single valid bid; 2-line title above idare"
+  },
+  {
+    "section": "A",
+    "seq": 150,
+    "page_start": 151,
+    "in_fixture": false,
+    "ikn": "2026/1990288",
+    "idare": "RECEP TAYYİP ERDOĞAN ÜNİVERSİTESİ REKTÖRLÜĞÜ İDARİ VE MALİ İŞLER DAİRE BAŞKANLIĞI",
+    "yuklenici": "Kaan Kır",
+    "sozlesme_bedeli": {
+      "amount": "1595460.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "2204035.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "Pazarlık (MD 21 F)",
+    "notes": "split across p151-152; person contractor; single valid bid; wrapped idare"
+  },
+  {
+    "section": "A",
+    "seq": 151,
+    "page_start": 152,
+    "in_fixture": false,
+    "ikn": "2026/1831506",
+    "idare": "ÇORUM BELEDİYE BAŞKANLIĞI DESTEK HİZMETLERİ MÜDÜRLÜĞÜ",
+    "yuklenici": "Peryap İnşaat Malzemeleri Yapı Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "27666000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "31831740.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 4,
+    "ihale_usulu": "Açık",
+    "notes": "split across p152-153"
+  },
+  {
+    "section": "A",
+    "seq": 183,
+    "page_start": 182,
+    "in_fixture": false,
+    "ikn": "2026/1189991",
+    "idare": "İSTANBUL İL SAĞLIK MÜDÜRLÜĞÜ İSTANBUL HASEKİ EĞİTİM VE ARAŞTIRMA HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Karmed Medikal Tıbbi Cihazlar Zirai Ürünler Ecza Deposu Temizlik Gıda İthalat İhracat Sanayi ve Ticaret Pazarlama Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "550000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1677500.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "Açık",
+    "notes": "split across p182-183; yuklenici wraps over 3 lines; kısmi lot (bedel 33% of estimate)"
+  },
+  {
+    "section": "A",
+    "seq": 184,
+    "page_start": 183,
+    "in_fixture": false,
+    "ikn": "2026/1286427",
+    "idare": "ANKARA İL SAĞLIK MÜDÜRLÜĞÜ ANKARA ETLİK ŞEHİR HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Antkem Gıda Turizm Makina Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "521700.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "11584907.40",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 11,
+    "toplam_teklif": 15,
+    "ihale_usulu": "Açık",
+    "notes": "split across p183-184; 15 bids, 11 valid; kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 185,
+    "page_start": 184,
+    "in_fixture": false,
+    "ikn": "2026/1469148",
+    "idare": "MALATYA İL SAĞLIK MÜDÜRLÜĞÜ BATTALGAZİ DEVLET HASTANESİ BAŞHEKİMLİĞİ",
+    "yuklenici": "Hakan-Ticaret Pazarlama ve Medikal Elektronik Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1288008.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "14229772.12",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 13,
+    "toplam_teklif": 16,
+    "ihale_usulu": "Açık",
+    "notes": "split across p184-185; 16 bids, 13 valid; kısmi lot"
+  },
+  {
+    "section": "A",
+    "seq": 202,
+    "page_start": 201,
+    "in_fixture": false,
+    "ikn": "2026/1726832",
+    "idare": "BİNGÖL ÜNİVERSİTESİ REKTÖRLÜĞÜ İDARİ VE MALİ İŞLER DAİRE BAŞKANLIĞI",
+    "yuklenici": "Gruptechs Bilgi Teknolojileri Yapı ve Danışmanlık Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1195432.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1651250.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "Açık",
+    "notes": "second-to-last record of section A"
+  },
+  {
+    "section": "A",
+    "seq": 203,
+    "page_start": 201,
+    "in_fixture": false,
+    "ikn": "2026/2067702",
+    "idare": "KAHRAMANMARAŞ İL TARIM VE ORMAN MÜDÜRLÜĞÜ",
+    "yuklenici": "Tünel Tasarım AR-GE Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3842040.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "4069013.32",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "Pazarlık (MD 21 B)",
+    "notes": "LAST record of section A; split across p201-202; 3-line title above idare"
+  },
+  {
+    "section": "B",
+    "seq": 1,
+    "page_start": 203,
+    "in_fixture": true,
+    "ikn": "2026/2227691",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Kale Makina Pazarlama Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3324800.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3675000.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "first record of section B; short layout; price 90.5% of estimate"
+  },
+  {
+    "section": "B",
+    "seq": 2,
+    "page_start": 203,
+    "in_fixture": true,
+    "ikn": "2026/2089214",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Hidromek-Hidrolik ve Mekanik Makina İmalat Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "7690700.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "8181818.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p203-204; Yüklenici label printed between the two value lines"
+  },
+  {
+    "section": "B",
+    "seq": 3,
+    "page_start": 204,
+    "in_fixture": true,
+    "ikn": "2026/2132166",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Enka Pazarlama İhracat İthalat Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "16731100.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "17818181.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": null
+  },
+  {
+    "section": "B",
+    "seq": 4,
+    "page_start": 205,
+    "in_fixture": true,
+    "ikn": "2025/1643181",
+    "idare": "DEVLET HAVA MEYDANLARI İŞLETMESİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Arat Üstyapı Otomotiv Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "33000000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "47407500.00",
+      "currency": "TRY",
+      "alt": {
+        "amount": "1072475.00",
+        "currency": "EUR"
+      }
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "dual-currency estimate TRY + EUR; ikn year 2025; 3-line title"
+  },
+  {
+    "section": "B",
+    "seq": 5,
+    "page_start": 205,
+    "in_fixture": false,
+    "ikn": "2026/2006278",
+    "idare": "TARIM İŞLETMELERİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Prauf Makina Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "3399800.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "4002666.66",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p205-206 (tail outside fixture)"
+  },
+  {
+    "section": "B",
+    "seq": 6,
+    "page_start": 206,
+    "in_fixture": false,
+    "ikn": "2026/1999007",
+    "idare": "KARA KUVVETLERİ EĞİTİM VE DOKTRİN KOMUTANLIĞI KARA KUVVETLERİ SİMÜLASYON DESTEKLİ EĞİTİM VE TATBİKAT MERKEZİ KOMUTANLIĞI",
+    "yuklenici": "Tat Tuz Otomotiv İnşaat Maden Uluslararası Nakliye Besicilik Gıda Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "2232950.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "3615787.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-b",
+    "notes": "usul 3-b; long idare wrapped over 2 lines; yuklenici wraps"
+  },
+  {
+    "section": "B",
+    "seq": 7,
+    "page_start": 206,
+    "in_fixture": false,
+    "ikn": "2026/1950525",
+    "idare": "TÜRKİYE RAYLI SİSTEM ARAÇLARI SANAYİİ ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ TÜRASAŞ ESKİŞEHİR BÖLGE MÜDÜRLÜĞÜ",
+    "yuklenici": "Billur Cam Endüstrisi Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "230000.00",
+      "currency": "EUR"
+    },
+    "yaklasik_maliyet": {
+      "amount": "13066712.75",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p206-207 (tail outside fixture); sozlesme bedeli in EUR with TRY estimate; contractor address EMPTY; single valid bid"
+  },
+  {
+    "section": "B",
+    "seq": 8,
+    "page_start": 207,
+    "in_fixture": false,
+    "ikn": "2026/1757810",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "2S Grup Otomotiv Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "53197.50",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "27238146.82",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 8,
+    "toplam_teklif": 8,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757810 (82 records); lot is 0.2% of estimate"
+  },
+  {
+    "section": "B",
+    "seq": 9,
+    "page_start": 208,
+    "in_fixture": false,
+    "ikn": "2026/1757810",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Medtronic Medikal Teknoloji Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "773750.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "27238146.82",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 4,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757810"
+  },
+  {
+    "section": "B",
+    "seq": 10,
+    "page_start": 208,
+    "in_fixture": false,
+    "ikn": "2026/1757810",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Otamed Tıp-Lab Tıbbi Malzeme İnşaat İthalat İhracat Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "38000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "27238146.82",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p208-209; kısmi lot of ikn 2026/1757810; single valid bid"
+  },
+  {
+    "section": "B",
+    "seq": 11,
+    "page_start": 209,
+    "in_fixture": false,
+    "ikn": "2026/1757810",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Zadi Tıbbi Gereçler Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "504.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "27238146.82",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot; bedel 504,00 TRY (smallest amounts)"
+  },
+  {
+    "section": "B",
+    "seq": 90,
+    "page_start": 257,
+    "in_fixture": true,
+    "ikn": "2026/2065783",
+    "idare": "İSTANBUL BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI METRO İSTANBUL SANAYİ VE TİCARET ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "HST Demiryolu Sistemleri Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "154050.00",
+      "currency": "EUR"
+    },
+    "yaklasik_maliyet": {
+      "amount": "10377991.57",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "EUR sozlesme bedeli with TRY estimate; long idare over 2 lines"
+  },
+  {
+    "section": "B",
+    "seq": 91,
+    "page_start": 257,
+    "in_fixture": false,
+    "ikn": "2026/2051815",
+    "idare": "TARIMSAL ARAŞTIRMALAR VE POLİTİKALAR GENEL MÜDÜRLÜĞÜ ULUSLARARASI HAYVANCILIK ARAŞTIRMA VE EĞİTİM MERKEZİ MÜDÜRLÜĞÜ",
+    "yuklenici": "Tarım İşletmeleri Genel Müdürlüğü",
+    "sozlesme_bedeli": {
+      "amount": "19462500.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": null,
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-a",
+    "notes": "split across p257-258 (tail outside fixture); Yaklaşık Maliyeti field holds TEXT, not a number: 'İhalenin ilgili mevzuat gereğince yaklaşık maliyeti bulunmamaktadır.' -> null; public-body contractor; contractor address empty; usul 3-a"
+  },
+  {
+    "section": "B",
+    "seq": 92,
+    "page_start": 258,
+    "in_fixture": false,
+    "ikn": "2026/1969563",
+    "idare": "TP BATMAN BÖLGE MÜDÜRLÜĞÜ",
+    "yuklenici": "Yakışlar Demir Elektirik ve İnşaat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "21454000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "24366530.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "same ikn+yuklenici+bedeli as seq 93 (p259), only Süresi differs: duplicate pair"
+  },
+  {
+    "section": "B",
+    "seq": 93,
+    "page_start": 259,
+    "in_fixture": false,
+    "ikn": "2026/1969563",
+    "idare": "TP BATMAN BÖLGE MÜDÜRLÜĞÜ",
+    "yuklenici": "Yakışlar Demir Elektirik ve İnşaat Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "21454000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "24366530.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "duplicate of seq 92 (same ikn, yuklenici, bedeli; Süresi differs 10.11.2026 vs 13.11.2026)"
+  },
+  {
+    "section": "B",
+    "seq": 94,
+    "page_start": 259,
+    "in_fixture": false,
+    "ikn": "2026/1757844",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "2S Grup Otomotiv Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "40222.50",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "26070301.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 7,
+    "toplam_teklif": 7,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p259-260; kısmi lot of ikn 2026/1757844 (69 records)"
+  },
+  {
+    "section": "B",
+    "seq": 95,
+    "page_start": 260,
+    "in_fixture": false,
+    "ikn": "2026/1757844",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Meran Tıp Ürünleri Teknoloji Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "10500.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "26070301.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 6,
+    "toplam_teklif": 6,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot; yuklenici adresi has only 1 line"
+  },
+  {
+    "section": "B",
+    "seq": 163,
+    "page_start": 301,
+    "in_fixture": false,
+    "ikn": "2026/2155877",
+    "idare": "YE-PA YENİMAHALLE GIDA YAYINCILIK TEMİZLİK ÇEVRE DÜZENLEME İNŞAAT TURİZM SANAYİ VE TİCARET LİMİTED ŞİRKETİ MÜDÜRLÜĞÜ",
+    "yuklenici": "Tan Oto Motorlu Araçlar Sanayi ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "12916666.70",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "13150000.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "long idare wrapped over 2 lines under a 1-line title; price 98.2% of estimate"
+  },
+  {
+    "section": "B",
+    "seq": 164,
+    "page_start": 301,
+    "in_fixture": false,
+    "ikn": "2026/2090906",
+    "idare": "İSTANBUL AĞAÇ PEYZAJ EĞİTİM HİZMETLERİ VE HAYVANAT BAHÇESİ İŞLETMECİLİĞİ SANAYİ VE TİCARET ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "İkizler Uluslararası Çiçekçilik Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "7382350.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "8415270.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p301-302; single valid bid; 2-line idare"
+  },
+  {
+    "section": "B",
+    "seq": 165,
+    "page_start": 302,
+    "in_fixture": false,
+    "ikn": "2026/2278208",
+    "idare": "AĞRI BELEDİYE BAŞKANLIĞI ÖZ AĞRI İNŞAAT TEMİZLİK YEMEK TAŞIMACILIK PERSONEL TURİZM İTHALAT İHRACAT SANAYİ VE TİCARET ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Tolgahan Bayındır",
+    "sozlesme_bedeli": {
+      "amount": "1148400.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "1411474.06",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "person contractor; idare wraps over 3 lines"
+  },
+  {
+    "section": "B",
+    "seq": 166,
+    "page_start": 302,
+    "in_fixture": false,
+    "ikn": "2026/1757863",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "AZT Medikal ve Teknik Hizmetler Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "158900.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "105028737.69",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 4,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p302-303; kısmi lot of ikn 2026/1757863 (109 records)"
+  },
+  {
+    "section": "B",
+    "seq": 167,
+    "page_start": 303,
+    "in_fixture": false,
+    "ikn": "2026/1757863",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "UNI MAG Tıp ve Kimyasal Malzemeler Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "163810.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "105028737.69",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757863"
+  },
+  {
+    "section": "B",
+    "seq": 168,
+    "page_start": 304,
+    "in_fixture": false,
+    "ikn": "2026/1757863",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Erdamed Tıbbi Ürünler Sanayi İç ve Dış Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "639825.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "105028737.69",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 8,
+    "toplam_teklif": 8,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757863"
+  },
+  {
+    "section": "B",
+    "seq": 274,
+    "page_start": 368,
+    "in_fixture": false,
+    "ikn": "2026/1757863",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Bilgin Tıp Medikal Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "74800.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "105028737.69",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "LAST kısmi lot of ikn 2026/1757863 in the document order"
+  },
+  {
+    "section": "B",
+    "seq": 275,
+    "page_start": 368,
+    "in_fixture": false,
+    "ikn": "2026/1633431",
+    "idare": "İSTANBUL BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI METRO İSTANBUL SANAYİ VE TİCARET ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Başarı Telematik Dijital Pazarlama ve Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "594360.00",
+      "currency": "EUR"
+    },
+    "yaklasik_maliyet": {
+      "amount": "96264076.71",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 8,
+    "toplam_teklif": 8,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p368-369; EUR sozlesme bedeli with TRY estimate; 3-line address; 2-line title above long idare"
+  },
+  {
+    "section": "B",
+    "seq": 276,
+    "page_start": 369,
+    "in_fixture": false,
+    "ikn": "2026/1757870",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "B.Braun Medikal Dış Ticaret Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "77250.70",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "80193535.77",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 6,
+    "toplam_teklif": 6,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757870"
+  },
+  {
+    "section": "B",
+    "seq": 319,
+    "page_start": 395,
+    "in_fixture": false,
+    "ikn": "2026/1662598",
+    "idare": "BELDE ÖZEL SAĞLIK VE EĞİTİM HİZMETLERİ SOSYAL HİZMETLER GIDA VE İHTİYAÇ MADDELERİ PAZARLAMA VE TİCARET ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Emay Bilgi İşlem Mühendislik ve Danışmanlık Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "344100.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "793900.50",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 5,
+    "toplam_teklif": 5,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "long idare over 2 lines under 1-line title; repeated ikn 2026/1662598 (p393-395)"
+  },
+  {
+    "section": "B",
+    "seq": 320,
+    "page_start": 395,
+    "in_fixture": false,
+    "ikn": "2026/1988749",
+    "idare": "TP BATMAN BÖLGE MÜDÜRLÜĞÜ",
+    "yuklenici": "Edöksan Döküm Makina Çelik Konstrüksiyon Sanayi Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1900000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "2408000.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p395-396; 3 bids, 2 valid; wrapped yuklenici"
+  },
+  {
+    "section": "B",
+    "seq": 321,
+    "page_start": 396,
+    "in_fixture": false,
+    "ikn": "2026/2295417",
+    "idare": "İZMİR BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI SATIN ALMA DAİRESİ BAŞKANLIĞI DOĞRUDAN TEMİN ŞUBE MÜDÜRLÜĞÜ",
+    "yuklenici": "Devlet Malzeme Ofisi Genel Müdürlüğü",
+    "sozlesme_bedeli": {
+      "amount": "2099446.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "2099446.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-e",
+    "notes": "only 3-e record; bedel == estimate exactly; public-body contractor; contractor address empty"
+  },
+  {
+    "section": "B",
+    "seq": 322,
+    "page_start": 397,
+    "in_fixture": false,
+    "ikn": "2026/2191341",
+    "idare": "İZMİR BÜYÜKŞEHİR BELEDİYESİ GRAND PLAZA GIDA OTELCİLİK VE TURİZM İŞLETMELERİ ANONİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Erhan Şenlik",
+    "sozlesme_bedeli": {
+      "amount": "311470.50",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "336293.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "person contractor; long idare over 2 lines; price 92.6% of estimate"
+  },
+  {
+    "section": "B",
+    "seq": 323,
+    "page_start": 397,
+    "in_fixture": false,
+    "ikn": "2026/1898744",
+    "idare": "MADEN TETKİK VE ARAMA GENEL MÜDÜRLÜĞÜ",
+    "yuklenici": "Mikrotest Laboratuvar Cihazları Makine İmalat Gıda Ahşap Ürünleri Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "9391000.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "13744183.00",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 3,
+    "toplam_teklif": 3,
+    "ihale_usulu": "4734 / 3-f",
+    "notes": "only 3-f record; split across p397-398; 3-line title above 1-line idare; yuklenici wraps"
+  },
+  {
+    "section": "B",
+    "seq": 324,
+    "page_start": 398,
+    "in_fixture": false,
+    "ikn": "2026/1757890",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Ünaldı Medikal Ticaret ve Sanayi Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "301.60",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "109914669.54",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 4,
+    "toplam_teklif": 4,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757890; bedel 301,60 TRY (tiny)"
+  },
+  {
+    "section": "B",
+    "seq": 420,
+    "page_start": 457,
+    "in_fixture": false,
+    "ikn": "2026/1757890",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "BNM Fabrika Biyo Nano Mikro Teknoloji Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "1500.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "109914669.54",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot of ikn 2026/1757890 (100 records); near end of section"
+  },
+  {
+    "section": "B",
+    "seq": 421,
+    "page_start": 457,
+    "in_fixture": false,
+    "ikn": "2026/1757890",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Pergo Medikal ve İlaç Sanayi Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "9265.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "109914669.54",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "split across p457-458; kısmi lot; single valid bid"
+  },
+  {
+    "section": "B",
+    "seq": 422,
+    "page_start": 458,
+    "in_fixture": false,
+    "ikn": "2026/1757890",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Odakmed Tıbbi Malzemeler Sanayi ve Ticaret Limited Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "12975.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "109914669.54",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 2,
+    "toplam_teklif": 2,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "kısmi lot; penultimate record"
+  },
+  {
+    "section": "B",
+    "seq": 423,
+    "page_start": 458,
+    "in_fixture": false,
+    "ikn": "2026/1757890",
+    "idare": "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI",
+    "yuklenici": "Fresenıus Medikal Hizmetler Anonim Şirketi",
+    "sozlesme_bedeli": {
+      "amount": "58800.00",
+      "currency": "TRY"
+    },
+    "yaklasik_maliyet": {
+      "amount": "109914669.54",
+      "currency": "TRY"
+    },
+    "gecerli_teklif": 1,
+    "toplam_teklif": 1,
+    "ihale_usulu": "4734 / 3-g",
+    "notes": "LAST record of the document; split across p458-459; single valid bid"
+  }
+]
