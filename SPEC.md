@@ -30,9 +30,9 @@ A public-interest **watchdog over Turkish public procurement**. Every day it rea
   - **Yöntem:** how each flag is computed and its limits.
 
 ## 4. Pipeline
-Python. Keep the 2022 code's layout knowledge, including the pdfplumber table settings and field token maps.
+**The 2022 code is disposable** (Efe, 2026-11-18). Reuse a piece only where it helps, e.g. its notes on bulletin layout and its field names. Rewrite or replace everything else freely, including the language, the libraries and Selenium.
 
-1. **Scrape:** the existing `EKAPClient` (Selenium, headless Chrome) downloads the day's bulletin zip. As of 2026-11-18 the BultenIndirme.aspx form still has the same controls, and there is no CAPTCHA or login wall.
+1. **Scrape:** download the day's bulletin zip from EKAP's BultenIndirme.aspx. Prefer a plain HTTP form post; use a headless browser only if a form post doesn't work. As of 2026-11-18 the page still has the same form controls, and there is no CAPTCHA or login wall.
 2. **Parse:** split the bulletin into tender records, each with a per-field confidence.
 3. **Store:** a local SQLite database.
 4. **Flag:** compute the flags from that data.
@@ -61,7 +61,7 @@ Python. Keep the 2022 code's layout knowledge, including the pdfplumber table se
 
 ## 7. Autonomy
 **Standing OKs:**
-- Commit and push to `master` on the public GitHub repo.
+- Commit and push to `main` on the public GitHub repo.
 - Create and deploy a free-tier Cloudflare Worker for this project on Efe's account.
 - Run the scraper on Efe's PC, and register its daily scheduled task. Tell him when it's registered.
 
@@ -69,7 +69,7 @@ Python. Keep the 2022 code's layout knowledge, including the pdfplumber table se
 - Making the site public: indexable, or shared or linked anywhere.
 - Money: a paid plan, a payment method, a new account.
 - EKAP blocking, CAPTCHA or login.
-- Irreversible git operations on `master` (force-push, history rewrite).
+- Irreversible git operations on `main` (force-push, history rewrite).
 
 ## 8. Operating model
 This works like clearpile:
@@ -83,10 +83,9 @@ This works like clearpile:
 Efe opens the live site on his phone. The spec owner gives him a 3-line note: what changed on the site, what's next, and anything only he can decide. The note describes what he will see, not process.
 
 ## 10. Milestones
-- **M0 Revive:**
-  - Move to Python 3.12 and current dependencies.
-  - Drop the committed `chromedriver.exe` (Selenium Manager handles the driver).
-  - Fix the package and test layout, and remove the dead Heroku files.
+- **M0 Fresh base:**
+  - Set up a clean project skeleton. Starting from scratch is fine.
+  - Remove the dead parts: the committed `chromedriver.exe` and the Heroku files.
   - Download today's bulletins again.
   - Get offline fixture tests passing.
 - **M1 Parse:** turn *mal* result bulletins into records with confidence, scoring ≥95% on the labeled sample.
