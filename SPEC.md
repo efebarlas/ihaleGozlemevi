@@ -183,6 +183,23 @@ This works like clearpile:
 ## 9. Daily check
 Efe opens the live site on his phone. The spec owner gives him a 3-line note: what changed on the site, what's next, and anything only he can decide. The note describes what he will see, not process.
 
+### 9.1 Günün sorusu: Efe as the oracle (from M3 on)
+Efe gives at most **one verification a day**. It is the project's scarcest resource; spend it carefully.
+- **Only what agents can't check:** newsworthiness, whether wording reads as neutral, Turkish context, and anything behind Efe's own login or hands. Never parsing, arithmetic, rendering or a news search.
+- **Pick the question with the most value.** Each question states what its answer will change. If nothing would change, don't ask.
+- **The format:**
+  - one question, answered with buttons in under a minute, on his phone;
+  - skipping is fine, and three skips in a row lower the frequency;
+  - prefer pairwise choices ("Which of A and B is more worth a reporter's time?") over ratings.
+- **Blinding:** when asking about newsworthiness, hide which party runs the idare.
+- **Log every answer.** The spec owner writes it to `oracle/log.jsonl` with the date, the question, the options shown, the answer and what it was meant to change. The answers are one rater's judgment, not ground truth.
+- **Priority of questions:**
+  1. Ranking calibration: pairwise tender choices that feed the M5 weights.
+  2. Agent-vs-code disagreements that the hand-checked sample can't settle.
+  3. Fairness of anything heading toward G-Public.
+  4. Signal-discovery verdicts (M7).
+- **The pipeline supplies candidates.** Each daily run exports `oracle/candidates.json`: a few tender pairs where the current score is least certain. Every tender has its fields and source link.
+
 ## 10. Milestones
 - **M0 Fresh base:**
   - Set up a clean project skeleton. Starting from scratch is fine.
@@ -201,13 +218,55 @@ Efe opens the live site on his phone. The spec owner gives him a 3-line note: wh
   - Deploy Bugün, İhale detayı and Yöntem on Cloudflare.
   - Run the pipeline daily on Efe's PC.
   - This gives the first daily check with real data.
-- **M4 Dosyalar:** İdare and Yüklenici pages with continuity timelines, plus *hizmet* and *yapım* bulletins. Link KİK board decisions and debarment status.
-- **M5 Rules and history:**
+  - Export `oracle/candidates.json` so Günün sorusu can start (§9.1).
+
+The order from here was set by the spec owner on 2026-11-19, under Efe's delegation. The reasoning: trust and ranking quality first, breadth second, public-facing features last.
+
+- **M4 Dosyalar and better peers:**
+  - İdare and Yüklenici pages with continuity timelines.
+  - Add the *hizmet* and *yapım* bulletins.
+  - Link KİK board decisions and debarment status.
+  - **First agent-module experiment (§12):** sector and idare-type classification. A build session classifies every known idare name and item name once into a reviewed lookup table. Score it against keyword rules on the hand-checked sample, then run it in shadow mode, and promote it only if it wins. This makes real same-sector, same-type peers possible.
+  - Export OCDS (via ocdskit) and FollowTheMoney, and run Cardinal on the export as a cross-check. The exports stay private until G-Public.
+  - **Simulated-user check:** agent personas do real reporting tasks on the site, e.g. "find every award firm X won at idare Y". It catches broken flows; it says nothing about demand.
+- **M5 Weights, rules and history:**
   - Backfill at a polite rate.
-  - Add rule-anchored signals (21/b and pazarlık share vs. peers).
-  - Link Sayıştay findings per idare.
+  - Fit the score's weights GTI-style, to outcomes and to the oracle's pairwise judgments. This replaces the hand-set weights.
+  - Add the rule-anchored signals: 21/b and pazarlık share vs. peers.
+  - Add the IMCO-style idare scorecard.
+  - Link Sayıştay findings per idare. Their extraction is the second agent-module experiment.
 - **M6 Kartlar:**
-  - Shareable fact cards.
-  - Unit price vs. reference price, starting with fuel vs. EPDK.
-  - Cards stay unlisted, like the site, until G-Public.
+  - Shareable fact cards, still unlisted.
+  - Unit price vs. a reference price, starting with fuel vs. EPDK.
+  - Quantity extraction from the ilan notices, via a new reader joined to results by ikn. This is the third agent-module experiment.
+- **M7 Signal discovery:**
+  - Agents propose new risk patterns and test each against outcomes in the data.
+  - Only patterns that pass reach Efe as Günün sorusu, and his verdict is the final gate.
+  - The goal is a set of red flags validated for Turkey and documented on the Yöntem page.
 - **G-Public:** Efe decides whether to go public.
+- **After G-Public only:**
+  - a read-only MCP tool server over our data, so people can bring their own agent;
+  - usability tests with real journalists and council members;
+  - right of reply;
+  - A/B tests of card formats.
+
+  These either create a public endpoint or contact real people.
+- **Coverage note:** add doğrudan temin and istisna purchases only if they can be fetched without EKAP's human verification. Never work around it.
+
+## 12. Agents inside the product
+A module can be replaced by an agent only behind a seam:
+- **One interface** with per-field confidence, a coded implementation, and an agent implementation.
+- **An offline A/B test** on the hand-checked sample, measuring:
+  - accuracy per field;
+  - cost per record;
+  - consistency: run the agent twice on the same input and check that it agrees with itself.
+- **Shadow mode** in the daily run, with every disagreement logged.
+- **Promotion on evidence only.** The best end state is usually a hybrid: code first, the agent only where code is unsure.
+
+**Prefer a one-time lookup table** built by a build session over calling an agent at run time. Vocabularies like idare names and item names barely change, so this costs almost nothing.
+
+**Never an agent:**
+- flags, scores, peer statistics and the downloader;
+- the final value of any number shown on the site. An agent may propose a value, but code must verify it.
+
+Calling an agent at run time costs money per call, which is a §7 hard stop. A local model on Efe's PC is allowed only under a permissive license (Apache-2.0, MIT); Llama-style custom licenses don't qualify.
