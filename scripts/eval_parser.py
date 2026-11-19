@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from ihale import config  # noqa: E402
 from ihale.model import CONFIDENT, CORE_FIELDS, Money  # noqa: E402
-from ihale.parse import parse_bulletin  # noqa: E402
+from ihale.parse import parse_bulletin_read  # noqa: E402
 
 DEFAULT_LABELS = ROOT / "tests" / "labels" / "mal_2026-11-18.json"
 BULLETIN_DATE = date(2026, 11, 18)
@@ -100,6 +100,49 @@ def load_labels(path: Path) -> dict[tuple[str, int], dict]:
     return out
 
 
+def raw_ihalent_table(read, recs, labels) -> None:
+    """ihalent's own Award per notice (no adapter fixes): what the library alone gives."""
+    from ihalent.bulletin import award_from_notice
+
+    rejected = {x.position for x in read.rejected}
+    notices = iter(read.notices)
+    awards = {}
+    for pos, r in enumerate(recs, start=1):
+        if pos in rejected:
+            continue
+        awards[(r.section, r.seq)] = award_from_notice(next(notices))
+
+    def try_(v):
+        return None if v is None else (round(v * 100), "TRY")
+
+    getters = {
+        "ikn": lambda a: a.ikn,
+        "idare": lambda a: a.authority and _ws(a.authority),
+        "yuklenici": lambda a: a.winner and _ws(a.winner),
+        "sozlesme_bedeli": lambda a: try_(a.contract_try),
+        "yaklasik_maliyet": lambda a: try_(a.estimate_try),
+        "gecerli_teklif": lambda a: a.valid_bid_count,
+    }
+    print("\nihalent raw (Award per notice, TRY only; no adapter, no confidence):")
+    for f, g in getters.items():
+        n = ok = 0
+        bad = []
+        for key, lab in labels.items():
+            a = awards.get(key)
+            if a is None or f not in lab:
+                continue
+            exp = norm_label(f, lab[f])
+            if f in MONEY_FIELDS and exp is not None:
+                exp = (exp[0], exp[1])  # Award has no alt figure
+            n += 1
+            got = g(a)
+            if got == exp:
+                ok += 1
+            else:
+                bad.append((key, exp, got))
+        print(f"  {f:18s} {n:3d} {100*ok/max(n,1):6.1f}%  {bad[:4]}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--labels", type=Path, default=DEFAULT_LABELS)
@@ -109,9 +152,16 @@ def main() -> int:
 
     pdf = args.pdf or config.bulletins_dir() / "2026-11-18" / "BULTEN_18112026_MAL_SONUC.pdf"
     t0 = time.time()
-    recs = parse_bulletin(pdf, BULLETIN_DATE, "mal")
+    recs, read = parse_bulletin_read(pdf, BULLETIN_DATE, "mal")
     dt = time.time() - t0
     print(f"parsed {pdf.name}: {len(recs)} records, {len({r.ikn for r in recs})} distinct ikn, {dt:.1f}s")
+
+    # ------------------------------------------------- ihalent's own evidence
+    print(f"ihalent: {len(read.notices)} notices read, {len(read.rejected)} rejected, "
+          f"ToC lists {len(read.toc_ikns)}, missing {len(read.missing)}, unlisted {len(read.unlisted)}, "
+          f"complete={read.complete}")
+    for x in read.rejected[:10]:
+        print(f"  rejected #{x.position} p.{x.page}: {x.reason[:100]}")
 
     # ---------------------------------------------------------------- sanity
     n_all_conf = sum(all(r.confident(f) for f in CORE_FIELDS) for r in recs)
@@ -178,6 +228,7 @@ def main() -> int:
         a, b = s["correct"] / s["n"], s["conf_ok"] / s["n"]
         worst = min(worst, b)
         print(f"{f:20s} {s['n']:5d} {100*a:8.1f}% {100*b:18.1f}%")
+    raw_ihalent_table(read, recs, labels)
     print(f"\nmismatches / unconfident ({len(mism)}):")
     for key, page, f, exp, got, conf, ok in mism[: args.show]:
         why = "WRONG" if not ok else "unconfident"

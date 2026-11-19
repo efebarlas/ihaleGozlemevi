@@ -124,12 +124,12 @@ def test_confidence_on_empty_and_missing_fields(by_key):
     # empty value after the colon: None with confidence 1.0
     a3 = by_key["A", 3]
     assert a3.sozlesme_suresi is None and a3.confidence["sozlesme_suresi"] == 1.0
-    # truncated record (fixture cut): labels never seen -> None with confidence 0 and warnings
+    # truncated record (fixture cut): ihalent rejects it -> Record with confidence < 0.9 and warnings
     a7 = by_key["A", 7]
     assert a7.yuklenici is None and a7.confidence["yuklenici"] == 0.0
     assert not a7.confident("yuklenici") and not a7.confident("sozlesme_bedeli")
     assert any("kesik" in w for w in a7.warnings)
-    assert a7.confident("ikn") and a7.confident("idare") and a7.confident("yaklasik_maliyet")
+    assert not any(a7.confident(f) for f in CORE_FIELDS)   # ihalent rejected it: nothing is confident
 
 
 def test_confident_values_have_expected_shape(records):
@@ -146,23 +146,27 @@ def test_confident_values_have_expected_shape(records):
             assert re.fullmatch(r"\d{4}/\d+(-\d+)?", r.ikn)
 
 
-def test_never_raises_on_garbage_rows():
-    from ihale.parse import _Row, parse_rows
+def test_never_raises_and_rejected_notice_becomes_record():
+    from ihalent.bulletin import Word
+    from ihale.parse import parse_words
 
-    rows = [
-        _Row(1, 100.0, "3", False, ""),
-        _Row(1, 110.0, "SONUÇ İLANI", False, ""),
-        _Row(1, 120.0, "garbage", True, "???"),
-        _Row(1, 130.0, "İhale kayıt numarası", True, "xx"),
-        _Row(1, 140.0, "1- İhalenin", False, ""),
-        _Row(1, 150.0, "c) Yaklaşık Maliyeti", True, "abc TRY"),
+    def w(top, x0, text):
+        return Word(1, float(x0), float(top), float(top) + 8, text)
+
+    words = [
+        w(100, 295, "3"), w(110, 265, "SONUÇ"), w(110, 302, "İLANI"),
+        w(120, 145, "3."), w(120, 216, "2026/1234567"), w(120, 291, "BAŞLIK"),
+        w(130, 75, "İhale"), w(130, 100, "kayıt"), w(130, 124, "numarası"), w(130, 242, ":"), w(130, 248, "xx"),
+        w(145, 75, "1-"), w(145, 86, "İhalenin"),
+        w(160, 75, "c)"), w(160, 86, "Yaklaşık"), w(160, 124, "Maliyeti"), w(160, 242, ":"), w(160, 248, "abc"),
     ]
-    recs = parse_rows(rows, date(2026, 11, 18), "mal", "x.pdf")
-    assert len(recs) == 1
-    assert recs[0].yaklasik_maliyet is None
-    assert not recs[0].confident("yaklasik_maliyet")
-    assert not recs[0].confident("ikn")
-    assert recs[0].warnings
+    recs, read = parse_words(words, {1: 1}, date(2026, 11, 18), "mal", "x.pdf")
+    assert len(recs) == 1 and len(read.rejected) == 1
+    r = recs[0]
+    assert (r.section, r.seq) == ("A", 3)
+    assert r.ikn == "2026/1234567" and not r.confident("ikn")   # recovered from the header only
+    assert not any(r.confident(f) for f in CORE_FIELDS)
+    assert any("reddetti" in x for x in r.warnings)
 
 
 LABELS = Path(__file__).parent / "labels" / "mal_2026-11-18.json"

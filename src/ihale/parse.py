@@ -1,142 +1,72 @@
-"""Parser for EKAP "sonuç ilanları" bulletins (mal; the frame is shared by hizmet/yapım).
+"""Parser for EKAP "sonuç ilanları" bulletins: a thin adapter over ihalent (MIT, SPEC §4.1).
 
-Approach (see docs/bulletin-layout.md §5): work on word coordinates, not text lines.
+``ihalent.bulletin`` reads the PDF's two-column form into ``BulletinNotice`` objects
+(``ikn``, ``section``, ``page``, ``title``, ``authority`` and ``(part, label, value)``
+fields). This module maps each notice to our :class:`~ihale.model.Record`.
 
-1. Crop every page body (between the header rule at top≈73 and the footer rule at top≈793).
-2. Group words into rows. Each row is split at the colon column (x≈242) into a
-   label part (left), a colon flag and a value part (right).
-3. Join all pages' rows, then cut records at the ``SONUÇ İLANI`` marker.
-4. Inside a record, rows are classified as group heading (``1- İhalenin``), label start
-   (``a) Tarihi :``), label continuation, or value-only. Labels printed vertically centred
-   between value lines are re-attached geometrically.
-5. Fields are keyed by (group, label text), never by the ``a)``/``d)`` letters.
+What the adapter adds on top of ihalent (each is a shortfall for our use):
 
-Confidence (docs/data-contract.md §1): >= CONFIDENT only when the label was found in its
-proper group *and* the value matched its expected shape. Empty value after the colon:
-``None`` with confidence 1.0. Label not found / shape mismatch: ``None``, low confidence.
-The parser never raises on a bad record.
+* **Source page numbers.** ihalent drops the page footer and reports PDF indexes. We read the
+  footer number (``Kamu İhale Kurumu – www.kik.gov.tr <n>``) so an excerpt reports the same
+  pages as the full PDF; without a footer the PDF index + 1 is used.
+* **Printed ``seq`` and ``page_end``.** ihalent keeps neither the printed running number nor
+  where a notice ends. A light pass over the same word list recovers both.
+* **Money.** ihalent's ``Award`` drops EUR/USD and dual figures. Money is parsed here from the raw
+  field text (exact kuruş + currency; dual figure in ``Money.alt``).
+* **Section mapping.** ihalent ``"4734"`` → ``"A"``; ``"istisna"`` / ``"kapsam-disi"`` → ``"B"``.
+  The heading found in the pass above (``A- 4734`` / ``B- 4734``) wins when both exist and a
+  disagreement is reported as a warning.
+* **Rejected notices.** ihalent rejects a notice it cannot read with confidence
+  (``BulletinRead.rejected``). Each one still becomes a Record (so the day's count stays honest)
+  with whatever is recoverable (printed seq, section, pages, ikn from the header line), confidence
+  below ``CONFIDENT`` and a warning carrying ihalent's reason.
+* **Not provided:** ihalent drops the contractor's address on purpose, so ``yuklenici_adresi`` is
+  always ``None`` and has no confidence entry (never attempted).
+
+Confidence (docs/data-contract.md §1): ≥ CONFIDENT only when ihalent produced the value (label found
+in the right part of the form) and the value matches its expected shape. Empty value after the colon:
+``None`` with confidence 1.0. A required label ihalent did not produce: ``None`` with confidence 0.0.
+The parser never raises on a single bad notice.
+
+``raw_fields`` carries ihalent's ``(part, label, value)`` triples verbatim, in order.
 """
 from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
-import pdfplumber
+from ihalent import bulletin as ib
 
-from .model import CONFIDENT, Money, Record
+from .model import Money, Record
 
 log = logging.getLogger(__name__)
 
-BODY_TOP = 74.0       # header rule at ~73
-BODY_BOTTOM = 792.0   # footer rule at ~793
-COLON_LO = 239.0      # colon sits at x0≈242
-VALUE_X0 = 245.5      # values start at x0≈248
-ROW_TOL = 2.6         # words whose vertical centres differ by less belong to one row
-CENTRED_GAP = 13.0   # label-to-previous-row pitch is ~14.5; wrapped value lines are ~11.5 apart
-OK = 0.95             # confidence for "label in right group and shape matched"
+OK = 0.95
 LOW = 0.3
 
-_MARKER = "SONUÇ İLANI"
-_END = "Kamuoyuna saygıyla duyurulur"
-
 _RE_SEQ = re.compile(r"^\d+$")
-_RE_NUMBERED = re.compile(r"^(\d+)\.\s+(\d{4}/\d+(?:-\d+)?)\s*(.*)$")
-_RE_IKN = re.compile(r"^\d{4}/\d+(?:-\d+)?$")
-_RE_HEAD = re.compile(r"^\d+\s*-\s*(\S.*)$")
-_RE_LETTER = re.compile(r"^[a-zçğıöşü]\)\s*(.*)$")
 _RE_SECTION = re.compile(r"^([AB])\s*-\s*4734")
 _RE_FOOTER = re.compile(r"kik\.gov\.tr\s*(\d+)")
+_RE_HEADER_IKN = re.compile(r"^\d+\.\s+(\d{4}/\d+(?:-\d+)?)\b")
+_RE_IKN = re.compile(r"^\d{4}/\d+(?:-\d+)?$")
 _NUM = r"\d{1,3}(?:\.\d{3})*,\d{2}"
 _RE_MONEY = re.compile(rf"^({_NUM})\s*([A-Za-z]{{2,4}})(?:\s*\(\s*({_NUM})\s*([A-Za-z]{{2,4}})\s*\))?$")
 _RE_DATE = re.compile(r"^(\d{2})\.(\d{2})\.(\d{4})$")
 _RE_INT = re.compile(r"^\d+$")
+# the bulletin itself says there is no estimate: "- TRY", "... yaklaşık maliyeti bulunmamaktadır."
 _RE_NO_AMOUNT = re.compile(r"bulunmamakta|^-+(\s*[A-Za-z]{2,4})?$", re.IGNORECASE)
+_HEADINGS = ("A- 4734", "B- 4734", "1. İHALE SONUÇ", "1.1. ", "1. İSTİSNA", "2. KAPSAM", "2.1. ", "1. KAPSAM")
+
+_SECTION_MAP = {"4734": "A", "istisna": "B", "kapsam-disi": "B"}
 
 
-def _norm(s: str) -> str:
-    """Case/punctuation-insensitive Turkish-aware key (for matching only)."""
-    s = s.replace("İ", "i").replace("I", "ı").lower()
-    return re.sub(r"[\W_]+", "", s)
-
+# ----------------------------------------------------------------- value shapes
 
 def _clean(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
-
-@dataclass
-class _Row:
-    page: int        # source page number (footer number, else pdf index + 1)
-    top: float
-    left: str
-    colon: bool
-    right: str
-
-    @property
-    def full(self) -> str:
-        return _clean(f"{self.left} {self.right}")
-
-
-# ---------------------------------------------------------------- extraction
-
-def _page_rows(page, pdf_index: int) -> list[_Row]:
-    words = page.extract_words(x_tolerance=3, y_tolerance=3)
-    page_no = pdf_index + 1
-    body = []
-    foot = []
-    for w in words:
-        if w["top"] >= BODY_BOTTOM:
-            foot.append(w)
-        elif w["top"] > BODY_TOP:
-            body.append(w)
-    if foot:
-        foot.sort(key=lambda w: w["x0"])
-        m = _RE_FOOTER.search(" ".join(w["text"] for w in foot))
-        if m:
-            page_no = int(m.group(1))
-    body.sort(key=lambda w: ((w["top"] + w["bottom"]) / 2, w["x0"]))
-    groups: list[list[dict]] = []
-    ys: list[float] = []
-    for w in body:
-        y = (w["top"] + w["bottom"]) / 2
-        if groups and abs(y - ys[-1]) <= ROW_TOL:
-            groups[-1].append(w)
-            ys[-1] = (ys[-1] * (len(groups[-1]) - 1) + y) / len(groups[-1])
-        else:
-            groups.append([w])
-            ys.append(y)
-    rows = []
-    for g, y in zip(groups, ys):
-        g.sort(key=lambda w: w["x0"])
-        left, right, colon = [], [], False
-        for w in g:
-            if w["x0"] >= VALUE_X0:
-                right.append(w["text"])
-            elif w["x0"] >= COLON_LO and w["text"] == ":":
-                colon = True
-            elif w["x0"] >= COLON_LO:
-                right.append(w["text"])  # unexpected word in the colon band: treat as value
-            else:
-                left.append(w["text"])
-        rows.append(_Row(page_no, y, " ".join(left), colon, " ".join(right)))
-    return rows
-
-
-def _extract_rows(pdf_path: Path) -> list[_Row]:
-    rows: list[_Row] = []
-    with pdfplumber.open(str(pdf_path)) as pdf:
-        for i, page in enumerate(pdf.pages):
-            try:
-                rows.extend(_page_rows(page, i))
-            except Exception as e:  # pragma: no cover - defensive
-                log.warning("page %d: row extraction failed: %s", i + 1, e)
-            page.flush_cache()
-    return rows
-
-
-# -------------------------------------------------------------- value shapes
 
 def _money(text: str) -> Money | None:
     m = _RE_MONEY.match(_clean(text))
@@ -166,323 +96,216 @@ def _int(text: str) -> int | None:
 
 
 def _text(text: str) -> str | None:
+    return _clean(text) or None
+
+
+def _ikn(text: str) -> str | None:
     t = _clean(text)
-    return t or None
+    return t if _RE_IKN.match(t) else None
 
 
-_PARSERS = {"money": _money, "date": _date, "int": _int, "text": _text}
+_PARSERS = {"money": _money, "date": _date, "int": _int, "text": _text, "ikn": _ikn}
 
-# (group, normalised label) -> (attribute, shape)
-_FIELD_MAP: dict[tuple[str, str], tuple[str, str]] = {
-    ("ikn", _norm("İhale kayıt numarası")): ("ikn", "ikn"),
-    ("ihale", _norm("Tarihi")): ("ihale_tarihi", "date"),
-    ("ihale", _norm("Türü")): ("ihale_turu", "text"),
-    ("ihale", _norm("Usulü")): ("ihale_usulu", "text"),
-    ("ihale", _norm("Yaklaşık Maliyeti")): ("yaklasik_maliyet", "money"),
-    ("ihale", _norm("Sözleşmeye Esas Kısımlarının Yaklaşık Maliyeti")): ("esas_kisim_yaklasik_maliyet", "money"),
-    ("konu", _norm("Adı")): ("konu", "text"),
-    ("teklif", _norm("Toplam Teklif Sayısı")): ("toplam_teklif", "int"),
-    ("teklif", _norm("Toplam Geçerli Teklif Sayısı")): ("gecerli_teklif", "int"),
-    ("sozlesme", _norm("Tarihi")): ("sozlesme_tarihi", "date"),
-    ("sozlesme", _norm("Bedeli")): ("sozlesme_bedeli", "money"),
-    ("sozlesme", _norm("Süresi")): ("sozlesme_suresi", "text"),
-    ("sozlesme", _norm("Yüklenicisi")): ("yuklenici", "text"),
-    ("sozlesme", _norm("Yüklenici")): ("yuklenici", "text"),
-    ("sozlesme", _norm("Yüklenicinin uyruğu")): ("yuklenici_uyrugu", "text"),
-    ("sozlesme", _norm("Yüklenicinin adresi")): ("yuklenici_adresi", "text"),
-}
-# Fields every record is expected to carry; others (esas kısım, uyruk) are layout-dependent.
-_REQUIRED = (
-    "ikn", "ihale_tarihi", "ihale_turu", "ihale_usulu", "yaklasik_maliyet", "konu",
-    "toplam_teklif", "gecerli_teklif", "sozlesme_tarihi", "sozlesme_bedeli",
-    "sozlesme_suresi", "yuklenici", "yuklenici_adresi",
+# attribute -> (part, label as printed (ihalent matches it folded), shape)
+_FIELDS: tuple[tuple[str, str, str, str], ...] = (
+    ("ikn", "0", "İhale kayıt numarası", "ikn"),
+    ("ihale_tarihi", "1", "Tarihi", "date"),
+    ("ihale_turu", "1", "Türü", "text"),
+    ("ihale_usulu", "1", "Usulü", "text"),
+    ("yaklasik_maliyet", "1", "Yaklaşık Maliyeti", "money"),
+    ("konu", "2", "Adı", "text"),
+    ("toplam_teklif", "3", "Toplam Teklif Sayısı", "int"),
+    ("gecerli_teklif", "3", "Toplam Geçerli Teklif Sayısı", "int"),
+    ("sozlesme_tarihi", "4", "Tarihi", "date"),
+    ("sozlesme_bedeli", "4", "Bedeli", "money"),
+    ("sozlesme_suresi", "4", "Süresi", "text"),
 )
-
-_GROUPS = (
-    ("ihalenin", "ihale"),
-    ("ihalekonusu", "konu"),
-    ("teklifler", "teklif"),
-    ("sözleşmenin", "sozlesme"),
-)
+_REQUIRED = tuple(f[0] for f in _FIELDS) + ("yuklenici",)
 
 
-def _group_of(heading: str) -> str | None:
-    n = _norm(heading)
-    for prefix, g in _GROUPS:
-        if n.startswith(prefix):
-            return g
-    return None
-
-
-# ---------------------------------------------------------------- one record
-
-def _split_title_idare(r0: str, lines: list[str]) -> tuple[str | None, str | None, bool]:
-    """Numbered title (+wrap), the plain duplicate, then the idare block.
-
-    Returns (title, idare, matched). `matched` is False when the duplicate could not be
-    located, in which case title/idare are best guesses.
-    """
-    n = len(lines)
-    for a in range(0, n):
-        numbered = _clean(" ".join([r0] + lines[:a]))
-        target = _norm(numbered)
-        if not target:
-            continue
-        for b in range(a + 1, n):  # b < n: the idare block must be non-empty
-            if _norm(" ".join(lines[a:b])) == target:
-                return numbered, _clean(" ".join(lines[b:])), True
-            if len(_norm(" ".join(lines[a:b]))) > len(target):
-                break
-    # fallback: keep the numbered line, assume the idare is the last line(s)
-    if n >= 2:
-        return _clean(r0) or None, _clean(lines[-1]) or None, False
-    return _clean(r0) or None, None, False
-
-
-def _parse_record(rows: list[_Row], rec: Record, numbered_ikn: str | None, tail_complete: bool) -> None:
-    conf = rec.confidence
-    warn = rec.warnings
-    if not tail_complete:
-        warn.append("kayıt 'Kamuoyuna saygıyla duyurulur.' ile bitmiyor (kesik kayıt)")
-
-    # --- header block: numbered title, title again, idare, up to the ikn row
-    ikn_idx = next((k for k, r in enumerate(rows) if _norm(r.left).startswith(_norm("İhale kayıt numarası"))), None)
-    head_rows = rows[: ikn_idx if ikn_idx is not None else 0]
-    if ikn_idx is None:
-        warn.append("'İhale kayıt numarası' etiketi bulunamadı")
-        ikn_idx = 0
-        head_rows = []
-    if head_rows:
-        m = _RE_NUMBERED.match(head_rows[0].full)
-        if m:
-            seq_in_title, ikn_in_title, r0 = int(m.group(1)), m.group(2), m.group(3)
-            if seq_in_title != rec.seq:
-                warn.append(f"başlık satırındaki sıra no ({seq_in_title}) ile bölüm sırası ({rec.seq}) farklı")
-            lines = [r.full for r in head_rows[1:] if r.full]
-            title, idare, matched = _split_title_idare(r0, lines)
-            rec.title = title
-            rec.idare = idare
-            conf["title"] = OK if (title and matched) else (0.5 if title else 0.0)
-            conf["idare"] = OK if (idare and matched) else (0.5 if idare else 0.0)
-            if not matched:
-                warn.append("başlık tekrarı eşleşmedi; idare adı tahmini")
-            numbered_ikn = ikn_in_title
-        else:
-            warn.append("numaralı başlık satırı çözümlenemedi")
-            conf["title"] = 0.0
-            conf["idare"] = 0.0
+def _set(rec: Record, attr: str, raw: str | None, shape: str) -> None:
+    """Assign one field from ihalent's raw value and score it (see module docstring)."""
+    conf, warn = rec.confidence, rec.warnings
+    if raw is None:  # label not produced by ihalent
+        setattr(rec, attr, None)
+        conf[attr] = 0.0
+        warn.append(f"{attr}: etiket bulunamadı")
+        return
+    raw = _clean(raw)
+    if not raw:
+        setattr(rec, attr, None)
+        conf[attr] = 1.0  # known empty
+        return
+    if shape == "money" and _RE_NO_AMOUNT.search(raw):
+        setattr(rec, attr, None)
+        conf[attr] = 1.0
+        warn.append(f"{attr}: bülten tutar vermiyor ({raw!r})")
+        return
+    val = _PARSERS[shape](raw)
+    if val is None:
+        setattr(rec, attr, None)
+        conf[attr] = LOW
+        warn.append(f"{attr}: beklenmeyen biçim {raw!r}")
     else:
-        conf["title"] = 0.0
-        conf["idare"] = 0.0
-        warn.append("başlık/idare bloğu bulunamadı")
+        setattr(rec, attr, val)
+        conf[attr] = OK
 
-    # --- classify rows after (and including) the ikn row
-    body = rows[ikn_idx:] if rows else []
-    kinds: list[str] = []
-    for r in body:
-        if r.colon and _norm(r.left).startswith(_norm("İhale kayıt numarası")):
-            kinds.append("label")
-        elif r.left and not r.colon and not r.right and _RE_HEAD.match(r.left):
-            kinds.append("head")
-        elif r.left and _RE_LETTER.match(r.left):
-            kinds.append("label")
-        elif r.left:
-            kinds.append("lcont")
-        elif r.right:
-            kinds.append("value")
+
+# ------------------------------------------------------------ one notice → Record
+
+def _fill_from_notice(rec: Record, n: ib.BulletinNotice) -> None:
+    rec.raw_fields = [(p, lab, val) for p, lab, val in n.fields]
+    for attr, part, label, shape in _FIELDS:
+        _set(rec, attr, n.value(part, label), shape)
+    # esas kısımların yaklaşık maliyeti: only on lot (kısmi) notices, so absence is normal
+    esas = next((v for p, lab, v in n.fields if p == "1" and ib._fold(lab).startswith("sozlesmeye esas")), None)
+    if esas is not None:
+        _set(rec, "esas_kisim_yaklasik_maliyet", esas, "money")
+    winner = n.value("4", "Yüklenicisi")
+    if winner is None:
+        winner = n.value("4", "Yüklenici")
+    _set(rec, "yuklenici", winner, "text")
+    uyruk = n.value("4", "Yüklenicinin uyruğu")
+    if uyruk is not None:
+        _set(rec, "yuklenici_uyrugu", uyruk, "text")
+    # header block (ihalent only fills it when the title repeat was found)
+    rec.title = n.title
+    rec.idare = n.authority
+    for attr, val in (("title", n.title), ("idare", n.authority)):
+        if val:
+            rec.confidence[attr] = OK
         else:
-            kinds.append("empty")
+            rec.confidence[attr] = 0.0
+            rec.warnings.append(f"{attr}: başlık bloğu çözümlenemedi")
+    # ikn: ihalent already rejects a notice whose header ikn differs from the form's
 
-    # --- re-attach value rows when the label is printed between them (vertically centred)
-    owner_override: dict[int, int] = {}
-    for k, kind in enumerate(kinds):
-        if kind != "label" or k == 0:
-            continue
-        # Label rows are ~14.5pt apart from the previous row; a value-only row closer than
-        # CENTRED_GAP above means the label is vertically centred inside a multi-line cell.
-        below = 0
-        j = k + 1
-        while (j < len(body) and kinds[j] == "value" and body[j].page == body[k].page
-               and body[j].top - body[j - 1].top <= CENTRED_GAP):
-            below += 1
-            j += 1
-        j = k - 1
-        taken = 0
-        prev_top = body[k].top
-        while (j > 0 and kinds[j] == "value" and j not in owner_override
-               and body[j].page == body[k].page and prev_top - body[j].top < CENTRED_GAP
-               and taken < max(below, 1)):
-            owner_override[j] = k
-            taken += 1
-            prev_top = body[j].top
-            j -= 1
 
-    # --- build fields
-    group = "ikn"
-    fields: list[dict] = []  # {group, label_parts, parts: [(row_idx, text)], row}
-    cur = None
-    owner_of_row: dict[int, dict] = {}
-    for k, (r, kind) in enumerate(zip(body, kinds)):
-        if kind == "head":
-            m = _RE_HEAD.match(r.left)
-            g = _group_of(m.group(1)) if m else None
-            group = g or "?"
-            cur = None
-        elif kind == "label":
-            label = r.left if group == "ikn" and k == 0 else (_RE_LETTER.match(r.left).group(1))
-            cur = {"group": group, "label": [label], "parts": [], "row": k, "colon": r.colon}
-            if r.right:
-                cur["parts"].append((k, r.right))
-            fields.append(cur)
-            owner_of_row[k] = cur
-        elif kind == "lcont":
-            if cur is not None:
-                cur["label"].append(r.left)
-                if r.right:
-                    cur["parts"].append((k, r.right))
-        elif kind == "value":
-            if k in owner_override:
-                continue  # attached below
-            if cur is not None:
-                cur["parts"].append((k, r.right))
-    for j, k in owner_override.items():
-        owner_of_row[k]["parts"].append((j, body[j].right))
+# ------------------------------------------------------------------- PDF pass
 
-    seen: set[str] = set()
-    found: dict[str, tuple[str, str | None, bool]] = {}  # attr -> (shape, raw value text, centred)
-    for f in fields:
-        key = (f["group"], _norm(" ".join(f["label"])))
-        spec = _FIELD_MAP.get(key)
-        if not spec:
-            continue
-        attr, shape = spec
-        if attr in seen:
-            warn.append(f"{attr}: etiket birden fazla kez görüldü; ilki kullanıldı")
-            continue
-        seen.add(attr)
-        raw = _clean(" ".join(t for _, t in sorted(f["parts"])))
-        found[attr] = (shape, raw, any(owner_override.get(j) == f["row"] for j, _ in f["parts"]))
+def _words_and_pages(pdf_path: Path) -> tuple[list[ib.Word], dict[int, int]]:
+    """Same word list as ``ihalent.bulletin.words_from_pdf``, plus {pdf page -> printed page}."""
+    import pdfplumber
 
-    for attr, (shape, raw, centred) in found.items():
-        if attr == "ikn":
-            if not raw:
-                setattr(rec, "ikn", None)
-                conf["ikn"] = 1.0
-            elif _RE_IKN.match(raw):
-                rec.ikn = raw
-                conf["ikn"] = OK
-                if numbered_ikn and numbered_ikn != raw:
-                    conf["ikn"] = 0.5
-                    warn.append(f"ikn: başlıktaki ({numbered_ikn}) ile etiketteki ({raw}) farklı")
+    words: list[ib.Word] = []
+    pages: dict[int, int] = {}
+    with pdfplumber.open(str(pdf_path)) as pdf:
+        for number, page in enumerate(pdf.pages, start=1):
+            low, high = page.height * ib.HEADER_FRACTION, page.height * ib.FOOTER_FRACTION
+            foot: list[dict] = []
+            for w in page.extract_words(x_tolerance=1.5):
+                if low < w["top"] < high:
+                    words.append(ib.Word(number, w["x0"], w["top"], w["bottom"], w["text"]))
+                elif w["top"] >= high:
+                    foot.append(w)
+            foot.sort(key=lambda w: w["x0"])
+            m = _RE_FOOTER.search(" ".join(w["text"] for w in foot))
+            pages[number] = int(m.group(1)) if m else number
+            page.flush_cache()
+    return words, pages
+
+
+def _scan(words: list[ib.Word], pages: dict[int, int]) -> list[dict]:
+    """Per ``SONUÇ İLANI``: printed seq, A/B heading, source pages and the header's ikn."""
+    lines = ib.lines_from_words(words)
+    out: list[dict] = []
+    section: str | None = None
+    cur: dict | None = None
+    for i, line in enumerate(lines):
+        t = line.text
+        m = _RE_SECTION.match(t)
+        if m:
+            section = m.group(1)
+        if t.upper() == "SONUÇ İLANI":
+            prev = lines[i - 1] if i else None
+            has_seq = prev is not None and _RE_SEQ.match(prev.text) is not None
+            first = prev if has_seq else line
+            cur = {
+                "seq": int(prev.text) if has_seq else None,
+                "section": section,
+                "page_start": pages.get(first.page, first.page),
+                "page_end": pages.get(line.page, line.page),
+                "ikn": None,
+                "open": True,
+            }
+            out.append(cur)
+        elif cur is not None and cur["open"]:
+            if t.startswith("Kamuoyuna saygıyla"):
+                cur["page_end"] = pages.get(line.page, line.page)
+                cur["open"] = False
+            elif t.upper().startswith(_HEADINGS):
+                continue
             else:
-                rec.ikn = None
-                conf["ikn"] = LOW
-                warn.append(f"ikn: beklenmeyen biçim {raw!r}")
-            continue
-        if not raw:
-            setattr(rec, attr, None)
-            conf[attr] = 1.0  # known empty
-            continue
-        if shape == "money" and _RE_NO_AMOUNT.search(raw):
-            # the bulletin itself says there is no amount ("yaklaşık maliyeti bulunmamaktadır", "- TRY")
-            setattr(rec, attr, None)
-            conf[attr] = 1.0
-            warn.append(f"{attr}: bülten tutar vermiyor ({raw!r})")
-            continue
-        val = _PARSERS[shape](raw)
-        if val is None:
-            setattr(rec, attr, None)
-            conf[attr] = LOW
-            warn.append(f"{attr}: beklenmeyen biçim {raw!r}")
-        else:
-            setattr(rec, attr, val)
-            conf[attr] = OK
-    if rec.ikn is None and "ikn" not in conf and numbered_ikn:
-        rec.ikn = numbered_ikn
-        conf["ikn"] = 0.5
-        warn.append("ikn etiketten değil başlık satırından alındı")
-    for attr in _REQUIRED:
-        if attr not in found and attr not in conf:
-            conf[attr] = 0.0
-            warn.append(f"{attr}: etiket bulunamadı")
-    # optional, layout-dependent fields: only reported when present (already in `found`)
+                cur["page_end"] = pages.get(line.page, line.page)
+                if cur["ikn"] is None:
+                    h = _RE_HEADER_IKN.match(t)
+                    if h:
+                        cur["ikn"] = h.group(1)
+    return out
 
 
 # ----------------------------------------------------------------- top level
 
-def _is_page_heading(text: str) -> bool:
-    return bool(_RE_SECTION.match(text)) or text.startswith(("1. İHALE SONUÇLARININ", "1.1. "))
-
-
-def parse_rows(rows: list[_Row], bulletin_date: date, bulletin_type: str, source_file: str) -> list[Record]:
-    """Cut the joined row stream into records and parse each one."""
-    n = len(rows)
-    marker_idx = [k for k, r in enumerate(rows) if r.full == _MARKER]
-    # section at each row index
-    section_at = []
-    cur_section = None
-    for r in rows:
-        m = _RE_SECTION.match(r.full)
-        if m:
-            cur_section = m.group(1)
-        section_at.append(cur_section)
-
-    starts = []  # index of the seq row (or the marker row when no seq row precedes it)
-    for mi in marker_idx:
-        starts.append(mi - 1 if mi > 0 and _RE_SEQ.match(rows[mi - 1].full) else mi)
-
+def parse_words(
+    words: list[ib.Word], pages: dict[int, int], bulletin_date: date, bulletin_type: str, source_file: str
+) -> tuple[list[Record], ib.BulletinRead]:
+    read = ib.read_words(words, source=source_file)
+    meta = _scan(words, pages)
+    rejected = {r.position: r for r in read.rejected}
+    notices = iter(read.notices)
     records: list[Record] = []
-    prev_seq = None
-    implied_section = "A"
-    for n_i, (mi, s) in enumerate(zip(marker_idx, starts)):
-        limit = starts[n_i + 1] if n_i + 1 < len(starts) else n
-        for k in range(mi + 1, limit):  # a section heading cannot be inside a record
-            if _is_page_heading(rows[k].full):
-                limit = k
-                break
-        end = None
-        for k in range(mi + 1, limit):
-            if rows[k].full.startswith(_END):
-                end = k
-                break
-        complete = end is not None
-        last = end if end is not None else limit - 1
-        body = rows[mi + 1 : (end if end is not None else limit)]
-        seq = int(rows[s].full) if s != mi else 0
-        section = section_at[s]
-        extra_warn = []
-        if section is None:
-            # no heading seen yet (e.g. excerpt): infer from restarts of the running number
-            if prev_seq is not None and seq <= prev_seq and seq == 1:
-                implied_section = "B" if implied_section == "A" else implied_section
-            section = implied_section
-            extra_warn.append("bölüm başlığı görülmedi; bölüm sıra numarasından tahmin edildi")
-        prev_seq = seq
+    prev_section = "A"
+    for pos, info in enumerate(meta, start=1):
+        rej = rejected.get(pos)
+        notice = None if rej else next(notices, None)
+        section = _SECTION_MAP.get(notice.section) if notice else None
+        warn: list[str] = []
+        if info["section"] and section and info["section"] != section:
+            warn.append(f"bölüm: ihalent {notice.section!r}, başlık {info['section']!r}")
+        section = info["section"] or section or prev_section
+        prev_section = section
         rec = Record(
             bulletin_date=bulletin_date,
             bulletin_type=bulletin_type,
             source_file=source_file,
             section=section,
-            seq=seq,
-            page_start=rows[s].page,
-            page_end=rows[last].page if last >= 0 else rows[s].page,
+            seq=info["seq"] if info["seq"] is not None else 0,
+            page_start=info["page_start"],
+            page_end=info["page_end"],
         )
-        rec.warnings.extend(extra_warn)
-        if s == mi:
+        rec.warnings.extend(warn)
+        if info["open"]:
+            rec.warnings.append("kayıt 'Kamuoyuna saygıyla duyurulur.' ile bitmiyor (kesik kayıt)")
+        if info["seq"] is None:
             rec.warnings.append("sıra numarası bulunamadı")
         try:
-            _parse_record(body, rec, None, complete)
-        except Exception as e:  # never raise on a single bad record
+            if notice is not None:
+                _fill_from_notice(rec, notice)
+            else:
+                reason = rej.reason if rej else "ihalent bu ilanı okumadı"
+                rec.warnings.append(f"ihalent ilanı reddetti: {reason}")
+                for name in _REQUIRED + ("title", "idare"):
+                    rec.confidence[name] = 0.0
+                if info["ikn"]:
+                    rec.ikn = info["ikn"]
+                    rec.confidence["ikn"] = 0.5  # from the header line only: never confident
+        except Exception as e:  # never raise on a single bad notice
             rec.warnings.append(f"kayıt çözümlenemedi: {e!r}")
             for name in list(rec.confidence):
                 rec.confidence[name] = min(rec.confidence[name], LOW)
-        # honesty: a record with warnings about structure must not claim certainty elsewhere
         records.append(rec)
-    return records
+    if len(records) != len(read.notices) + len(read.rejected):
+        log.warning("%s: %d SONUÇ İLANI markers but ihalent counted %d notices + %d rejected",
+                    source_file, len(records), len(read.notices), len(read.rejected))
+    return records, read
+
+
+def parse_bulletin_read(pdf_path: Path, bulletin_date: date, bulletin_type: str = "mal"):
+    """Like :func:`parse_bulletin` but also returns ihalent's ``BulletinRead`` (complete/missing/rejected)."""
+    pdf_path = Path(pdf_path)
+    words, pages = _words_and_pages(pdf_path)
+    return parse_words(words, pages, bulletin_date, bulletin_type, pdf_path.name)
 
 
 def parse_bulletin(pdf_path: Path, bulletin_date: date, bulletin_type: str = "mal") -> list[Record]:
-    """Parse a *_SONUC.pdf bulletin into one Record per SONUÇ İLANI, in document order."""
-    pdf_path = Path(pdf_path)
-    rows = _extract_rows(pdf_path)
-    return parse_rows(rows, bulletin_date, bulletin_type, pdf_path.name)
+    """Parse a *_SONUC.pdf into one Record per SONUÇ İLANI, in document order."""
+    return parse_bulletin_read(pdf_path, bulletin_date, bulletin_type)[0]
