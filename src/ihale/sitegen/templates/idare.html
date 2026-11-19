@@ -25,10 +25,17 @@
 <h2>Haftalık usul dağılımı (İKN sayısı)</h2>
 {% if mix %}
 <p class="muted">Her satır bir ISO haftasıdır; çubuk uzunluğu o haftanın İKN sayısıyla orantılıdır. Açık usulden pazarlığa ya da istisnaya kayma varsa tabloda görünür.</p>
-<svg viewBox="0 0 100 {{ mix | length * 6 }}" role="img" aria-label="Haftalık usul dağılımı çubukları; sayılar aşağıdaki tabloda" width="100%" preserveAspectRatio="none" style="max-height:{{ mix | length * 22 + 8 }}px">
-  {% for w in mix %}{% set y = loop.index0 * 6 %}{% for s in w.segs %}<rect x="{{ s.x }}" y="{{ y }}" width="{{ s.w }}" height="4.6" fill="currentColor" fill-opacity="{{ s.op }}"><title>{{ w.week }} · {{ s.label }}: {{ s.n }}</title></rect>{% endfor %}{% endfor %}
+{% set rh = 24 %}{% set gut = 74 %}{% set bw = 266 %}{% set fills = ['currentColor','currentColor','url(#mx6)','url(#mx3)','url(#mx4)','url(#mx5)','currentColor'] %}
+<svg class="mixsvg" viewBox="0 0 340 {{ mix | length * rh + 2 }}" role="img" aria-label="Haftalık usul dağılımı çubukları; sayılar aşağıdaki tabloda" width="100%" style="max-width:340px">
+  <defs>
+    <pattern id="mx3" class="mxp3" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 7L7 -1M-1 1L1 -1M5 7L7 5" stroke="currentColor" stroke-width="1.6" fill="none"/></pattern>
+    <pattern id="mx4" class="mxp4" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.4" fill="currentColor"/></pattern>
+    <pattern id="mx5" class="mxp5" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3H6M3 0V6" stroke="currentColor" stroke-width="1.2" fill="none"/></pattern>
+    <pattern id="mx6" class="mxp6" width="6" height="4" patternUnits="userSpaceOnUse"><path d="M0 2H6" stroke="currentColor" stroke-width="1.8" fill="none"/></pattern>
+  </defs>
+  {% for w in mix %}{% set y = loop.index0 * rh + 1 %}<text class="mxl" x="0" y="{{ y + 14 }}" font-size="12" fill="currentColor">{{ w.week }}</text>{% for sg in w.segs %}<rect class="mx{{ sg.k }}" x="{{ (gut + sg.x * bw / 100) | round(2) }}" y="{{ y }}" width="{{ (sg.w * bw / 100) | round(2) }}" height="19" fill="{{ fills[sg.k] }}" stroke="currentColor" stroke-width=".75"><title>{{ w.week }} · {{ sg.label }}: {{ sg.n }}</title></rect>{% endfor %}{% endfor %}
 </svg>
-<p class="muted">{% for l in legend %}<span style="white-space:nowrap"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" fill="currentColor" fill-opacity="{{ l.op }}"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
+<p class="muted legend">{% for l in legend %}<span style="white-space:nowrap"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><rect class="mx{{ l.k }}" x=".5" y=".5" width="21" height="13" fill="{{ fills[l.k] }}" stroke="currentColor" stroke-width="1"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
 <div class="tw"><table class="rules stack">
   <thead><tr><th>Hafta</th>{% for l in legend %}<th>{{ l.label }}</th>{% endfor %}<th>Toplam (İKN)</th></tr></thead>
   <tbody>{% for w in mix %}<tr><td>{{ w.week }}</td>{% for c in w.cells %}<td data-label="{{ legend[loop.index0].label }}"{% if not c %} class="z"{% endif %}>{{ c | tr_int }}</td>{% endfor %}<td data-label="Toplam">{{ w.total | tr_int }}</td></tr>{% endfor %}</tbody>

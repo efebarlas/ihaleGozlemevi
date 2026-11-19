@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <p class="crumbs"><a href="/gun/{{ day.date }}/">{{ day.date | tr_date_long }}</a> › Sayfa {{ pn }} / {{ npages }}</p>
-<h1>{{ day.date | tr_date_long }} · sayfa {{ pn }}</h1>
+<h1>{{ day.date | tr_date_long }} <span class="pg">· sayfa {{ pn }}</span></h1>
 <p class="muted">Kayıtlar puana, sonra TRY sözleşme bedeline göre sıralıdır. Ayrıntı sayfası yalnızca puanı sıfırdan büyük olan kayıtlar için vardır; diğerlerinin bilgileri satıra tıklayınca açılır.</p>
 <ul class="rows">
 {{ rows_html }}

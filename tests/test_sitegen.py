@@ -668,25 +668,27 @@ def test_live_build_has_no_design_direction_or_switch(dist):
         if p.relative_to(dist).as_posix() not in ("index.html", "idare/index.html"):      # only the two finders use a script
             assert "<script" not in t, p
         assert "?yon=" not in t, p
-    css = (dist / "style.css").read_text(encoding="utf-8")
-    assert "data-direction" not in css and "--c-bg" not in css            # the live CSS is the plain one
+    css = (dist / "style.css").read_text(encoding="utf-8") + (dist / "sutun.css").read_text(encoding="utf-8")
+    assert "data-direction" not in css and "localStorage" not in css       # one direction, no switch
     assert (dist / "style.css").read_bytes() == (Path(sitegen.__file__).parent / "static" / "style.css").read_bytes()
 
 
-def test_design_preview_build_and_deploy_refuses_it(tmp_path):
-    out = tmp_path / "preview"
-    _build_full(SAMPLE, out, preview_design=True)
-    for n in ("defter", "gazete", "evrak"):
-        css = out / "tokens" / f"{n}.css"
-        assert css.is_file() and css.stat().st_size < 8000
-    h = _read(out, "index.html")
-    assert 'data-direction="defter"' in h and 'href="/tokens/defter.css"' in h
-    assert "yon" in h and "tema" in h and "localStorage" in h and "try{" in h      # switch script, guarded
-    assert 'class="sw"' in _read(out, "yontem/index.html") and 'class="sw"' not in h
-    assert "--c-bg" in (out / "style.css").read_text(encoding="utf-8")
-    assert '<p class="srcline">' in h                                              # rule fixes are in both builds
+def test_deploy_refuses_leftover_preview_token_files(tmp_path):
+    out = tmp_path / "d"
+    _build_full(SAMPLE, out)
+    (out / "tokens").mkdir()
+    (out / "tokens" / "x.css").write_text(":root{}", encoding="utf-8")
     with pytest.raises(RuntimeError, match="design preview"):
         sitegen.deploy(out)
+
+
+def test_one_direction_two_small_stylesheets_and_no_switch(dist):
+    for name in ("sutun.css", "style.css"):
+        assert (dist / name).stat().st_size < 30_000, name
+    assert 'href="/sutun.css"' in _read(dist, "index.html") and 'href="/style.css"' in _read(dist, "index.html")
+    assert "--s1" in (dist / "sutun.css").read_text(encoding="utf-8")
+    assert "var(--bg)" in (dist / "style.css").read_text(encoding="utf-8")
+    assert not hasattr(sitegen, "PREVIEW") and "preview_design" not in sitegen.build.__code__.co_varnames
 
 
 def test_deploy_refuses_data_direction_without_tokens(tmp_path):
@@ -829,7 +831,7 @@ def test_fold_entries_have_source_money_and_no_ocp_red_flag_wording(dist):
     h = _read(dist, "index.html")
     fold = h[h.index('class="card fold'):]
     fold = fold[:fold.index("</details>")]
-    entries = re.findall(r'<li class="ent [^"]*"[^>]*>.*?</li>', fold, flags=re.S)
+    entries = re.findall(r'<li class="ent [^"]*"[^>]*>.*?(?=<li class="ent |\Z)', fold, flags=re.S)
     assert len(entries) == 2
     for e in entries:
         assert 'class="srcline"' in e and 'class="money"' in e and "TRY" in e

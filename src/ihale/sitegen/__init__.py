@@ -509,13 +509,13 @@ def _load(export_dir: Path):
     return meta, days
 
 
-def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_bulk: bool | None = None) -> None:
+def build(export_dir: Path, out_dir: Path, split_bulk: bool = True) -> None:
     """Build the site. Live builds (default) keep core pages in `out_dir` and stage the bulk pages (see d1.is_bulk)
-    in `<out_dir>-pages.sqlite` for D1; `split_bulk=False` (and preview builds) write every page to `out_dir`."""
+    in `<out_dir>-pages.sqlite` for D1; `split_bulk=False` writes every page to `out_dir`."""
     export_dir, out_dir = Path(export_dir), Path(out_dir)
     meta, days = _load(export_dir)
     _wipe(out_dir)
-    split = (not preview_design) if split_bulk is None else split_bulk
+    split = split_bulk
     stage = d1.Stage(d1.staging_path(out_dir)) if split else None
     if not split:
         for suffix in ("", "-journal"):
@@ -530,7 +530,7 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(preview=preview_design, innocent=INNOCENT, innocent_bedel_over=INNOCENT_BEDEL_OVER,
+    ctx_base = dict(innocent=INNOCENT, innocent_bedel_over=INNOCENT_BEDEL_OVER,
                     innocent_items=[(FLAG_TITLES[c], [INNOCENT[c]] + ([INNOCENT_BEDEL_OVER] if c == "bedel_orani" else []))
                                     for c in FLAG_ORDER], ekap_url=EKAP_URL, kurul_url=KURUL_URL, flag_titles=FLAG_TITLES)
 
@@ -714,14 +714,8 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
                  for r in meta.get("structural_rules") or []])
     write("404.html", "404.html", page="404", title="Sayfa bulunamadı")
 
-    if preview_design:
-        # design preview only (never deployed): consumer CSS + the three direction token sets + hidden switch
-        shutil.copyfile(PKG_DIR / "static" / "preview" / "style.css", out_dir / "style.css")
-        (out_dir / "tokens").mkdir(exist_ok=True)
-        for tok in sorted((PKG_DIR / "static" / "preview" / "tokens").glob("*.css")):
-            shutil.copyfile(tok, out_dir / "tokens" / tok.name)
-    else:
-        shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")
+    for css in ("sutun.css", "style.css"):          # the one visual direction: tokens, then the stylesheet that uses them
+        shutil.copyfile(PKG_DIR / "static" / css, out_dir / css)
     (out_dir / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8", newline="\n")
     (out_dir / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8", newline="\n")
 
@@ -798,7 +792,7 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
     if (dist / "tokens").exists() or any(
             "data-direction" in f.read_text(encoding="utf-8", errors="replace") for f in (index, dist / "yontem" / "index.html")
             if f.is_file()):
-        raise RuntimeError("refusing to deploy: dist is a design preview build (token files / data-direction)")
+        raise RuntimeError("refusing to deploy: dist contains design preview leftovers (token files / data-direction)")
     if "ÖRNEK İL MÜDÜRLÜĞÜ" in index.read_text(encoding="utf-8"):
         raise RuntimeError("refusing to deploy: dist was built from the test sample export")
     stage_db = d1.staging_path(dist)

@@ -48,8 +48,10 @@
       {% for t in it.cluster %}
         <li class="ent {% for c in t._codes %}c-{{ c }} {% endfor %}" data-il="{{ (t.idare_stats or {}).get('il') or '' }}" data-idare="{{ t._idare }}"><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a>
           <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
-          <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
-          {{ srcline(t) }}</li>
+          {{ flags_list(t, true) }}
+          <span class="sub muted">Puan: {{ t.score | tr_score }}</span>
+          {{ srcline(t) }}
+          <p class="more sub"><a href="/ihale/{{ t.id }}/">Ayrıntı →</a></p></li>
       {% endfor %}
       </ul>
       <p class="muted">En yüksek puan: {{ it.score | tr_score }}</p>
@@ -63,8 +65,10 @@
         {% for t in it.fold %}
           <li class="ent {% for c in t._codes %}c-{{ c }} {% endfor %}" data-il="{{ (t.idare_stats or {}).get('il') or '' }}" data-idare="{{ t._idare }}"><a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
             <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
-            <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
-            {{ srcline(t) }}</li>
+            {{ flags_list(t, true) }}
+            <span class="sub muted">Puan: {{ t.score | tr_score }}</span>
+            {{ srcline(t) }}
+            <p class="more sub"><a href="/ihale/{{ t.id }}/">Ayrıntı →</a></p></li>
         {% endfor %}
         </ul>
       </details>

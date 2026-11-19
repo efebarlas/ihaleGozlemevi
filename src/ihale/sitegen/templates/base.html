@@ -1,33 +1,13 @@
 <!doctype html>
-<html lang="tr"{% if preview %} data-direction="defter"{% endif %}>
+<html lang="tr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light dark">
 <title>{{ title }} · İhale Gözlemevi</title>
-{% if preview %}
-<link rel="stylesheet" href="/tokens/defter.css">
+<link rel="stylesheet" href="/sutun.css">
 <link rel="stylesheet" href="/style.css">
-<script>
-(function(){var d=document.documentElement,D=["defter","gazete","evrak"],T={acik:"light",koyu:"dark"};
-var q=null,L=null;try{q=new URLSearchParams(location.search)}catch(e){}try{L=window.localStorage}catch(e){}
-function g(k){try{return L&&L.getItem(k)}catch(e){return null}}
-function s(k,v){try{if(L){if(v==null)L.removeItem(k);else L.setItem(k,v)}}catch(e){}}
-function dir(y){if(D.indexOf(y)<0)y="defter";d.setAttribute("data-direction",y);
- var o=document.getElementById("tok");if(o)o.parentNode.removeChild(o);
- if(y!=="defter"){var l=document.createElement("link");l.rel="stylesheet";l.id="tok";l.href="/tokens/"+y+".css";document.head.appendChild(l)}}
-function th(t){if(T[t])d.setAttribute("data-theme",T[t]);else d.removeAttribute("data-theme")}
-var y=q&&q.get("yon"),t=q&&q.get("tema");
-if(D.indexOf(y)>=0)s("yon",y);if(t&&(T[t]||t==="oto"))s("tema",t==="oto"?null:t);
-dir(g("yon"));th(g("tema"));
-document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.sw");if(!a)return;
- e.preventDefault();var n=D[(D.indexOf(d.getAttribute("data-direction"))+1)%D.length];s("yon",n);dir(n)});
-})();
-</script>
-{% else %}
-<link rel="stylesheet" href="/style.css">
-{% endif %}
 </head>
 <body>
 <a class="skip" href="#icerik">İçeriğe geç</a>

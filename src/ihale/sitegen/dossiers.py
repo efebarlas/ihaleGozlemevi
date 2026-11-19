@@ -16,7 +16,7 @@ ROW_BYTES_FIRST = 80_000     # timeline rows that share the first page with the 
 ROW_BYTES_NEXT = 100_000
 ROW_MAX = 50
 LIST_BYTES = 100_000
-MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # neutral shading only (no hues)
+MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # one entry per category slot (k); tones and hatch patterns live in the template, no hues
 IDARE_NOTE = "Bir idarenin tablosu tek başına bir sonuç değildir; usul ve alım türü farklılıkları rakamları etkiler."
 YUK_NOTE = "Bir firmanın sözleşme listesi tek başına bir sonuç değildir; firmanın faaliyet alanı ve idarelerin alım hacmi listeyi etkiler."
 
@@ -69,12 +69,12 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
             n = counts.get(c["code"], 0)
             if n:
                 wd = 100.0 * n / peak
-                segs.append(dict(x=round(x, 2), w=round(wd, 2), op=MIX_GRAYS[min(i, len(MIX_GRAYS) - 1)],
+                segs.append(dict(x=round(x, 2), w=round(wd, 2), k=min(i, len(MIX_GRAYS) - 1),
                                  label=c["label"], n=n))
                 x += wd
         rows.append(dict(week=w["week"], start=w.get("start"), total=total,
                          cells=[counts.get(c["code"], 0) for c in cats], segs=segs))
-    legend = [dict(label=c["label"], op=MIX_GRAYS[min(i, len(MIX_GRAYS) - 1)]) for i, c in enumerate(cats)]
+    legend = [dict(label=c["label"], k=min(i, len(MIX_GRAYS) - 1)) for i, c in enumerate(cats)]
     return rows, legend, peak
 
 

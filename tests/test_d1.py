@@ -98,8 +98,8 @@ def test_static_count_small_and_every_page_under_150kb(builds):
         db.close()
 
 
-def test_preview_build_stays_fully_static(tmp_path):
-    sitegen.build(SAMPLE, tmp_path / "p", preview_design=True)
+def test_full_build_without_split_is_fully_static(tmp_path):
+    sitegen.build(SAMPLE, tmp_path / "p", split_bulk=False)
     assert (tmp_path / "p" / "ihale" / "2026-11-18-mal-A-1" / "index.html").is_file()
     assert not d1.staging_path(tmp_path / "p").exists()
 
@@ -306,7 +306,8 @@ def test_deploy_refuses_without_staged_pages_and_keeps_old_guards(tmp_path, buil
     with pytest.raises(RuntimeError, match="sample"):                          # test-sample builds never deploy
         sitegen.deploy(split)
     out = tmp_path / "pv"
-    sitegen.build(SAMPLE, out, preview_design=True)
+    sitegen.build(SAMPLE, out)
+    (out / "tokens").mkdir()
     with pytest.raises(RuntimeError, match="design preview"):
         sitegen.deploy(out)
 
