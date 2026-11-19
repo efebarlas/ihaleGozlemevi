@@ -125,6 +125,27 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
 - Money is a JSON number in major units plus a currency, with an optional `"alt"` for dual figures. Persons' names appear exactly as printed.
 - `unreadable` lists the field names whose values were missing or below `CONFIDENT`, plus `{"field": ..., "reason": ...}` objects for reasons such as a currency mismatch.
 
+## 5.1 Oracle candidates (M3, SPEC §9.1 Günün sorusu)
+Each `run` writes `<data>/oracle/candidates.json`. It is local only and never deployed or committed. The spec owner appends Efe's answers to `<data>/oracle/log.jsonl`, and the pipeline never writes that file.
+```json
+{"schema": 1, "date": "2026-11-18", "generated_at": "...",
+ "pairs": [
+  {"pair_id": "2026-11-18-1",
+   "why": "aynı skor (2), farklı işaret karışımı: diger_teklifler_elendi / tek_teklif + bedel_orani",
+   "would_change": "diger_teklifler_elendi ağırlığı ile tek_teklif + bedel_orani toplamı arasındaki sıra",
+   "question": "Hangisi bir muhabirin zamanına daha çok değer?",
+   "a": { ...the full day-export tender object, incl. score, score_parts, indicators, source... },
+   "b": { ... }}
+ ]}
+```
+**Selection (deterministic):**
+- Candidates are today's records with `1 ≤ score ≤ 3`, which is the band around the Bugün cut-off.
+- Form pairs whose scores differ by at most 1 and whose `score_parts` sets differ.
+- Prefer pairs whose part sets differ by a single swap, since those isolate one weight. Next, prefer equal scores. Then prefer higher TRY bedel.
+- Use each record at most once, and pick 3–5 pairs.
+- If fewer than 3 qualify, write what there is, even 0, with `"note"` saying why.
+- Don't include any party or political attribution of the idare (§9.1 blinding). We don't have it anyway; never add it.
+
 ## 6. Site (M3)
 - **Generator:** `ihale.sitegen.build(export_dir: Path, out_dir: Path)`, plain Python with Jinja2. It writes static HTML to `site/dist/`, which is gitignored. Wrangler config is `site/wrangler.jsonc`: an assets-only Worker named `ihale-gozlemevi`.
 - **Pages:**
