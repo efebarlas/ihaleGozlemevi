@@ -226,7 +226,7 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
   - İdare and Yüklenici pages with continuity timelines.
   - Add the *hizmet* and *yapım* bulletins.
   - Link KİK board decisions and debarment status.
-  - **First agent-module experiment (§12):** sector and idare-type classification. A build session classifies every known idare name and item name once into a reviewed lookup table. Score it against keyword rules on the hand-checked sample, then run it in shadow mode, and promote it only if it wins. This makes real same-sector, same-type peers possible.
+  - **First agent-module experiment (§11):** sector and idare-type classification. A build session classifies every known idare name and item name once into a reviewed lookup table. Score it against keyword rules on the hand-checked sample, then run it in shadow mode, and promote it only if it wins. This makes real same-sector, same-type peers possible.
   - Export OCDS (via ocdskit) and FollowTheMoney, and run Cardinal on the export as a cross-check. The exports stay private until G-Public.
   - **Simulated-user check:** agent personas do real reporting tasks on the site, e.g. "find every award firm X won at idare Y". It catches broken flows; it says nothing about demand.
 - **M5 Weights, rules and history:**
@@ -253,7 +253,7 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
   These either create a public endpoint or contact real people.
 - **Coverage note:** add doğrudan temin and istisna purchases only if they can be fetched without EKAP's human verification. Never work around it.
 
-## 12. Agents inside the product
+## 11. Agents inside the product
 A module can be replaced by an agent only behind a seam:
 - **One interface** with per-field confidence, a coded implementation, and an agent implementation.
 - **An offline A/B test** on the hand-checked sample, measuring:
