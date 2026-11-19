@@ -259,13 +259,10 @@ def test_deletions_run_after_the_between_step(tmp_path):
 def test_row_guard_counts_todays_tally_and_refuses_before_any_write(tmp_path):
     stage = _mk_stage(tmp_path / "s.sqlite", {f"/ihale/{i}/": "x" for i in range(30)})
     fake = FakeD1()
-    with pytest.raises(RuntimeError, match="exceeds the limit"):
+    with pytest.raises(d1.BudgetExceeded, match="over the budget"):
         _sync(tmp_path, stage, fake, max_rows=50, rows_today=21)                    # 30 rows + 21 already today > 50
     assert fake.files == [] and not (tmp_path / "m.json").exists()
-    assert d1.D1_MAX_ROWS_PER_RUN == 90_000
-    # the failed real run: ~48k rows planned on top of 44.8k already written today must be refused
-    big = d1.Plan(rows=47_958)
-    assert 44_807 + big.rows > d1.D1_MAX_ROWS_PER_RUN
+    assert d1.D1_MAX_ROWS_PER_RUN == 80_000 and d1.D1_DAILY_LIMIT == 100_000        # 80% of the free daily writes
 
 
 def test_dry_run_reports_and_changes_nothing(tmp_path):
@@ -400,11 +397,12 @@ def test_deploy_dry_run_makes_no_wrangler_call_and_no_state_change(tmp_path, mon
 
 def test_deploy_refuses_when_todays_tally_plus_plan_is_over_the_limit(tmp_path, monkeypatch):
     dist = _fake_dist(tmp_path)
-    d1.add_rows_written(tmp_path / "datadir" / "d1-usage.json", 89_999, __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y-%m-%d"))
+    from datetime import datetime, timezone
+    d1.add_rows_written(tmp_path / "datadir" / "d1-usage.json", 79_999, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
     monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("no wrangler call expected"))
     monkeypatch.setattr(sitegen, "log", lambda m: None)
     monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
-    with pytest.raises(RuntimeError, match="already written today"):
+    with pytest.raises(sitegen.BudgetExceeded, match="already written today"):
         sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
 
 
@@ -570,3 +568,42 @@ def test_payment_or_account_request_stops_the_run(monkeypatch, text):
 def test_worker_returns_503_not_a_crash_when_d1_throws():
     src = WORKER.read_text(encoding="utf-8")
     assert "catch (e)" in src and "status: 503" in src and "unavailable(request)" in src
+
+# ------------------------------------------------------------------ daily write budget (80% of the free 100k rows/day)
+def test_budget_exceeded_prints_both_numbers_and_writes_nothing(tmp_path):
+    stage = _mk_stage(tmp_path / "s.sqlite", {f"/ihale/{i}/": f"p{i}" for i in range(35_200)})        # 35,200 rows planned
+    fake = FakeD1()
+    logs = []
+    with pytest.raises(d1.BudgetExceeded) as ei:
+        d1.sync_pages(stage_db=stage, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b", execute=fake,
+                      between=lambda: pytest.fail("the Worker must not be deployed"), rows_today=44_807, log=logs.append)
+    msg = str(ei.value)
+    assert "44807 rows already written today" in msg and "35200 planned" in msg and "80007" in msg and "80000" in msg
+    assert "Try again tomorrow" in msg and "unchanged" in msg
+    assert fake.files == [] and not (tmp_path / "m.json").exists() and not (tmp_path / "b").exists()
+    assert any("rows written today (UTC): 44807" in m for m in logs)                                  # the numbers are printed
+
+
+def test_budget_boundary_is_inclusive(tmp_path):
+    stage = _mk_stage(tmp_path / "s.sqlite", {"/ihale/a/": "a", "/ihale/b/": "b"})
+    plan = d1.sync_pages(stage_db=stage, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b", execute=FakeD1(),
+                         rows_today=79_998, log=lambda m: None)                                      # exactly 80,000: allowed
+    assert plan.rows == 2
+    with pytest.raises(d1.BudgetExceeded):
+        d1.sync_pages(stage_db=_mk_stage(tmp_path / "s2.sqlite", {"/ihale/c/": "c"}), manifest_path=tmp_path / "m2.json",
+                      batch_dir=tmp_path / "b2", execute=FakeD1(), rows_today=80_000, log=lambda m: None)
+
+
+def test_deploy_budget_exceeded_does_no_d1_write_and_no_worker_deploy(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    dist = _fake_dist(tmp_path)
+    d1.add_rows_written(tmp_path / "datadir" / "d1-usage.json", 79_999, datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+    calls = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: calls.append(args) or "")
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
+    with pytest.raises(sitegen.BudgetExceeded):
+        sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+    assert calls == []                                                     # no d1 execute, no `wrangler deploy`
+    assert not (tmp_path / "b").exists() and not (tmp_path / "m.json").exists()
+    assert issubclass(sitegen.BudgetExceeded, RuntimeError)

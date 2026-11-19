@@ -118,6 +118,9 @@ def cmd_deploy(args) -> int:
     try:
         pipeline.deploy_site()
     except Exception as e:  # noqa: BLE001
+        if pipeline.is_budget_exceeded(e):
+            print(f"not deployed, try tomorrow: {e}", file=sys.stderr)
+            return pipeline.EXIT_BUDGET
         print(f"deploy failed: {type(e).__name__}: {e}", file=sys.stderr)
         return pipeline.EXIT_ERROR
     return 0

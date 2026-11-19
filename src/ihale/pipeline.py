@@ -24,6 +24,7 @@ EXIT_ERROR = 1
 EXIT_BLOCKED = 3          # EKAP hard stop, or the BLOCKED marker is present (same code as `fetch`)
 EXIT_NO_BULLETIN = 4      # `fetch` only; `run` treats it as a normal day
 EXIT_CAP = 5              # backfill stopped at the request cap; re-run to continue
+EXIT_BUDGET = 6           # `run`/`deploy`: D1 daily write budget would be exceeded; nothing deployed, try tomorrow
 
 
 def today_istanbul() -> date:
@@ -170,6 +171,11 @@ def deploy_site() -> None:
     log.info("site deployed")
 
 
+def is_budget_exceeded(e: BaseException) -> bool:
+    """sitegen.BudgetExceeded (D1 daily write budget): a normal 'not deployed today', not an error."""
+    return type(e).__name__ == "BudgetExceeded"
+
+
 def _log_exc(msg: str, e: BaseException) -> None:
     log.error("%s: %s: %s", msg, type(e).__name__, e)
 
@@ -269,6 +275,9 @@ def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> i
         log.error("EKAP BLOCKED: %s. Wrote %s. Not deploying; all scraping is suspended.", e, m)
         return EXIT_BLOCKED
     except Exception as e:  # noqa: BLE001: a failed run must exit non-zero and not deploy
+        if is_budget_exceeded(e):
+            log.warning("NOT DEPLOYED, try tomorrow: %s", e)
+            return EXIT_BUDGET
         _log_exc("run failed (not deployed)", e)
         return EXIT_ERROR
     log.info("run done")

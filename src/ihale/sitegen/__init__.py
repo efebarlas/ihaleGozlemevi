@@ -739,6 +739,7 @@ def build(export_dir: Path, out_dir: Path, split_bulk: bool = True) -> None:
 _URL_RE = re.compile(r"https://[A-Za-z0-9.-]+\.workers\.dev\S*")
 
 
+BudgetExceeded = d1.BudgetExceeded
 PLACEHOLDER_D1_ID = "00000000-0000-0000-0000-000000000000"
 D1_NAME = "ihale-pages"
 log = print

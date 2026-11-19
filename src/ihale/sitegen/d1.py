@@ -22,7 +22,12 @@ from typing import Callable
 PART_BYTES = 40_000           # raw gzip bytes per part: a hex literal doubles it, so a statement stays well under 90 KB
 MAX_STATEMENT_BYTES = 90_000
 BATCH_BYTES = 3_000_000       # one `wrangler d1 execute --file` per batch (the first full upload used 2.9 MB files)
-D1_MAX_ROWS_PER_RUN = 90_000  # D1 free tier: 100k rows written per UTC day; today's tally counts too
+D1_DAILY_LIMIT = 100_000      # D1 free tier: rows written per UTC day
+D1_MAX_ROWS_PER_RUN = 80_000  # budget: 80% of the daily limit, counting today's tally plus this run's plan
+
+
+class BudgetExceeded(RuntimeError):
+    """Today's D1 rows written plus the planned rows would pass the budget: nothing is written or deployed."""
 MANIFEST_VERSION = "v2"       # v2 = gzip BLOB table `pg`; a v1 manifest (table `pages`) is never reused
 
 JV_LABEL = "Gerçek kişi içeren iş ortaklığı"
@@ -243,8 +248,9 @@ def sync_pages(*, stage_db: Path, manifest_path: Path, batch_dir: Path, execute:
     plan = make_plan(stage_db, manifest)
     log(plan_report(plan, rows_today=rows_today, max_rows=max_rows))
     if rows_today + plan.rows > max_rows:
-        raise RuntimeError(f"refusing: {plan.rows} rows to write plus {rows_today} already written today exceeds the "
-                           f"limit of {max_rows} (free tier: 100,000 rows/day). Nothing was written.")
+        raise BudgetExceeded(f"D1 write budget: {rows_today} rows already written today (UTC) + {plan.rows} planned = "
+                             f"{rows_today + plan.rows}, over the budget of {max_rows} (80% of the free {D1_DAILY_LIMIT}/day). "
+                             "Nothing was written or deployed; the live site is unchanged. Try again tomorrow.")
     if dry_run:
         return plan
     batch_dir.mkdir(parents=True, exist_ok=True)

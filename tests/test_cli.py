@@ -353,3 +353,32 @@ def test_run_creates_oracle_dir_when_missing(env, data_dir):
     assert not (data_dir / "oracle").exists()
     assert run("run") == 0
     assert (data_dir / "oracle" / "candidates.json").exists()
+
+# ------------------------------------------------------------------ D1 daily write budget: "not deployed, try tomorrow"
+def _budget_deploy(env, monkeypatch):
+    from ihale.sitegen import d1
+
+    def deploy():
+        raise d1.BudgetExceeded("D1 write budget: 44807 rows already written today (UTC) + 35200 planned = 80007, over the budget of 80000")
+    monkeypatch.setattr(pipeline, "sitegen_module", lambda: SimpleNamespace(build=lambda e, o: env.built.append((e, o)), deploy=deploy))
+
+
+def test_run_budget_exceeded_exits_with_the_distinct_code_and_logs_not_deployed(env, data_dir, monkeypatch):
+    _budget_deploy(env, monkeypatch)
+    assert run("run", "--date", "18.11.2026") == pipeline.EXIT_BUDGET == 6
+    assert env.built                                                       # everything up to the deploy still ran
+    text = (data_dir / "logs" / "2026-11-18.log").read_text(encoding="utf-8")
+    assert "NOT DEPLOYED, try tomorrow" in text and "44807" in text and "35200" in text
+    assert "run failed" not in text and "run done" not in text            # not an error
+
+
+def test_deploy_command_budget_exceeded_has_the_same_code(env, monkeypatch, capsys):
+    _budget_deploy(env, monkeypatch)
+    assert run("deploy") == pipeline.EXIT_BUDGET
+    assert "not deployed, try tomorrow" in capsys.readouterr().err
+
+
+def test_other_deploy_errors_are_still_plain_errors(env, monkeypatch):
+    monkeypatch.setattr(pipeline, "sitegen_module", lambda: SimpleNamespace(build=lambda e, o: None, deploy=lambda: (_ for _ in ()).throw(RuntimeError("wrangler exploded"))))
+    assert run("run", "--date", "18.11.2026") == pipeline.EXIT_ERROR
+    assert pipeline.EXIT_BUDGET not in (pipeline.EXIT_OK, pipeline.EXIT_ERROR, pipeline.EXIT_BLOCKED, pipeline.EXIT_NO_BULLETIN, pipeline.EXIT_CAP)
