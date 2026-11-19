@@ -22,13 +22,22 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - **File-count risk:** about 300 new files a day (detail pages plus new idare/firm pages) means the 19,000-file guard is hit in about 2 weeks, and the M5 backfill is impossible as static files. Planned fix (M4 infra): pre-rendered HTML for detail/idare/yüklenici pages stored in a free-tier D1 database and served by the Worker; only the core pages stay as static assets.
 - Base-rate reconciliation (M4): single valid bid per tender, 21 days: açık 20.1%, pazarlık 43.3%, 4734 istisna 40.0%; açık+pazarlık 26.5% (mal 28.7%, hizmet 36.6%, yapım 12.4%). İhaleGlobal reports ~43%. Its figure is closest to our pazarlık or istisna rates. Explain in Yöntem once its definition is known.
 
+- 2026-11-19: **Person masking fixed** (4f018ca). The old rule let trade names of sole proprietors and joint ventures of persons through, exposing names on 41 dossier pages. Legal-entity forms now decide. A deploy guard refuses any build where a masked name appears in a yüklenici field outside its own detail page. Live.
+- 2026-11-19: **KİK board decisions / debarment: EKAP v2 API returned a sign-in wall (429, suggestSignIn).** Reported to the spec owner as a §7 hard stop. We stopped. Default: detail pages only link out to EKAP's decision search. Debarment via Resmî Gazete notices is the spec owner's call. Bulletin download is unaffected.
+- 2026-11-19: open exports (OCDS, FtM) done, private. The Cardinal cross-check was skipped: the PyPI package has no indicators, and a binary download is not allowed.
+- 2026-11-19: unguided design baseline frozen (tag `design-unguided`). Nothing design-related is deployed.
+- 2026-11-19: D1 database `ihale-pages` created (free, eeur). First D1 deploy running.
+- **M5 storage note:** the D1 pages take about 124 MB per 30 days. D1 free allows 500 MB per database, 10 databases, 5 GB total. The 2010 backfill needs compression (gzip BLOBs) or Worker-side rendering from data rows. Plan this before M5.
+- M4 classifier experiment (SPEC §11) started: taxonomy plus seam (M2 builder), then an independent hand label and a lookup-table build.
+
+## Milestones
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
-| M4 | Dosyalar and better peers | in progress: hizmet/yapım adapter + labels (parser builder), per-type groups + Dosyalar export (M2 builder); site pages next |
+| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (deploying). Blocked: KİK decisions/debarment (EKAP sign-in wall). Open: classifier experiment, simulated-user check. |
 | M5 | History | not started |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
