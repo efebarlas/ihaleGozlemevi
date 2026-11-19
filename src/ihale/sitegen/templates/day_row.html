@@ -1,0 +1,21 @@
+{% from "_macros.html" import flags_list, srcline with context %}
+{% from "_record.html" import body with context %}
+{% if t._page %}
+<li class="row" id="{{ t.id }}">
+  <a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
+  <span class="rm">{{ t._idare }} · {{ t._yuklenici }}</span>
+  <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
+  {{ flags_list(t, true) }}
+  {{ srcline(t) }}
+</li>
+{% else %}
+<li class="row" id="{{ t.id }}">
+  <details>
+    <summary><span class="rt">{{ t._name }}</span>
+      <span class="rm">{{ t._idare }} · {{ t._yuklenici }}</span>
+      <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span></summary>
+    <div class="dbody">{{ body(t, true) }}</div>
+  </details>
+  {{ srcline(t) }}
+</li>
+{% endif %}
