@@ -13,7 +13,7 @@ Observed on the real **2026-11-18 mal** bulletin (Kamu İhale Bülteni **Sayı 5
 
 Same-day hizmet: `..._HIZMET.pdf` 3.2 MB, `..._HIZMET_SONUC.pdf` 1.8 MB. Yapım: `..._YAPIM.pdf` 1.9 MB, `..._YAPIM_SONUC.pdf` 1.6 MB (page counts not measured). Naming: `BULTEN_{ddmmyyyy}_{TYPE}[_SONUC].pdf`, TYPE in `MAL|HIZMET|YAPIM|DANISMANLIK`.
 
-The PDFs are **born-digital text** (Times New Roman / Arial Narrow embedded TrueType). `pdfplumber` extracts text fine; **no OCR needed**. A full 464-page `extract_text()` pass took well under a minute. Page size 595.32 × 842.04 (A4), single column.
+The PDFs are **born-digital text** (Times New Roman / Arial Narrow embedded TrueType). `pdfplumber` extracts text fine; **no OCR needed**. Page size 595.32 × 842.04 (A4), single column.
 
 ## 2. Page structure of `*_MAL_SONUC.pdf`
 
@@ -180,13 +180,19 @@ A tender awarded in parts / to several contractors is published as **one record 
 
 `tests/fixtures/mal_sonuc_excerpt.pdf` (12 pages, ~357 KB) was cut with `scripts/make_fixture.py` from pages **17, 18, 19, 20, 21, 22, 84, 85, 203, 204, 205, 257** (1-based) of `BULTEN_18112026_MAL_SONUC.pdf`. Fixture page → what it contains:
 
-| fixture page | source page | contents |
-|---|---|---|
-| 1–6 | 17–22 | first records of section A: pazarlık MD 21 F / B, `Uygulanmıştır / %15`, empty `Süresi`, kısmi lots of ikn 2026/1833735 (records 5 and 6, fixture pages 4–6, both split across pages) |
-| 7–8 | 84–85 | the short `Açık` record with empty `Yaklaşık Maliyeti` and ikn suffix `2026/1772339-1`, split across pages |
-| 9–10 | 203–204 | start of section B (`B- 4734 SAYILI KANUN KAPSAMINDA OLMAYAN İLANLAR`), numbering restarts at 1, `4734 / 3-g`, empty `Yaklaşık Maliyeti` on record 3 |
-| 11 | 205 | dual-currency estimate `47.407.500,00 TRY (1.072.475,00 EUR)` |
-| 12 | 257 | `Bedeli : 154.050,00 EUR`, a record split to the next page |
+| fixture page | source page | records starting on it | notes |
+|---|---|---|---|
+| 1 | 17 | no. 1 (`2026/1880594`) | section A heading; pazarlık `MD 21 F`, with `Pazarlık Usulünün Seçilme` text |
+| 2 | 18 | no. 2, no. 3 | no. 3 (`2026/1766844`) is split onto the next page |
+| 3 | 19 | no. 4 | `c) Süresi :` is **empty** for a lot with `Yerli malı ... Uygulanmıştır / %15`; no. 4 continues on fixture page 4 |
+| 4–6 | 20–22 | no. 5, 6, 7 (all `2026/1833735`) | kısmi lots of one ikn, each split across a page break; `f) Sözleşmeye Esas Kısımlarının` appears mid-record after a page break (fixture page 6 starts with it) |
+| 7–8 | 84–85 | no. 75, 76 (`2026/1772339-1`), 77 | no. 76 is the short `Açık` record: ikn suffix `-1` and an **empty** `d) Yaklaşık Maliyeti :`; also an empty `c) Süresi :` on page 84 |
+| 9 | 203 | no. 1, 2 of section B | `B- 4734 SAYILI KANUN KAPSAMINDA OLMAYAN İLANLAR (DİĞER İLANLAR)` heading, numbering restarts at 1, `4734 / 3-g` |
+| 10 | 204 | no. 3 | top of page holds the tail of no. 2: wrapped `Yüklenici` with the label between value lines (`Hidromek-...` / `d) Yüklenici :` / `Anonim Şirketi`) |
+| 11 | 205 | no. 4 (`2025/1643181`, older ikn year), no. 5 | dual-currency estimate `47.407.500,00 TRY (1.072.475,00 EUR)`; no. 5 is split onto the next page |
+| 12 | 257 | no. 90, 91 | no. 90 has `Bedeli : 154.050,00 EUR` (TRY estimate!); no. 91 is cut at the page end |
+
+(The pages in the fixture are verbatim source pages, so the same page-boundary splits show up in the fixture; record 7's and 91's tails are not in the excerpt.)
 
 The fixture pages keep their original header/footer, so the footer page numbers inside the text are source page numbers (17…257). Pages 2 and 464 (ToC, idare index) are *not* included: their fonts alone added ~1 MB.
 
