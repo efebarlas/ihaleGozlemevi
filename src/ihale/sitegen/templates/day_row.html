@@ -3,7 +3,7 @@
 {% if t._page %}
 <li class="row" id="{{ t.id }}">
   <a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
-  <span class="rm">{{ t._idare }} · {{ t._yuklenici }}</span>
+  <span class="rm">{% if t._idare_href %}<a href="{{ t._idare_href }}">{{ t._idare }}</a>{% else %}{{ t._idare }}{% endif %} · {% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ t._yuklenici }}</a>{% else %}{{ t._yuklenici }}{% endif %}</span>
   <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
   {{ flags_list(t, true) }}
   {{ srcline(t) }}

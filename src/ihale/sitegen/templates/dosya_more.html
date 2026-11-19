@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumbs"><a href="/{{ kind }}/{{ slug }}/">{{ name }}</a> › Sayfa {{ pn }} / {{ npages }}</p>
+<h1>{{ name }} · sayfa {{ pn }}</h1>
+<ul class="rows">
+{{ rows_html }}
+</ul>
+<nav class="pager" aria-label="Sayfalar">
+  <a href="/{{ kind }}/{{ slug }}/{% if pn > 2 %}{{ pn - 1 }}/{% endif %}">← Önceki</a>
+  <a href="/{{ kind }}/{{ slug }}/">Başa dön</a>
+  {% if pn < npages %}<a href="/{{ kind }}/{{ slug }}/{{ pn + 1 }}/">Sonraki →</a>{% endif %}
+</nav>
+{% endblock %}

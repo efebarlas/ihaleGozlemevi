@@ -53,6 +53,7 @@
     {% elif r.value is none %}—
     {% elif r.key in money_fields %}{{ r.value | tr_money }}
     {% elif r.key in date_fields %}{{ r.value | tr_date_short }}
+    {% elif r.href %}<a href="{{ r.href }}">{{ r.value }}</a>
     {% else %}{{ r.value }}{% endif %}
     {% if r.note %}<span class="reason">({{ r.note }}; bu alan işaret hesabında kullanılmadı)</span>{% endif %}
     </dd>

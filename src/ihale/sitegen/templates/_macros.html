@@ -21,8 +21,8 @@
 
 {% macro facts(t) %}
 <dl class="facts">
-  <div><dt>İdare</dt><dd>{{ t._idare }}</dd></div>
-  <div><dt>Yüklenici</dt><dd>{{ t._yuklenici }}</dd></div>
+  <div><dt>İdare</dt><dd>{% if t._idare_href %}<a href="{{ t._idare_href }}">{{ t._idare }}</a>{% else %}{{ t._idare }}{% endif %}</dd></div>
+  <div><dt>Yüklenici</dt><dd>{% if t._yuk_href %}<a href="{{ t._yuk_href }}">{{ t._yuklenici }}</a>{% else %}{{ t._yuklenici }}{% endif %}</dd></div>
   <div><dt>Sözleşme bedeli</dt><dd>{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</dd></div>
   <div><dt>Usul</dt><dd>{{ t.usul or 'okunamadı' }}</dd></div>
 </dl>

@@ -36,6 +36,7 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
     <a class="brand" href="/">İhale Gözlemevi</a>
     <nav aria-label="Ana menü">
       <a href="/"{% if page == 'bugun' %} aria-current="page"{% endif %}>Bugün</a>
+      <a href="/idare/"{% if page in ('idare', 'yuklenici') %} aria-current="page"{% endif %}>İdareler</a>
       <a href="/arsiv/"{% if page == 'arsiv' %} aria-current="page"{% endif %}>Arşiv</a>
       <a href="/yontem/"{% if page == 'yontem' %} aria-current="page"{% endif %}>Yöntem</a>
     </nav>

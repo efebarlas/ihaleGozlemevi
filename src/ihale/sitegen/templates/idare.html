@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumbs"><a href="/idare/">İdareler</a></p>
+<h1>{{ d.name }}</h1>
+<dl class="detail">
+  <dt>İdare türü</dt><dd>{{ d.idare_turu or "okunamadı" }}</dd>
+  <dt>İl</dt><dd>{{ d.il or "belirlenemedi (ad tek bir il içermiyor)" }}</dd>
+  {% if parent %}<dt>Bağlı olduğu kurum</dt><dd>{{ parent }}</dd>{% endif %}
+</dl>
+
+<h2>Toplamlar</h2>
+<table class="rules">
+  <thead><tr><th>Tür</th><th>Kayıt</th><th>İhale (İKN)</th><th>Toplam (TRY)</th><th>Ortanca bedel (TRY)</th></tr></thead>
+  <tbody>
+  {% for typ, t in d.totals.items() %}
+    <tr><td>{{ type_labels.get(typ, typ) }}</td><td>{{ t.records | tr_int }}</td><td>{{ t.awards | tr_int }}</td>
+        <td>{{ t.try_total | tr_money_plain }}</td><td>{% if t.median_bedel_try is not none %}{{ t.median_bedel_try | tr_money_plain }}{% else %}—{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if d.natural_person_awards %}<p class="muted">Bu kayıtların {{ d.natural_person_awards | tr_int }} tanesi gerçek kişi yüklenicilerledir; adları bu sayfada gösterilmez.</p>{% endif %}
+
+<h2>Haftalık usul dağılımı</h2>
+{% if mix %}
+<p class="muted">Her satır bir ISO haftasıdır; çubuk uzunluğu o haftanın kayıt sayısıyla orantılıdır. Açık usulden pazarlığa ya da istisnaya kayma varsa tabloda görünür.</p>
+<svg viewBox="0 0 100 {{ mix | length * 6 }}" role="img" aria-label="Haftalık usul dağılımı çubukları; sayılar aşağıdaki tabloda" width="100%" preserveAspectRatio="none" style="max-height:{{ mix | length * 22 + 8 }}px">
+  {% for w in mix %}{% set y = loop.index0 * 6 %}{% for s in w.segs %}<rect x="{{ s.x }}" y="{{ y }}" width="{{ s.w }}" height="4.6" fill="currentColor" fill-opacity="{{ s.op }}"><title>{{ w.week }} · {{ s.label }}: {{ s.n }}</title></rect>{% endfor %}{% endfor %}
+</svg>
+<p class="muted">{% for l in legend %}<span style="white-space:nowrap"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" fill="currentColor" fill-opacity="{{ l.op }}"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
+<div class="tw"><table class="rules">
+  <thead><tr><th>Hafta</th>{% for l in legend %}<th>{{ l.label }}</th>{% endfor %}<th>Toplam</th></tr></thead>
+  <tbody>{% for w in mix %}<tr><td>{{ w.week }}</td>{% for c in w.cells %}<td>{{ c | tr_int }}</td>{% endfor %}<td>{{ w.total | tr_int }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% else %}<p>Bu idare için haftalık dağılım yok.</p>{% endif %}
+
+<h2>Tek geçerli teklif payı (usule göre)</h2>
+{% if groups %}
+<div class="tw"><table class="rules">
+  <thead><tr><th>Usul</th><th>Bu idare</th><th>Karşılaştırma grubu</th></tr></thead>
+  <tbody>
+  {% for g in groups %}
+    <tr><td>{{ g.label }}</td>
+      <td>{% if g.enough and g.rate is not none %}{{ g.rate | tr_pct }} (n={{ g.records | tr_int }}){% else %}n={{ g.records | tr_int }} (oran için örnek yetersiz){% endif %}</td>
+      <td>{% if g.peer_label and g.peer_rate is not none %}{{ g.peer_label }}: {{ g.peer_rate | tr_pct }} (n={{ g.peer_n | tr_int }}){% elif g.peer_note %}{{ g.peer_note }}{% else %}—{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p>Bu idare için usul tablosu yok.</p>{% endif %}
+<p class="note">{{ note }}</p>
+
+<h2>Bu idareden en çok iş alan yükleniciler</h2>
+<div class="tw"><table class="rules">
+  <thead><tr><th>Sözleşme sayısına göre</th><th>Sayı</th></tr></thead>
+  <tbody>{% for y in top_count %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td>{{ y.count | tr_int }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<div class="tw"><table class="rules">
+  <thead><tr><th>TRY toplamına göre</th><th>Toplam (TRY)</th></tr></thead>
+  <tbody>{% for y in top_try %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td>{{ y.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
+</table></div>
+
+<h2>Sözleşme dökümü (yeniden eskiye)</h2>
+<p class="muted">{{ total_rows | tr_int }} kayıt. Her satır, ilgili kaydın sayfasına bağlanır.</p>
+<ul class="rows">
+{{ rows_html }}
+</ul>
+{% if npages > 1 %}<nav class="pager" aria-label="Sayfalar"><span>Sayfa 1 / {{ npages }}</span><a href="/idare/{{ slug }}/2/">Sonraki →</a></nav>{% endif %}
+{% endblock %}

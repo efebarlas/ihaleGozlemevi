@@ -79,5 +79,29 @@
    "tekrarlayan_eslesik": 0.35,
    "n": 13000
   }
- }
+ },
+ "idare_index": [
+  {
+   "slug": "ornek-il-mudurlugu",
+   "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+   "records": 10
+  },
+  {
+   "slug": "ornek-universitesi-rektorlugu",
+   "name": "ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜ",
+   "records": 1
+  }
+ ],
+ "yuklenici_index": [
+  {
+   "slug": "ornek-yapi-ltd",
+   "name": "Örnek Yapı Limited Şirketi",
+   "records": 8
+  },
+  {
+   "slug": "ornek-kirtasiye-as",
+   "name": "Örnek Kırtasiye Anonim Şirketi",
+   "records": 1
+  }
+ ]
 }

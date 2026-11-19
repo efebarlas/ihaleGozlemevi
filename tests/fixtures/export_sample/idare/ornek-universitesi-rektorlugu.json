@@ -1,0 +1,136 @@
+{
+ "schema": 1,
+ "slug": "ornek-universitesi-rektorlugu",
+ "name": "ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜ",
+ "key": "örnek üni̇versi̇tesi̇ rektörlüğü",
+ "idare_turu": "diğer",
+ "il": null,
+ "totals": {
+  "mal": {
+   "records": 1,
+   "awards": 1,
+   "try_total": 1234567.5,
+   "median_bedel_try": 100000.0
+  }
+ },
+ "procedure_categories": [
+  {
+   "code": "acik",
+   "label": "Açık"
+  },
+  {
+   "code": "pazarlik_21b",
+   "label": "Pazarlık 21/b"
+  },
+  {
+   "code": "pazarlik_diger",
+   "label": "Pazarlık (diğer)"
+  },
+  {
+   "code": "istisna_3g",
+   "label": "İstisna 3/g"
+  },
+  {
+   "code": "istisna_3e",
+   "label": "İstisna 3/e"
+  },
+  {
+   "code": "istisna_diger",
+   "label": "İstisna (diğer)"
+  },
+  {
+   "code": "diger",
+   "label": "Diğer"
+  }
+ ],
+ "procedure_mix": [
+  {
+   "week": "2026-W46",
+   "start": "2026-11-09",
+   "counts": {
+    "acik": 3,
+    "pazarlik_21b": 1
+   },
+   "try": {}
+  },
+  {
+   "week": "2026-W47",
+   "start": "2026-11-16",
+   "counts": {
+    "acik": 2,
+    "istisna_3g": 4
+   },
+   "try": {}
+  }
+ ],
+ "tek_gecerli_by_group": [
+  {
+   "group": "mal/acik",
+   "type": "mal",
+   "usul_turu": "acik",
+   "label": "Açık",
+   "records": 12,
+   "tek_gecerli_teklif": 0.4,
+   "peer": {
+    "label": "Türkiye'deki diğer idareler (mal, Açık)",
+    "records": 300,
+    "tek_gecerli_teklif": 0.25
+   }
+  },
+  {
+   "group": "mal/istisna_3g",
+   "type": "mal",
+   "usul_turu": "istisna_3g",
+   "label": "4734/3-g (diğer idareler)",
+   "records": 3,
+   "tek_gecerli_teklif": 1.0,
+   "peer": null,
+   "peer_note": "Kendi geçmişiyle karşılaştırılır"
+  }
+ ],
+ "timeline": [
+  {
+   "id": "2026-11-18-mal-A-2",
+   "date": "2026-11-18",
+   "type": "mal",
+   "konu": "Örnek Laboratuvar Cihazı Alımı",
+   "yuklenici": "Örnek Yapı Limited Şirketi",
+   "yuklenici_slug": "ornek-yapi-ltd",
+   "bedel": {
+    "amount": 104000.0,
+    "currency": "EUR",
+    "alt": {
+     "amount": 4200000.0,
+     "currency": "TRY"
+    }
+   },
+   "flags": [
+    "bedel_orani"
+   ],
+   "score": 3.2
+  }
+ ],
+ "top_yuklenici_by_count": [
+  {
+   "name": "Örnek Yapı Limited Şirketi",
+   "slug": "ornek-yapi-ltd",
+   "count": 5,
+   "try_total": 900000.0
+  },
+  {
+   "name": "Ayşe ÖRNEK",
+   "slug": null,
+   "count": 2,
+   "try_total": 5000.0
+  }
+ ],
+ "top_yuklenici_by_try": [
+  {
+   "name": "Örnek Yapı Limited Şirketi",
+   "slug": "ornek-yapi-ltd",
+   "count": 5,
+   "try_total": 900000.0
+  }
+ ],
+ "natural_person_awards": 2
+}

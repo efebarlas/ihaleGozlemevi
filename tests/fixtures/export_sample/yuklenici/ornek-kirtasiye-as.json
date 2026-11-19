@@ -1,0 +1,31 @@
+{
+ "schema": 1,
+ "slug": "ornek-kirtasiye-as",
+ "name": "Örnek Kırtasiye Anonim Şirketi",
+ "key": "örnek kırtasiye anonim şirketi",
+ "awards": [
+  {
+   "id": "2026-11-18-mal-A-4",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Kırtasiye Malzemesi Alımı",
+   "bedel": {
+    "amount": 398000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  }
+ ],
+ "totals_per_idare": [
+  {
+   "idare": "ÖRNEK İL MÜDÜRLÜĞÜ",
+   "slug": "ornek-il-mudurlugu",
+   "count": 1,
+   "try_total": 398000.0
+  }
+ ]
+}

@@ -1,0 +1,146 @@
+{
+ "schema": 1,
+ "slug": "ornek-yapi-ltd",
+ "name": "Örnek Yapı Limited Şirketi",
+ "key": "örnek yapı limited şirketi",
+ "awards": [
+  {
+   "id": "2026-11-17-mal-A-1",
+   "date": "2026-11-17",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Temizlik Malzemesi Alımı",
+   "bedel": {
+    "amount": 42000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-17-mal-A-2",
+   "date": "2026-11-17",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Toner Alımı",
+   "bedel": {
+    "amount": 70000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-18-mal-A-1",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "100 Adet Örnek Masa Alımı",
+   "bedel": {
+    "amount": 2767200.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-18-mal-A-2",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜ",
+    "slug": "ornek-universitesi-rektorlugu"
+   },
+   "konu": "Örnek Laboratuvar Cihazı Alımı",
+   "bedel": {
+    "amount": 104000.0,
+    "currency": "EUR",
+    "alt": {
+     "amount": 4200000.0,
+     "currency": "TRY"
+    }
+   },
+   "usul": "Pazarlık (MD 21 B)"
+  },
+  {
+   "id": "2026-11-18-mal-A-3",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Kırtasiye Malzemesi Alımı",
+   "bedel": {
+    "amount": 485000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-18-mal-B-2",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Akaryakıt Alımı",
+   "bedel": {
+    "amount": 75000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-18-mal-B-3",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Boya Malzemesi Alımı 3",
+   "bedel": {
+    "amount": 200000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  },
+  {
+   "id": "2026-11-18-mal-B-4",
+   "date": "2026-11-18",
+   "type": "mal",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "slug": "ornek-il-mudurlugu"
+   },
+   "konu": "Örnek Boya Malzemesi Alımı 4",
+   "bedel": {
+    "amount": 100000.0,
+    "currency": "TRY"
+   },
+   "usul": "Açık"
+  }
+ ],
+ "totals_per_idare": [
+  {
+   "idare": "ÖRNEK İL MÜDÜRLÜĞÜ",
+   "slug": "ornek-il-mudurlugu",
+   "count": 7,
+   "try_total": 3739200.0
+  },
+  {
+   "idare": "ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜ",
+   "slug": "ornek-universitesi-rektorlugu",
+   "count": 1,
+   "try_total": 104000.0
+  }
+ ]
+}

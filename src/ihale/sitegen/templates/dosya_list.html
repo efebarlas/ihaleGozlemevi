@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ heading }}</h1>
+<p class="muted">{{ total | tr_int }} kayıt, A'dan Z'ye. Bu sayfalar yalnızca bültende yayımlanan olguları listeler. <a href="{{ other[0] }}">{{ other[1] }}</a></p>
+{% if kind == "yuklenici" %}<p class="muted">Gerçek kişi yüklenicilerin sayfası yoktur.</p>{% endif %}
+<ul class="archive">
+{{ items_html }}
+</ul>
+{% if npages > 1 %}
+<nav class="pager" aria-label="Sayfalar">
+  {% for n, sp in page_spans %}{% if n == pn %}<strong>{{ n }} ({{ sp[0] }}–{{ sp[1] }})</strong>{% else %}<a href="/{{ kind }}/{% if n > 1 %}liste/{{ n }}/{% endif %}">{{ n }} ({{ sp[0] }}–{{ sp[1] }})</a>{% endif %}{% endfor %}
+</nav>
+{% endif %}
+{% endblock %}

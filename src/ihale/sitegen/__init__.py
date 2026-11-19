@@ -401,13 +401,15 @@ def fold_cards(flagged: list[dict]) -> list[dict]:
     return items
 
 
-def paginate(sizes: list[int]) -> list[list[int]]:
+def paginate(sizes: list[int], max_bytes: int | None = None, max_records: int | None = None) -> list[list[int]]:
     """Greedy split of row indexes into pages by record count and byte size."""
+    max_bytes = max_bytes or PAGE_MAX_BYTES
+    max_records = max_records or PAGE_MAX_RECORDS
     pages: list[list[int]] = []
     cur: list[int] = []
     size = 0
     for i, n in enumerate(sizes):
-        if cur and (len(cur) >= PAGE_MAX_RECORDS or size + n > PAGE_MAX_BYTES):
+        if cur and (len(cur) >= max_records or size + n > max_bytes):
             pages.append(cur)
             cur, size = [], 0
         cur.append(i)
@@ -429,7 +431,9 @@ def _env() -> Environment:
                       autoescape=select_autoescape(["html", "xml"]),
                       trim_blocks=True, lstrip_blocks=True)
     env.filters.update(tr_date_long=tr_date_long, tr_date_short=tr_date_short,
-                       tr_money=tr_money, tr_int=tr_int, tr_score=tr_score, tr_pct=tr_pct)
+                       tr_money=tr_money, tr_int=tr_int, tr_score=tr_score, tr_pct=tr_pct,
+                       tr_money_plain=lambda x: tr_money({"amount": x, "currency": "TRY"}) if x is not None else "—")
+    env.globals["type_labels"] = TYPE_LABELS
     env.globals["innocent_brand"] = INNOCENT_BRAND
     return env
 
@@ -472,6 +476,12 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
         # natural persons: the name appears only on the record's own detail page (SPEC §6.1)
         t["_yuklenici"] = PERSON_LABEL if t["_person"] else (yname or "okunamadı")
         t["_bedel_peer"] = bedel_peer_line(t)
+        iname = (t.get("idare") or {}).get("name")
+        t["_idare_href"] = idare_href.get(iname)
+        t["_yuk_href"] = None if t["_person"] else yuk_href.get(yname)
+        par = ((t.get("idare") or {}).get("parent") or {}).get("name")
+        if par and iname:
+            idare_parent.setdefault(iname, par)
         t["_peer"] = peer_line(t)
         t["_ind"] = indicators(t)
         t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
@@ -485,6 +495,11 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
         if wl:
             t["_parts"].append(wl)
         return t
+
+    idare_href = {e["name"]: f"/idare/{_safe(e['slug'])}/" for e in meta.get("idare_index") or []}
+    yuk_href = {e["name"]: f"/yuklenici/{_safe(e['slug'])}/" for e in meta.get("yuklenici_index") or []
+                if not is_natural_person(e["name"])}
+    idare_parent: dict[str, str] = {}
 
     day_ctx = {}
     for ds in dates:
@@ -516,7 +531,8 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
                 missing = v is None and key not in OPTIONAL_FIELDS
                 if key == "yuklenici" and t["_person"] and not t["_page"]:
                     v = PERSON_LABEL
-                rows.append(dict(key=key, label=label, value=v, note=reason or "",
+                href = t["_idare_href"] if key == "idare" else (t["_yuk_href"] if key == "yuklenici" else None)
+                rows.append(dict(key=key, label=label, value=v, note=reason or "", href=href,
                                  unreadable=missing or (key in unread and reason == "")))
             src = t.get("source") or {}
             type_label = TYPE_LABELS.get(src.get("type"), src.get("type") or "")
@@ -582,6 +598,14 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False) -> None
                 chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
     write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips,
           items=fold_cards(d["flagged"]) if d else [])
+
+    from .dossiers import build_dossiers
+    href_by_id = {t["id"]: t["_href"] for ds in dates for t in day_ctx[ds]["tenders"]}
+    build_dossiers(export_dir=export_dir, meta=meta, env=env, write=write, ctx_base=ctx_base,
+                   render_fragment=lambda tpl, **kw: _squeeze(tpl.render(**ctx_base, **kw)),
+                   href_by_id=href_by_id, idare_href=idare_href, yuk_href=yuk_href, idare_parent=idare_parent,
+                   fmt=dict(tr_money=tr_money, tr_int=tr_int, tr_date_short=tr_date_short),
+                   paginate_list=lambda sizes, mb: paginate(sizes, max_bytes=mb, max_records=10**9))
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
           earliest=min(dates) if dates else None, latest=latest,

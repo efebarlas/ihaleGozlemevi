@@ -686,3 +686,128 @@ def test_deploy_refuses_data_direction_without_tokens(tmp_path):
     with pytest.raises(RuntimeError, match="design preview"):
         sitegen.deploy(out)
 
+
+
+# ------------------------------------------------------------------ Dosyalar (idare / yüklenici pages)
+def _main_text(html: str) -> str:
+    m = re.search(r"<main.*?</main>", html, flags=re.S)
+    return _visible_text(m.group(0) if m else html)
+
+
+def test_dossier_pages_exist_and_are_linked(dist):
+    for rel in ("idare/index.html", "yuklenici/index.html", "idare/ornek-il-mudurlugu/index.html",
+                "idare/ornek-universitesi-rektorlugu/index.html", "yuklenici/ornek-yapi-ltd/index.html",
+                "yuklenici/ornek-kirtasiye-as/index.html"):
+        assert (dist / rel).is_file(), rel
+    assert 'href="/idare/"' in _read(dist, "index.html")                        # header nav
+    h = _read(dist, "index.html")
+    assert 'href="/idare/ornek-il-mudurlugu/"' in h and 'href="/yuklenici/ornek-yapi-ltd/"' in h   # card links
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert 'href="/idare/ornek-il-mudurlugu/"' in d and 'href="/yuklenici/ornek-yapi-ltd/"' in d
+    day = _day_text(dist, "2026-11-18")
+    assert 'href="/idare/ornek-il-mudurlugu/"' in day
+    # a masked person is never a link
+    b1 = _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
+    assert "/yuklenici/ayse" not in b1 and "/yuklenici/ayse" not in _read(dist, "index.html")
+
+
+def test_idare_page_content(dist):
+    t = _main_text(_read(dist, "idare/ornek-il-mudurlugu/index.html"))
+    for needle in ["ÖRNEK İL MÜDÜRLÜĞÜ", "Haftalık usul dağılımı", "2026-W47", "Tek geçerli teklif payı (usule göre)",
+                   "%40 (n=12)", "(mal, Açık): %25 (n=300)", "Kendi geçmişiyle karşılaştırılır",
+                   "oran için örnek yetersiz", "en çok iş alan yükleniciler",
+                   "Bir idarenin tablosu tek başına bir sonuç değildir; usul ve alım türü farklılıkları rakamları etkiler.",
+                   "Sözleşme dökümü"]:
+        assert needle in t, needle
+    h = _read(dist, "idare/ornek-il-mudurlugu/index.html")
+    assert "<svg" in h and "Pazarlık 21/b" in h
+    assert "Bağlı olduğu kurum" not in h                                         # no parent in the sample
+
+
+def test_dossier_pages_mask_persons(dist):
+    for p in (dist / "idare").rglob("*.html"):
+        t = p.read_text(encoding="utf-8")
+        assert "Ayşe ÖRNEK" not in t and "Mehmet Örnekoğlu" not in t, p
+    i = _main_text(_read(dist, "idare/ornek-il-mudurlugu/index.html"))
+    assert i.count(PERSON_LABEL) >= 2                                            # export-masked row and the raw name
+
+
+def test_yuklenici_pages_have_no_score_rank_or_rate(dist):
+    for p in (dist / "yuklenici").rglob("*.html"):
+        t = _main_text(p.read_text(encoding="utf-8"))
+        for bad in ("Puan", "puan", "%", "oran", "sıra", "en çok"):
+            assert bad not in t, (p, bad)
+    y = _main_text(_read(dist, "yuklenici/ornek-yapi-ltd/index.html"))
+    assert "İdarelere göre toplamlar" in y and "ÖRNEK İL MÜDÜRLÜĞÜ" in y
+    assert not (dist / "yuklenici" / "ayse-ornek").exists()                       # persons have no page
+
+
+def test_every_internal_link_resolves(dist):
+    pages = {}
+    for p in dist.rglob("*.html"):
+        pages[p.relative_to(dist).as_posix()] = p.read_text(encoding="utf-8")
+    for rel, t in pages.items():
+        for href in re.findall(r'href="(/[^"]*)"', t):
+            path, _, frag = href.partition("#")
+            if path.endswith(".css") or path.endswith(".txt"):
+                continue
+            target = (path.strip("/") + "/index.html") if path.strip("/") else "index.html"
+            if path.startswith("/?") or path == "/":
+                target = "index.html"
+            assert target in pages, (rel, href)
+            if frag:
+                assert f'id="{frag}"' in pages[target], (rel, href)
+
+
+def _big_dossier_export(tmp_path, n=400):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    f = exp / "idare" / "ornek-il-mudurlugu.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    base = d["timeline"][0]
+    for k in range(n):
+        d["timeline"].append(dict(base, id=f"x-{k}", konu=f"Çok uzun örnek konu {k} " + "kelime " * 25))
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    g = exp / "yuklenici" / "ornek-yapi-ltd.json"
+    y = json.loads(g.read_text(encoding="utf-8"))
+    for k in range(n):
+        y["awards"].append(dict(y["awards"][0], id=f"x-{k}", konu=f"Çok uzun örnek konu {k} " + "kelime " * 25))
+    g.write_text(json.dumps(y, ensure_ascii=False), encoding="utf-8")
+    return exp
+
+
+def test_dossier_timelines_paginate_under_150kb(tmp_path):
+    out = tmp_path / "o"
+    sitegen.build(_big_dossier_export(tmp_path), out)
+    for kind, slug in (("idare", "ornek-il-mudurlugu"), ("yuklenici", "ornek-yapi-ltd")):
+        more = sorted((out / kind / slug).glob("*/index.html"))
+        assert len(more) >= 3, kind
+        assert "Sonraki" in (out / kind / slug / "index.html").read_text(encoding="utf-8")
+    for p in out.rglob("*.html"):
+        assert p.stat().st_size <= 150_000, (p, p.stat().st_size)
+
+
+def test_index_pages_paginate_and_sort(tmp_path):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    m = json.loads((exp / "meta.json").read_text(encoding="utf-8"))
+    base = m["idare_index"][0]
+    m["idare_index"] = [dict(base, name=f"İdare {i:05d} " + "x" * 80) for i in range(1500)] + m["idare_index"]
+    # only entries with a file are listed; give them all the same file via symlink-free copies
+    for i, e in enumerate(m["idare_index"][:1500]):
+        e["slug"] = f"s{i}"
+    src = exp / "idare" / "ornek-il-mudurlugu.json"
+    for e in m["idare_index"][:1500]:
+        (exp / "idare" / f"{e['slug']}.json").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    (exp / "meta.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "o"
+    sitegen.build(exp, out)
+    lists = sorted((out / "idare" / "liste").glob("*/index.html"))
+    assert lists and (out / "idare" / "index.html").stat().st_size <= 150_000
+    for p in lists:
+        assert p.stat().st_size <= 150_000
+
+
+def test_file_count_report_for_sample(dist):
+    n = sum(1 for p in dist.rglob("*") if p.is_file())
+    assert n < sitegen.MAX_FILES
