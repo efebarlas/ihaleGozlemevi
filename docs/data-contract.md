@@ -37,11 +37,14 @@ Each idare and yüklenici has a `key` used for grouping, built as follows:
 Be conservative: a false merge is worse than a missed one. No fuzzy matching in v1. Persons' names are keyed the same way and are never enriched (SPEC §6).
 
 ## 4. Flags (v1)
+The old single flag `tek_gecerli_teklif` is split per SPEC §1 "Borrowed from abroad": `tek_teklif` and `diger_teklifler_elendi`. Both depend on `toplam_teklif` and `gecerli_teklif` being confident. `tek_gecerli_teklif` (= either of the two) is still used as the rate for `idare_stats` and the peer comparison.
+
 A flag is computed only when **every input field is confident**. Otherwise the record lists those fields under `unreadable`, and that flag is not computed. Wording is neutral (SPEC §6), and every flag carries its numbers.
 
 | code | condition | text (Turkish, shown on the site) |
 |---|---|---|
-| `tek_gecerli_teklif` | `gecerli_teklif == 1` | `Tek geçerli teklif` (also show `toplam_teklif` when > 1: `2 teklif, 1 geçerli`) |
+| `tek_teklif` (OCP R018) | `toplam_teklif == 1` | `Tek teklif verildi` |
+| `diger_teklifler_elendi` (OCP R035) | `toplam_teklif > 1` and `gecerli_teklif == 1` | `4 teklif verildi, yalnızca kazananınki geçerli sayıldı` |
 | `bedel_orani` | ratio ≥ 0.97 (see below), i.e. ihalent's `low_discount` (kırım < 3%) | `Sözleşme bedeli yaklaşık maliyetin %97'si`; if > 1: `Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)` |
 | `tekrarlayan_yuklenici` | the same (idare key, yüklenici key) has ≥ 3 distinct ikns with a bulletin date within the 365 days up to and including this record's | `Bu yüklenici son 12 ayda bu idareden 3 sözleşme aldı (bu dahil)` |
 
@@ -54,9 +57,10 @@ A flag is computed only when **every input field is confident**. Otherwise the r
 
 ### 4.1 Ranking: compound unusualness (SPEC §1 "Base rates")
 Flags alone fire on roughly half of all tenders, so Bugün ranks by a transparent `score`, an integer sum of these parts:
-- +1 `tek_gecerli_teklif`
+- +1 `tek_teklif`
+- +2 `diger_teklifler_elendi` (weighted above R018: other bids existed and were disqualified)
 - +1 `bedel_orani`
-- +2 `tekrarlayan_yuklenici` when this record also has at least one of the two flags above (a repeat pair inside flagged tenders). A bare repeat adds +0, but the flag is still shown.
+- +2 `tekrarlayan_yuklenici` when this record also has at least one of the flags above (a repeat pair inside flagged tenders). A bare repeat adds +0, but the flag is still shown.
 - +1 `idare_orani`: the idare has ≥ 5 records in the window, and its share of `tek_gecerli_teklif` is ≥ 2× its peer group's share (see Peer comparison below).
 
 Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli (TRY). Thresholds are provisional. `scripts/base_rates.py` prints the measured base rates from the DB (share of tek teklif, bedel ≥ 0.97, repeat pairs, per usul and section). Revisit the thresholds once ~30 days are loaded.
@@ -70,6 +74,14 @@ Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli
   - Peers are tried in this order, taking the first group with ≥ 20 awards in the window (excluding the idare itself): same `idare_turu` + `il` + sector, then same `idare_turu` + sector nationwide, then all idares in that sector.
   - The group's Turkish label is exported, so the site never guesses it.
 - The Yöntem page explains this proxy and its limits.
+
+### 4.2 Indicators: stored as values, not yet in the score
+From the sonuç fields (SPEC §1 "Borrowed from abroad", GTI and OCP). Computed and exported per record, shown on the detail page with peer medians where n ≥ 5. They are **not added to `score`** until `scripts/base_rates.py` has run on ~30 days of data and the thresholds are chosen.
+- `elenen_orani` (OCP R038): `(toplam_teklif - gecerli_teklif) / toplam_teklif` when `toplam_teklif ≥ 2`. Export the peer group's mean too (same peer chain as §4.1, min n ≥ 5).
+- `karar_suresi_gun` (GTI decision period): days from `ihale_tarihi` to `sozlesme_tarihi`, only when both are confident and the result is ≥ 0. Negative or absent → null plus a warning.
+- `usul_turu`: from the verbatim `ihale_usulu`: `acik` (`Açık`), `belli_istekliler`, `pazarlik_21a` … `pazarlik_21f` (`Pazarlık (MD 21 X)`), `istisna_3x` (`4734 / 3-x`), `dogrudan_temin_22x` if seen, else `diger`. `acik_olmayan` is true for everything except `acik` and `belli_istekliler`.
+- `yuklenici_payi` (GTI winner share): this yüklenici's share of the idare's TRY sözleşme bedeli total in the 365-day window up to and including this record. Only when the idare has ≥ 5 awards in the window. Export the share and n.
+- `base_rates.py` also prints the distribution of each indicator, by usul_turu and section.
 
 `tekrarlayan_yuklenici` needs history, so it becomes meaningful once ~30 days of bulletins are loaded (a small backfill in M2/M3, full backfill in M5).
 
@@ -102,6 +114,8 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
    "score": 1, "score_parts": ["bedel_orani"],
+   "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
+                  "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
                    "peer": {"label": "Antalya'daki sağlık idareleri (mal)", "records": 140, "tek_gecerli_teklif": 0.43}}}
  ]}
