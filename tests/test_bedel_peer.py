@@ -82,11 +82,11 @@ def test_peer_chain_falls_back_from_il_to_turu():
     assert i["bedel_orani_peer_n"] == 22 and i["bedel_orani_peer_median"] == 0.6   # 10x0.4 + 12x0.6 → median 0.6
 
 
-def test_structural_dmo_gets_no_peer_median():
+def test_dmo_is_scored_like_any_idare_with_a_peer_median():
     dmo = mk(1, "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ", 0.99, usul="4734 / 3-g")
     peers = peers_ratio(30, lambda i: 0.5, usul="4734 / 3-g")
     i = run(dmo, *peers)[0].indicators
-    assert i["bedel_orani"] == 0.99 and i["bedel_orani_peer_median"] is None
+    assert i["bedel_orani"] == 0.99 and i["bedel_orani_peer_median"] == 0.5 and i["bedel_orani_peer_n"] == 30
 
 
 def test_no_threshold_in_exported_texts():

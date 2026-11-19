@@ -127,6 +127,6 @@ def test_3e_rule_in_table_and_matches_any_idare():
     assert structural.match("HERHANGİ BİR İDARE", "istisna_3e").id == "istisna-3e"
     assert structural.match("HERHANGİ BİR İDARE", "istisna_3g") is None
     ids = [r["id"] for r in structural.rules_meta()]
-    assert ids == ["dmo-3g", "istisna-3e"]
-    rule = structural.rules_meta()[1]
+    assert ids == ["istisna-3e"]
+    rule = structural.rules_meta()[0]
     assert rule["effects"] == ["no_single_bid_points"] and rule["added"] == "2026-11-19"

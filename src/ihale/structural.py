@@ -32,16 +32,6 @@ class Rule:
 
 RULES: tuple[Rule, ...] = (
     Rule(
-        id="dmo-3g",
-        prefix="DEVLET MALZEME OFİSİ",
-        usul_turu="istisna_3g",
-        effects=(NO_SINGLE_BID_POINTS, OWN_PEER_GROUP),
-        reason_tr=("Devlet Malzeme Ofisi merkezî alım kurumudur; 4734/3-g kapsamındaki seri, markaya özgü "
-                   "alımlarında tek teklif yapısı gereğidir."),
-        match_tr="İdare adı «DEVLET MALZEME OFİSİ» ile başlar ve usul 4734/3-g'dir",
-        added="2026-11-19",
-    ),
-    Rule(
         id="istisna-3e",
         prefix=None,
         usul_turu="istisna_3e",

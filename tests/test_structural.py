@@ -1,24 +1,24 @@
+"""Structural single-bid table (§4.1.1): only `istisna-3e` is in it; DMO is scored like any other idare."""
+import json
 from datetime import date
-
-import pytest
 
 from ihale import structural
 from ihale.export import export_all
-from ihale.flags import compute_flags
+from ihale.flags import compute_flags_full
 from ihale.store import Store, StoredRecord
 
 from rec_helpers import rec
 
 D = date(2026, 11, 18)
 DMO = "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA ŞUBESİ"
-G = "4734 / 3-g"
-REASON = ("Devlet Malzeme Ofisi merkezî alım kurumudur; 4734/3-g kapsamındaki seri, markaya özgü alımlarında "
-          "tek teklif yapısı gereğidir.")
+G, E3 = "4734 / 3-g", "4734 / 3-e"
+REASON_3E = ("4734 sayılı Kanun md. 3/e: alım, Kanunda adı sayılan kamu kuruluşundan (ör. ceza infaz kurumu "
+             "işyurtları, DMO, TCDD, Et ve Balık Kurumu) yapılır; tek tedarikçi Kanun gereğidir.")
 
 
 def run(*recs):
     stored = [StoredRecord(id=i + 1, record=r) for i, r in enumerate(recs)]
-    out = compute_flags(stored)
+    out, _ = compute_flags_full(stored)
     return [out[s.id] for s in stored]
 
 
@@ -29,89 +29,99 @@ def mk(i, idare, usul, *, toplam=1, gecerli=1, bedel=50.0, maliyet=200.0, yuklen
     return r
 
 
+def background(n=150, tek_n=15, start=1000):
+    """Open-tender background so that part rates are small and points positive."""
+    return [mk(start + i, f"ARKA PLAN KURUMU {i}", "Açık", toplam=1 if i < tek_n else 3,
+               gecerli=1 if i < tek_n else 3, yuklenici=f"B{i}") for i in range(n)]
+
+
 def codes(res):
     return [f["code"] for f in res.flags]
 
 
-def test_match_rules():
-    assert structural.match(DMO, "istisna_3g").id == "dmo-3g"
-    assert structural.match("devlet malzeme ofisi", "istisna_3g").id == "dmo-3g"       # Turkish casefold
-    assert structural.match("  DEVLET   MALZEME  OFİSİ X", "istisna_3g").id == "dmo-3g"
+def test_table_has_only_istisna_3e():
+    assert [r.id for r in structural.RULES] == ["istisna-3e"]
+    assert structural.match(DMO, "istisna_3g") is None             # DMO is no longer special
     assert structural.match(DMO, "acik") is None
-    assert structural.match(DMO, "istisna_3a") is None
-    assert structural.match("ANKARA BELEDİYESİ", "istisna_3g") is None
-    assert structural.match("T.C. DEVLET MALZEME OFİSİ", "istisna_3g") is None            # prefix, not substring
-    assert structural.match(None, "istisna_3g") is None and structural.match(DMO, None) is None
 
 
-def test_dmo_3g_keeps_flags_but_scores_only_from_bedel_orani():
-    (a,) = run(mk(1, DMO, G, bedel=99.0, maliyet=100.0))
-    assert codes(a) == ["tek_teklif", "bedel_orani"]            # both stay as shown facts
-    assert a.part_codes == ["bedel_orani"]
-    assert a.structural == {"id": "dmo-3g", "text": REASON}
+def test_match_3e_any_idare():
+    assert structural.match("HERHANGİ BİR İDARE", "istisna_3e").id == "istisna-3e"
+    assert structural.match("ADALET BAKANLIĞI CEZA İNFAZ KURUMU İŞYURTLARI", "istisna_3e").id == "istisna-3e"
+    assert structural.match("HERHANGİ BİR İDARE", "istisna_3g") is None
+    assert structural.match("X", "istisna_3a") is None
+    assert structural.match(None, "istisna_3e") is None and structural.match("X", None) is None
 
 
-def test_dmo_3g_diger_teklifler_elendi_adds_no_points():
-    (a,) = run(mk(1, DMO, G, toplam=4, gecerli=1))
-    assert codes(a) == ["diger_teklifler_elendi"] and a.score == 0 and a.part_codes == []
+def test_dmo_3g_is_scored_like_any_idare():
+    recs = [mk(1, DMO, G, bedel=99.0, maliyet=100.0)] + [mk(100 + i, f"ÖBÜR KURUM {i}", G, toplam=3, gecerli=3,
+                                                              yuklenici=f"P{i}") for i in range(150)]
+    a = run(*recs)[0]
+    assert codes(a) == ["tek_teklif", "bedel_orani"]
+    assert [p["code"] for p in a.score_parts] == ["tek_teklif", "bedel_orani"] and a.score > 0
+    assert a.structural is None
 
 
-def test_tekrarlayan_needs_a_non_excluded_partner_flag():
-    recs = [mk(i, DMO, G) for i in range(3)]                         # same yüklenici, 3 ikns, all tek teklif
-    last = run(*recs)[2]
-    assert "tekrarlayan_yuklenici" in codes(last) and last.score == 0 and last.part_codes == []
-    bedel = [mk(i, DMO, G, bedel=99.0, maliyet=100.0) for i in range(3)]
-    last = run(*bedel)[2]
-    assert last.part_codes == ["bedel_orani", "tekrarlayan_eslesik"]
-
-
-def test_own_peer_group_means_no_peer_and_no_idare_orani():
+def test_dmo_gets_a_peer_group_and_can_fire_idare_orani():
     own = [mk(i, DMO, G) for i in range(6)]
     peers = [mk(100 + i, f"KONYA BELEDİYESİ {i}", G, toplam=3, gecerli=3, yuklenici=f"P{i}") for i in range(30)]
     a = run(*own, *peers)[0]
     st = a.idare_stats
-    assert st["peer"] is None and st["peer_note"] == "Kendi geçmişiyle karşılaştırılır"
-    assert st["records"] == 6 and st["tek_gecerli_teklif"] == 1.0          # its own rate is still shown
-    assert "idare_orani" not in a.part_codes
+    assert st["peer"] is not None and "peer_note" not in st and st["records"] == 6
+    assert "idare_orani" in a.part_codes
 
 
-def test_dmo_with_other_usul_is_unaffected():
-    (a,) = run(mk(1, DMO, "Açık"))
-    assert a.structural is None and a.part_codes == ["tek_teklif"]
-    own = [mk(i, DMO, "Açık") for i in range(6)]
-    peers = [mk(100 + i, f"KONYA BELEDİYESİ {i}", "Açık", toplam=3, gecerli=3, yuklenici=f"P{i}") for i in range(30)]
-    st = run(*own, *peers)[0]
-    assert st.structural is None and "peer_note" not in st.idare_stats and "idare_orani" in st.part_codes
+def test_3e_single_bid_keeps_flags_but_no_points():
+    recs = [mk(1, "ADALET BAKANLIĞI CEZA İNFAZ KURUMU İŞYURTLARI", E3)] + background()
+    a = run(*recs)[0]
+    assert codes(a) == ["tek_teklif"] and a.score_parts == [] and a.score == 0.0
+    assert a.structural == {"id": "istisna-3e", "text": REASON_3E}
 
 
-def test_non_dmo_idare_with_3g_is_unaffected():
-    (a,) = run(mk(1, "ANKARA BELEDİYESİ", G))
-    assert a.structural is None and a.part_codes == ["tek_teklif"]
+def test_3e_diger_teklifler_elendi_gets_no_points_and_other_parts_count():
+    recs = [mk(1, "KURUM A", E3, toplam=4, gecerli=1, bedel=99.0, maliyet=100.0)] + background()
+    a = run(*recs)[0]
+    assert codes(a) == ["diger_teklifler_elendi", "bedel_orani"]
+    assert [p["code"] for p in a.score_parts] == ["bedel_orani"]
+
+
+def test_tekrarlayan_needs_a_non_excluded_partner_part_for_3e():
+    recs = [mk(i, "KURUM A", E3) for i in range(3)] + background()          # same yüklenici, 3 ikns, single bids
+    last = run(*recs)[2]
+    assert "tekrarlayan_yuklenici" in codes(last) and last.score_parts == []
+    paired = [mk(i, "KURUM A", E3, bedel=99.0, maliyet=100.0) for i in range(3)] + background()
+    assert [p["code"] for p in run(*paired)[2].score_parts] == ["bedel_orani", "tekrarlayan_eslesik"]
 
 
 def test_unconfident_idare_or_usul_never_matches():
-    r = mk(1, DMO, G)
-    r.confidence["idare"] = 0.2
+    r = mk(1, "KURUM A", E3)
+    r.confidence["ihale_usulu"] = 0.2
     assert run(r)[0].structural is None
-    r2 = mk(1, DMO, G)
-    r2.confidence["ihale_usulu"] = 0.2
-    assert run(r2)[0].structural is None
+
+
+def test_own_peer_group_mechanism_still_works_for_a_future_rule(monkeypatch):
+    rule = structural.Rule(id="test", prefix="ÖZEL KURUM", usul_turu="acik",
+                           effects=(structural.NO_SINGLE_BID_POINTS, structural.OWN_PEER_GROUP),
+                           reason_tr="deneme", match_tr="deneme", added="2026-01-01")
+    monkeypatch.setattr(structural, "RULES", (rule,))
+    own = [mk(i, "ÖZEL KURUM GM", "Açık") for i in range(6)]
+    peers = [mk(100 + i, f"KONYA BELEDİYESİ {i}", "Açık", toplam=3, gecerli=3, yuklenici=f"P{i}") for i in range(30)]
+    a = run(*own, *peers)[0]
+    assert a.idare_stats["peer"] is None and a.idare_stats["peer_note"] == "Kendi geçmişiyle karşılaştırılır"
+    assert "idare_orani" not in a.part_codes and a.score_parts == []
 
 
 def test_export_carries_structural_and_meta_rules():
-    import json
-    from ihale import config
-    Store().replace_day(D, "mal", [mk(1, DMO, G), mk(2, "ANKARA BELEDİYESİ", G, yuklenici="B")])
+    Store().replace_day(D, "mal", [mk(1, "KURUM A", E3), mk(2, DMO, G, yuklenici="B")])
     from ihale.pipeline import flag_all
     s = Store()
     flag_all(s)
     out = export_all(s)
     day = json.loads((out / "days" / "2026-11-18.json").read_text(encoding="utf-8"))
-    assert day["tenders"][0]["structural"] == {"id": "dmo-3g", "text": REASON}
+    assert day["tenders"][0]["structural"] == {"id": "istisna-3e", "text": REASON_3E}
     assert day["tenders"][1]["structural"] is None
     meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
-    rule = next(r for r in meta["structural_rules"] if r["id"] == "dmo-3g")
-    assert [r["id"] for r in meta["structural_rules"]] == ["dmo-3g", "istisna-3e"]
+    (rule,) = meta["structural_rules"]
     assert set(rule) == {"id", "match_tr", "effects", "reason_tr", "added"}
-    assert rule["id"] == "dmo-3g" and rule["effects"] == ["no_single_bid_points", "own_peer_group"]
-    assert rule["reason_tr"] == REASON and rule["added"] == "2026-11-19"
+    assert rule["id"] == "istisna-3e" and rule["effects"] == ["no_single_bid_points"]
+    assert rule["reason_tr"] == REASON_3E and rule["added"] == "2026-11-19"

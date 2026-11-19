@@ -9,7 +9,7 @@ from ihale.store import StoredRecord
 from rec_helpers import rec
 
 D = date(2026, 11, 18)
-DMO = "ÖRNEK MERKEZİ ALIM KURUMU"   # a stand-in: the real DMO is covered by the structural rule (test_structural)
+DMO = "ÖRNEK MERKEZİ ALIM KURUMU"   # a central purchasing body (stand-in for DMO, which is scored like any other idare)
 G = "4734 / 3-g"
 SUBE = "ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ ŞUBE {}"
 
