@@ -165,6 +165,65 @@ def _log_exc(msg: str, e: BaseException) -> None:
     log.error("%s: %s: %s", msg, type(e).__name__, e)
 
 
+# ---------------------------------------------------------------- loading days (shared by run catch-up and backfill)
+CATCH_UP_DAYS = 7
+
+
+def _no_bulletin_file() -> Path:
+    return config.data_dir() / "no-bulletin.txt"
+
+
+def _known_no_bulletin() -> set[str]:
+    try:
+        return set(_no_bulletin_file().read_text(encoding="utf-8").split("\n")) - {""}
+    except OSError:
+        return set()
+
+
+def _remember_no_bulletin(day: date, type_: str) -> None:
+    """Holidays are stable: remember them so catch-up does not ask EKAP again every day."""
+    f = _no_bulletin_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    with open(f, "a", encoding="utf-8") as fh:
+        fh.write(f"{day.isoformat()} {type_}\n")
+
+
+def load_days(client, store: Store, window: list[date], types, *, skip_known_empty: bool = False,
+              reserve_requests: int = 0) -> None:
+    """Fetch + parse every workday of `window` (oldest first) that has no stored records yet.
+
+    Weekends are skipped without a request. A bulletin already on disk is not re-downloaded, only parsed if the
+    store has nothing for it. NoBulletin is a skip. BlockedError propagates. RequestBudgetExceeded propagates,
+    except that with `reserve_requests` the loop stops quietly that many requests before the cap.
+    """
+    known = _known_no_bulletin() if skip_known_empty else set()
+    cap = getattr(client, "max_requests", None)
+    for day in window:
+        if day.weekday() >= 5:
+            log.info("%s: weekend, skipped", day)
+            continue
+        for t in types:
+            if store.has_day(day, t):
+                log.info("%s %s: already stored, skipped", day, t)
+                continue
+            if f"{day.isoformat()} {t}" in known:
+                log.info("%s %s: known no-bulletin day, skipped", day, t)
+                continue
+            cached = ekap.bulletin_paths(config.bulletins_dir(), day, t)[1].exists()
+            if not cached:
+                if reserve_requests and cap is not None and getattr(client, "requests_made", 0) >= cap - reserve_requests:
+                    log.warning("%s %s: request budget nearly used (%s/%s); stopping catch-up", day, t,
+                                client.requests_made, cap)
+                    return
+                try:
+                    client.fetch(day, t)
+                except ekap.NoBulletinError:
+                    log.info("%s %s: no bulletin, skipped", day, t)
+                    _remember_no_bulletin(day, t)
+                    continue
+            parse_and_store(day, t, store)
+
+
 # ---------------------------------------------------------------- run
 def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> int:
     """fetch → parse → store → flag → export → build → deploy. Returns the process exit code."""
@@ -178,6 +237,10 @@ def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> i
     try:
         client = make_client()
         store = Store()
+        # Efe's PC is sometimes off: first catch up workdays of the last 7 days that have no stored records.
+        # Shares the per-run request cap; one request is kept in reserve for today's bulletin.
+        window = [day - timedelta(days=i) for i in range(CATCH_UP_DAYS, 0, -1)]
+        load_days(client, store, window, types, skip_known_empty=True, reserve_requests=len(types))
         for t in types:
             try:
                 client.fetch(day, t)
@@ -222,22 +285,7 @@ def backfill(days: int, types=("mal",), max_requests: int | None = None, today: 
         client = make_client(max_requests)
         store = Store()
         window = [today - timedelta(days=i) for i in range(days - 1, -1, -1)]
-        for day in window:
-            if day.weekday() >= 5:
-                log.info("%s: weekend, skipped", day)
-                continue
-            for t in types:
-                cached = ekap.bulletin_paths(config.bulletins_dir(), day, t)[1].exists()
-                if not cached:
-                    try:
-                        client.fetch(day, t)
-                    except ekap.NoBulletinError:
-                        log.info("%s %s: no bulletin, skipped", day, t)
-                        continue
-                if cached and store.has_day(day, t):
-                    log.info("%s %s: already local and stored, skipped", day, t)
-                    continue
-                parse_and_store(day, t, store)
+        load_days(client, store, window, types)
     except ekap.BlockedError as e:
         m = write_blocked_marker(str(e))
         log.error("EKAP BLOCKED: %s. Wrote %s. Backfill stopped.", e, m)

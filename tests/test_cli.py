@@ -70,6 +70,7 @@ def env(monkeypatch, tmp_path):
                         lambda: SimpleNamespace(build=build, deploy=lambda: e.deployed.append(True)))
     monkeypatch.setattr(pipeline, "repo_root", lambda: tmp_path / "repo")
     monkeypatch.setattr(pipeline, "today_istanbul", lambda: e.today)
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 0)   # most tests: only today; catch-up tests set it to 7
     return e
 
 
@@ -287,3 +288,67 @@ def test_oracle_failure_does_not_stop_the_run(env, monkeypatch):
     import ihale.oracle
     monkeypatch.setattr(ihale.oracle, "write_candidates", lambda store=None: (_ for _ in ()).throw(OSError("disk")))
     assert run("run") == 0 and env.deployed == [True]
+
+
+# ------------------------------------------------------------------ run: catch-up of missed workdays
+def test_run_catches_up_missed_workdays_oldest_first_then_today(env, monkeypatch):
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 7)
+    env.today = date(2026, 11, 18)                       # Wed; window Wed 11 … Tue 17
+    Store().replace_day(date(2026, 11, 12), "mal", [rec(1, day=date(2026, 11, 12))])   # already stored
+    env.plan[date(2026, 11, 16)] = "none"                # holiday
+    assert run("run") == 0
+    calls = FakeClient.instances[0].calls
+    assert [c[0].day for c in calls] == [11, 13, 16, 17, 18]     # 12 stored, 14/15 weekend, today last
+    assert sorted({r.record.bulletin_date.day for r in Store().all_records()}) == [11, 12, 13, 17, 18]
+    assert env.deployed == [True]
+
+
+def test_run_catch_up_skips_known_holidays_next_time(env, monkeypatch):
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 7)
+    env.plan[date(2026, 11, 16)] = "none"
+    run("run")
+    FakeClient.instances.clear()
+    run("run")
+    assert date(2026, 11, 16) not in [c[0] for c in FakeClient.instances[0].calls]
+
+
+def test_run_catch_up_does_nothing_when_all_days_stored_or_cached(env, monkeypatch):
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 7)
+    run("run")
+    FakeClient.instances.clear()
+    env.parse_calls.clear()
+    run("run")
+    assert FakeClient.instances[0].calls == [(D, "mal")]          # only today again
+    assert env.parse_calls == [("BULTEN_18112026_MAL_SONUC.pdf", D, "mal")]
+
+
+def test_run_catch_up_keeps_a_request_for_today(env, monkeypatch):
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 7)
+
+    class Capped(FakeClient):
+        def __init__(self, plan=None):
+            super().__init__(plan, max_requests=3)
+            self.requests_made = 0
+
+        def fetch(self, day, type_, root=None, force=False):
+            self.requests_made += 1
+            assert self.requests_made <= self.max_requests, "cap exceeded"
+            return super().fetch(day, type_, root, force)
+
+    monkeypatch.setattr(pipeline, "make_client", lambda max_requests=None: Capped(env.plan))
+    assert run("run") == 0
+    assert Capped.instances[-1].calls[-1] == (D, "mal") and len(Capped.instances[-1].calls) == 3
+
+
+def test_run_catch_up_block_writes_marker_and_stops(env, data_dir, monkeypatch):
+    monkeypatch.setattr(pipeline, "CATCH_UP_DAYS", 7)
+    env.plan[date(2026, 11, 13)] = "blocked"
+    assert run("run") == 3
+    assert [c[0].day for c in FakeClient.instances[0].calls] == [11, 12, 13]
+    assert (data_dir / "BLOCKED").exists() and env.deployed == []
+
+
+def test_run_creates_oracle_dir_when_missing(env, data_dir):
+    assert not (data_dir / "oracle").exists()
+    assert run("run") == 0
+    assert (data_dir / "oracle" / "candidates.json").exists()
