@@ -67,3 +67,6 @@ text cross-check). The text cross-check, run over all 69 records, found **2 tran
 fixed: B423 yüklenici (`Fresenius` -> `Fresenıus`, dotless ı, then confirmed on the image at 600 dpi) and B92/B93
 yüklenici (`Elektrik` -> `Elektirik`, then confirmed on the page-258 render). No amount, count, usul or ikn
 needed a correction.
+
+## Corrections after review
+- 2026-11-19, hizmet A-17 (p.18) yüklenici: "Fresenius" → "Fresenıus" (dotless ı, as printed). Confirmed at 400 dpi on the page by the parser builder; the same printed spelling was confirmed at 600 dpi for mal B-423 by the labeler. Corrected by the orchestrator, not by the parser builder.
