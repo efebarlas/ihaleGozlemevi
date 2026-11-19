@@ -44,7 +44,8 @@
    "diger_teklifler_elendi": 0.05,
    "bedel_orani": 0.2,
    "tekrarlayan_yuklenici": 0.33,
-   "idare_orani": 0.1
+   "idare_orani": 0.1,
+   "bedel_median_try": 700000
   },
   "istisna_3g": {
    "tek_teklif": 0.61,
@@ -58,6 +59,12 @@
    "bedel_orani": 0.25,
    "tekrarlayan_yuklenici": 0.35,
    "idare_orani": 0.1
+  },
+  "4734/3-g (DMO)": {
+   "tek_teklif": 0.9,
+   "bedel_orani": 0.4,
+   "tekrarlayan_yuklenici": 0.5,
+   "bedel_median_try": 3000000
   }
  }
 }

@@ -234,6 +234,26 @@ def part_lines(t: dict) -> list[str]:
     return out
 
 
+def weight_line(t: dict, part_rates: dict) -> str | None:
+    """Neutral 'Tutar katsayısı' line for the score breakdown (contract §4.1 Materiality)."""
+    w = t.get("value_weight")
+    if w is None:
+        return None
+    s = f"Tutar katsayısı: {tr_score(w)}"
+    groups = [pt.get("p_group") for pt in _parts(t) if pt.get("p_group")]
+    group = next((g for g in groups if g != "hepsi"), "hepsi")
+    med = ((part_rates or {}).get(group) or {}).get("bedel_median_try")
+    m = t.get("sozlesme_bedeli")
+    if m and m.get("currency") == "TRY" and med:
+        ratio = float(m["amount"]) / float(med)
+        r = f"{ratio:.0f}" if ratio >= 2 else f"{ratio:.1f}".replace(".", ",")
+        where = "tüm kayıtlardaki" if group == "hepsi" else "bu usuldeki"
+        s += f" (sözleşme bedeli, {where} ortanca bedelin yaklaşık {r} katı)"
+    elif not (m and m.get("currency") == "TRY"):
+        s += " (TRY dışındaki veya okunamayan bedellere katsayı uygulanmaz)"
+    return s
+
+
 def _pct(x) -> str:
     return f"%{round(float(x) * 100)}"
 
@@ -363,6 +383,9 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
         t["score"] = float(t.get("score", 0))
         t["_parts"] = part_lines(t)
+        wl = weight_line(t, meta.get("part_rates"))
+        if wl:
+            t["_parts"].append(wl)
         return t
 
     day_ctx = {}

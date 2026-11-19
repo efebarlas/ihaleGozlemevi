@@ -454,3 +454,14 @@ def test_old_integer_shape_still_builds(tmp_path):
         f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
     sitegen.build(exp, tmp_path / "o")
     assert (tmp_path / "o" / "index.html").is_file()
+
+
+def test_value_weight_line_and_group_labels(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "Tutar katsayısı: 1,3 (sözleşme bedeli, bu usuldeki ortanca bedelin yaklaşık 4 katı)" in d
+    assert "TRY dışındaki veya okunamayan bedellere katsayı uygulanmaz" in _read(dist, "ihale/2026-11-18-mal-A-2/index.html")
+    assert "Tutar katsayısı" not in _read(dist, "ihale/2026-11-18-mal-A-3/index.html")   # no weight exported
+    y = _read(dist, "yontem/index.html")
+    assert "Tutar katsayısı." in y and "log10" in y
+    assert "<td>4734/3-g (DMO)</td>" in y                    # label exactly as exported
+    assert "bedel_median_try" not in y and "3000000" not in y   # median is not a rate column
