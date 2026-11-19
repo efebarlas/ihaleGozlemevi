@@ -345,7 +345,7 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
 - **M4 Dosyalar and better peers:**
   - İdare and Yüklenici pages with continuity timelines.
   - Add the *hizmet* and *yapım* bulletins.
-  - Link KİK board decisions and debarment status.
+  - KİK board decisions: link out to EKAP's decision search, with the ikn to copy. Fetch nothing: since 2026-11-19 it sits behind a sign-in wall (§7 hard stop; never use Turnstile or signed-header clients). Debarment: parked until M5 (see M5).
   - **First agent-module experiment (§11):** sector and idare-type classification. A build session classifies every known idare name and item name once into a reviewed lookup table. Score it against keyword rules on the hand-checked sample, then run it in shadow mode, and promote it only if it wins. This makes real same-sector, same-type peers possible.
   - Export OCDS (via ocdskit) and FollowTheMoney, and run Cardinal on the export as a cross-check. The exports stay private until G-Public.
   - **Simulated-user check:** agent personas do real reporting tasks on the site, e.g. "find every award firm X won at idare Y". It catches broken flows; it says nothing about demand.
@@ -355,6 +355,7 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
   - Add the rule-anchored signals: 21/b and pazarlık share vs. peers.
   - Add the IMCO-style idare scorecard.
   - Link Sayıştay findings per idare. Their extraction is the second agent-module experiment.
+  - Debarment from Resmî Gazete yasaklama notices, if the format check finds a reliable second identifier. Legal entities only; natural persons are never matched or shown. Show a match only on an exact normalized legal name plus a second agreeing identifier. Shown as a neutral, dated fact with a link, on yüklenici pages only: never on Bugün and never in the score.
 - **M6 Kartlar:**
   - Shareable fact cards, still unlisted.
   - Unit price vs. a reference price, starting with fuel vs. EPDK.
