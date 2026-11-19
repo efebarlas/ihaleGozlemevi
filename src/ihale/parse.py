@@ -53,6 +53,7 @@ _NUM = r"\d{1,3}(?:\.\d{3})*,\d{2}"
 _RE_MONEY = re.compile(rf"^({_NUM})\s*([A-Za-z]{{2,4}})(?:\s*\(\s*({_NUM})\s*([A-Za-z]{{2,4}})\s*\))?$")
 _RE_DATE = re.compile(r"^(\d{2})\.(\d{2})\.(\d{4})$")
 _RE_INT = re.compile(r"^\d+$")
+_RE_NO_AMOUNT = re.compile(r"bulunmamakta|^-+(\s*[A-Za-z]{2,4})?$", re.IGNORECASE)
 
 
 def _norm(s: str) -> str:
@@ -381,6 +382,12 @@ def _parse_record(rows: list[_Row], rec: Record, numbered_ikn: str | None, tail_
         if not raw:
             setattr(rec, attr, None)
             conf[attr] = 1.0  # known empty
+            continue
+        if shape == "money" and _RE_NO_AMOUNT.search(raw):
+            # the bulletin itself says there is no amount ("yaklaşık maliyeti bulunmamaktadır", "- TRY")
+            setattr(rec, attr, None)
+            conf[attr] = 1.0
+            warn.append(f"{attr}: bülten tutar vermiyor ({raw!r})")
             continue
         val = _PARSERS[shape](raw)
         if val is None:

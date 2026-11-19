@@ -163,3 +163,39 @@ def test_never_raises_on_garbage_rows():
     assert not recs[0].confident("yaklasik_maliyet")
     assert not recs[0].confident("ikn")
     assert recs[0].warnings
+
+
+LABELS = Path(__file__).parent / "labels" / "mal_2026-11-18.json"
+
+
+@pytest.mark.skipif(not LABELS.exists(), reason="hand labels not present")
+def test_fixture_accuracy_against_labels(by_key):
+    """>=95% correct-and-confident per core field on the labeled records present in the fixture."""
+    import json
+    from decimal import Decimal
+
+    def money(v):
+        if v is None:
+            return None
+        alt = money(v["alt"]) if v.get("alt") else None
+        return Money(int((Decimal(v["amount"]) * 100).to_integral_exact()), v["currency"], alt)
+
+    labels = [x for x in json.loads(LABELS.read_text(encoding="utf-8")) if x["in_fixture"]]
+    assert len(labels) >= 10
+    good = {f: 0 for f in CORE_FIELDS}
+    for lab in labels:
+        r = by_key[lab["section"], lab["seq"]]
+        for f in CORE_FIELDS:
+            exp = lab[f]
+            if f in ("sozlesme_bedeli", "yaklasik_maliyet"):
+                exp = money(exp)
+            got = getattr(r, f)
+            if isinstance(got, str):
+                got = " ".join(got.split())
+            if got == exp and (r.confidence.get(f, 0) >= CONFIDENT):
+                good[f] += 1
+            else:
+                # a miss must never be confident AND wrong
+                assert not (got != exp and r.confidence.get(f, 0) >= CONFIDENT), (lab["section"], lab["seq"], f)
+    for f in CORE_FIELDS:
+        assert good[f] / len(labels) >= 0.95, (f, good[f], len(labels))
