@@ -185,7 +185,7 @@ Where the data shows a known innocent cause, such as the procedure type or a dec
 
 **Anticipate gaming.** Flagged organizations adapt. They might arrange cover bids to avoid "tek teklif", split tenders, or move purchases into istisna or doğrudan temin, where they're out of view.
 - Watch for drift. For example: single-bid rates fall while bedel stays near 100% of the estimate. Or an idare's EKAP volume drops while its istisna share rises.
-- Treat it as a known limit of bulletin-only data, and say so on the Yöntem page.
+- On the Yöntem page, state the limits of bulletin-only data in general terms. Never list the ways to avoid a flag: that would be an evasion guide (see §6.2).
 
 **Don't provoke data closure.** If the bulletins come to look like a liability, the cheapest response for the state is to publish less. That would hurt everyone, not just us. So:
 - keep a low, constructive profile;
@@ -200,6 +200,30 @@ Where the data shows a known innocent cause, such as the procedure type or a dec
 3. The correction and reply channel works.
 4. The M5 weights are validated against outcomes. Unvalidated hand-set rankings don't go public.
 5. A plan exists in case Turkey blocks access to the site.
+6. The §6.2 baseline is frozen, and the escape-route view exists.
+
+### 6.2 Release policy: raise accountability without pushing behavior out of view (2026-11-19)
+Pressure can move bad behavior out of view: into procedures, channels or tricks the bulletins don't show. That's a net loss of transparency, so the goal isn't the most pressure. It's the most accountability for the least displacement.
+
+1. **No cliffs to sit under.**
+   - Show actual values with their peer context, e.g. "yaklaşık maliyetin %98,6'sı · benzer idarelerde ortanca %87". No public threshold labels like "≥ %97", whether in flags, chips or cards.
+   - Scoring prefers continuous, peer-relative measures. Thresholds are fitted to data (M5), described on the Yöntem page with the date they took effect, and allowed to move with the data.
+2. **Explain the method, not how to evade it.**
+   - Yöntem says what is measured, why, and its general limits.
+   - It never says which behaviors would avoid a flag.
+3. **See the escape routes before adding pressure.** Before G-Public, every İdare page shows its procedure mix over time: açık vs pazarlık (including 21/b) vs istisna, plus its volume trend. Displacement then shows up as a visible, rule-anchored signal instead of vanishing. Add istisna and doğrudan temin result data where it can be fetched without bypassing EKAP's human verification.
+4. **Freeze a baseline before publicity.** Backfilled history is pre-publicity by definition, because we didn't exist. At G-Public, freeze a dated "t0" snapshot of every idare's indicators. After launch, compare flagged and unflagged idares for displacement signs:
+   - single-bid rates falling while prices stay at the estimate;
+   - bunching of prices just under former thresholds;
+   - a move to istisna, pazarlık or doğrudan temin;
+   - EKAP volume dropping.
+
+   Report what we find on the Yöntem page, including any harm we may have caused.
+5. **Stage the audience.**
+   - **G-Limited** comes before G-Public: invited readers only (journalists, researchers, council members), behind Cloudflare Access on the free tier.
+   - Inviting people is contact, so it's Efe's call.
+   - G-Public opens up only after the displacement signals have been watched for a while.
+6. **Dose the pressure.** At launch the site is pull-only: no bots, no tagging agencies or officials, no push alerts aimed at named bodies. Any push mechanism is a later, separate decision by Efe.
 
 ## 7. Autonomy
 **Standing OKs:**
@@ -335,7 +359,8 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
   - Agents propose new risk patterns and test each against outcomes in the data.
   - Only patterns that pass reach Efe as Günün sorusu, and his verdict is the final gate.
   - The goal is a set of red flags validated for Turkey and documented on the Yöntem page.
-- **G-Public:** Efe decides whether to go public, once the §6.1 gate conditions hold.
+- **G-Limited:** invited readers only, behind Cloudflare Access (§6.2). Efe decides.
+- **G-Public:** Efe decides whether to go public, once the §6.1 gate conditions hold and the displacement signals have been watched during G-Limited.
 - **After G-Public only:**
   - a read-only MCP tool server over our data, so people can bring their own agent;
   - usability tests with real journalists and council members;
