@@ -1,9 +1,18 @@
-{% macro flags_list(t) %}
-<ul class="flags">
+{% macro flags_list(t, small=false) %}
+{% if t.flags or t._idare_orani %}
+<ul class="flags{% if small %} small{% endif %}">
 {% for f in t.flags %}
   <li class="flag flag-{{ f.code }}">{{ f.text }}</li>
 {% endfor %}
+{% if t._idare_orani %}
+  <li class="flag flag-idare_orani">{{ idare_orani_text }}</li>
+{% endif %}
 </ul>
+{% endif %}
+{% endmacro %}
+
+{% macro peer(t) %}
+{% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
 {% endmacro %}
 
 {% macro facts(t) %}

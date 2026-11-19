@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% from "_macros.html" import flags_list, facts %}
+{% from "_macros.html" import flags_list, facts, peer with context %}
 {% block content %}
 {% if not day %}
 <h1>Bugün</h1>
 <p>Henüz yüklenmiş bülten yok.</p>
 {% else %}
 <h1>{{ day.date | tr_date_long }}</h1>
-<p class="summary">{{ day.records | tr_int }} sonuç ilanı · {{ day.flagged_n | tr_int }} tanesinde en az bir işaret</p>
-<p class="muted">İşaretler bir hüküm değil, bültendeki rakamlardan hesaplanan olgulardır. <a href="/yontem/">Nasıl hesaplanıyor?</a></p>
+<p class="summary">{{ day.records | tr_int }} sonuç ilanı okundu · {{ day.flagged | length }} tanesi gösteriliyor</p>
+<p class="muted">Gösterilenler, işaretlerin birleşiminden oluşan puanı 2 veya daha yüksek olan kayıtlardır; tek başına işaret çok sayıda olağan ihalede de görülür. İşaretler hüküm değil, bültendeki rakamlardan hesaplanan olgulardır. <a href="/yontem/">Nasıl hesaplanıyor?</a></p>
 
 {% if day.flagged %}
 <div class="filter">
@@ -27,13 +27,15 @@
       <h2><a href="/ihale/{{ t.id }}/">{{ t._name }}</a></h2>
       {{ facts(t) }}
       {{ flags_list(t) }}
+      {{ peer(t) }}
+      <p class="muted">Puan: {{ t.score }}</p>
       <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı ve kaynak →</a></p>
     </li>
   {% endfor %}
   </ol>
 </div>
 {% else %}
-<p>Bu gün için işaretli kayıt yok.</p>
+<p>Bu gün puanı 2 veya üzeri olan kayıt yok.</p>
 {% endif %}
 <p class="daylink"><a class="btn" href="/gun/{{ day.date }}/">Günün tüm {{ day.records | tr_int }} ilanını göster</a>
 <a href="/arsiv/">Önceki günler</a></p>

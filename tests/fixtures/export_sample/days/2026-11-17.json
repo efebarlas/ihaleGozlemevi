@@ -46,7 +46,21 @@
     "page": 7
    },
    "unreadable": [],
-   "flags": []
+   "flags": [],
+   "score": 0,
+   "score_parts": [],
+   "idare_stats": {
+    "records": 6,
+    "tek_gecerli_teklif": 0.17,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   },
   {
    "id": "2026-11-17-mal-A-2",
@@ -95,7 +109,21 @@
      "value": 3,
      "text": "Bu yüklenici son 12 ayda bu idareden 3 sözleşme aldı (bu dahil)"
     }
-   ]
+   ],
+   "score": 0,
+   "score_parts": [],
+   "idare_stats": {
+    "records": 2,
+    "tek_gecerli_teklif": 0.5,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   }
  ]
 }

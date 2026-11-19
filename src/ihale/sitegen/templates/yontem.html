@@ -5,7 +5,7 @@
 
 <h2>Veri kaynağı</h2>
 <p>Tüm bilgiler, Kamu İhale Kurumu'nun EKAP üzerinden yayımladığı <strong>Kamu İhale Bülteni</strong>'ndeki sonuç ilanlarından alınır. Bültenin PDF dosyası otomatik okunur; her sonuç ilanı bir kayıt olur. Her kaydın sayfasında bülten tarihi, türü ve sayfa numarası ile <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> bağlantısı bulunur; böylece her rakamı kaynağında kontrol edebilirsiniz.</p>
-<p>Okuma ve işaret hesabı için açık kaynaklı <a href="https://github.com/gulmezeren2-byte/ihalent">ihalent</a> kütüphanesinden (MIT lisansı) yararlanılır.</p>
+<p>Bültenleri okuyan ve işaretlerin temelini hesaplayan açık kaynaklı <a href="https://github.com/gulmezeren2-byte/ihalent">ihalent</a> kütüphanesi (MIT lisansı) kullanılır.</p>
 
 <h2>Kapsam</h2>
 <p>Şu anda yalnızca <strong>{{ type_text }}</strong> sonuç ilanları var.
@@ -18,10 +18,31 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
   <dt>Tek geçerli teklif</dt>
   <dd>Kural: geçerli teklif sayısı tam olarak 1. Toplam teklif sayısı 1'den büyükse metne eklenir (örn. «2 teklif, 1 geçerli»).</dd>
   <dt>Bedel / yaklaşık maliyet</dt>
-  <dd>Kural: sözleşme bedeli ÷ yaklaşık maliyet ≥ 0,95. Yaklaşık maliyet olarak, okunabiliyorsa «esas kısım yaklaşık maliyeti», yoksa «yaklaşık maliyet» kullanılır. Oran 1'i aşıyorsa «yaklaşık maliyetin üzerinde» yazılır. Gösterilen yüzde aşağı yuvarlanır: 0,999 oranı %99 olarak görünür, %100 olarak değil.</dd>
+  <dd>Kural: sözleşme bedeli ÷ yaklaşık maliyet ≥ 0,97 (yani indirim, kırım, %3'ten az). Yaklaşık maliyet olarak, okunabiliyorsa «esas kısım yaklaşık maliyeti», yoksa «yaklaşık maliyet» kullanılır. Oran 1'i aşıyorsa «yaklaşık maliyetin üzerinde» yazılır. Gösterilen yüzde aşağı yuvarlanır: 0,999 oranı %99 olarak görünür, %100 olarak değil.</dd>
   <dt>Tekrarlayan yüklenici</dt>
   <dd>Kural: aynı idare ile aynı yüklenici çifti için, bu kaydın bülten tarihine kadar olan son 365 günde (bu gün dahil) en az 3 farklı ihale kayıt numarası (İKN) var.</dd>
 </dl>
+
+<h2 id="puan">Puan ve Bugün sayfasındaki sıralama</h2>
+<p>Bu işaretler tek başlarına çok sayıda olağan ihalede görülür; ölçümlere göre tüm ihalelerin yaklaşık yarısında en az bir işaret vardır. Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; aşağıdaki parçaların toplamı olan bir <strong>puan</strong> hesaplar ve puanı 2 veya daha yüksek kayıtları, puana ve ardından TRY sözleşme bedeline göre sıralı gösterir. Tüm kayıtlar «günün tümü» sayfasında yer alır.</p>
+<ul>
+  <li><strong>+1 Tek geçerli teklif.</strong></li>
+  <li><strong>+1 Bedel / yaklaşık maliyet</strong> işareti.</li>
+  <li><strong>+2 Tekrarlayan yüklenici</strong>, yalnızca aynı kayıtta yukarıdaki iki işaretten en az biri de varsa. Tek başına tekrar 0 puandır ama işaret yine gösterilir.</li>
+  <li><strong>+1 İdarede tek teklif oranı yüksek:</strong> idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının en az 2 katıysa.</li>
+</ul>
+<p>Eşikler geçicidir; yeterli gün yüklendikçe ölçülen oranlara göre gözden geçirilecektir.</p>
+
+<h2>Karşılaştırma grubu</h2>
+<p>Bir idarenin oranı tek başına anlam taşımaz; bu yüzden her kayıtta «Bu idare (n=…): %… tek geçerli teklif» satırı, benzer idarelerin oranıyla ve her iki tarafın kayıt sayısıyla (n) birlikte gösterilir. Bir idarenin yüklenmiş geçmişte en az 5 kaydı yoksa oran gösterilmez.</p>
+<p>Bültende sektör veya il alanı yoktur; bu yüzden grup yaklaşık bir yöntemle kurulur:</p>
+<ul>
+  <li><strong>İdare türü</strong>, idare adındaki anahtar sözcüklerden bulunur (belediye, üniversite, hastane/sağlık, su ve kanalizasyon, jandarma/emniyet, milli eğitim/okul, karayolları, DSİ; diğerleri «diğer»).</li>
+  <li><strong>İl</strong>, yalnızca idare adında 81 ilden tam olarak biri geçiyorsa alınır; aksi hâlde bilinmez sayılır. Yüklenicinin adresi hiçbir zaman kullanılmaz.</li>
+  <li><strong>Sektör</strong>, bülten türüdür (mal, hizmet, yapım).</li>
+  <li>Sırayla şu gruplar denenir ve en az 20 kaydı olan ilk grup alınır (idarenin kendisi hariç): aynı tür + il + sektör; aynı tür + sektör (ülke geneli); aynı sektördeki tüm idareler. Grubun adı veriden gelir ve satırda olduğu gibi yazılır.</li>
+</ul>
+<p>Sınırlar: anahtar sözcükler idare türünü yanlış belirleyebilir (ör. adında «sağlık» geçen bir il müdürlüğü ile hastane aynı grupta olur) ve karşılaştırma yalnızca yüklenmiş geçmişe dayanır. Gruptan farklı olmak tek başına bir anlam taşımaz.</p>
 
 <h2>Sınırlar</h2>
 <ul>

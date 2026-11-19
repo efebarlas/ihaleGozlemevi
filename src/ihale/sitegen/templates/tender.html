@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% from "_macros.html" import flags_list, peer with context %}
 {% block content %}
 <p class="crumbs"><a href="/">Bugün</a> › <a href="/gun/{{ src.date or t.id[:10] }}/">{{ (src.date or t.id[:10]) | tr_date_long }}</a></p>
 <h1>{{ t._name }}</h1>
 <p class="muted">İhale detayı · {{ t.id }}</p>
 
-{% if t.flags %}
+{% if t.flags or t._idare_orani %}
 <section aria-labelledby="h-isaret">
   <h2 id="h-isaret">İşaretler</h2>
   <ul class="flags">
@@ -12,10 +13,14 @@
     <li class="flag flag-{{ f.code }}">{{ f.text }}
       <span class="num">({{ flag_titles.get(f.code, f.code) }}; değer: {{ f.value }})</span></li>
   {% endfor %}
+  {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ idare_orani_text }}</li>{% endif %}
   </ul>
+  {{ peer(t) }}
+  <p class="muted">Puan: {{ t.score }} (<a href="/yontem/#puan">nasıl hesaplanıyor?</a>)</p>
 </section>
 {% else %}
 <p>Bu kayıtta hesaplanan bir işaret yok.</p>
+{{ peer(t) }}
 {% endif %}
 
 {% if n_ikn > 1 %}

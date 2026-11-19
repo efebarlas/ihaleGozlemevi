@@ -87,15 +87,16 @@ def test_no_forbidden_words(dist):
 def test_bugun_heading_summary_and_order(dist):
     h = _read(dist, "index.html")
     assert "<h1>18 Kasım 2026</h1>" in h
-    assert "6 sonuç ilanı · 5 tanesinde en az bir işaret" in h
+    assert "6 sonuç ilanı okundu · 3 tanesi gösteriliyor" in h
     # 3 flags first; then one-flag cards by raw bedel amount (A-2 is 104.000 EUR, ranked below the TRY ones)
-    pos = [h.index(f"/ihale/2026-11-18-mal-{x}/") for x in ("A-1", "A-3", "A-4", "B-1", "A-2")]
+    pos = [h.index(f"/ihale/2026-11-18-mal-{x}/") for x in ("A-1", "A-3", "A-2")]
     assert pos == sorted(pos)
     assert "/gun/2026-11-18/" in h
     # no-JS filter chips
     assert 'type="radio"' in h and "Tek geçerli teklif (2)" in h
     # unflagged record is not a card on Bugün
-    assert "2026-11-18-mal-B-2" not in h
+    for hidden in ("A-4", "B-1", "B-2"):  # score 1 / 1 / 0
+        assert f"/ihale/2026-11-18-mal-{hidden}/" not in h
 
 
 def test_money_and_date_formatting(dist):
@@ -114,7 +115,7 @@ def test_money_and_date_formatting(dist):
 def test_detail_flags_source_and_labels(dist):
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
     assert "Tek geçerli teklif" in d
-    assert "Sözleşme bedeli yaklaşık maliyetin %95&#39;i" in d
+    assert "Sözleşme bedeli yaklaşık maliyetin %97&#39;si" in d
     assert "Kaynak: Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18" in d
     assert 'href="https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx"' in d
     assert "Geçerli teklif sayısı" in d and "Sözleşme bedeli" in d
@@ -139,7 +140,7 @@ def test_person_name_as_printed_and_escaped(dist):
 
 def test_yontem_content(dist):
     y = _read(dist, "yontem/index.html")
-    for needle in ["0,95", "365 gün", "en az 3 farklı", "tam olarak 1", "Kısmi", "okunamadı", "3-g",
+    for needle in ["0,97", "365 gün", "en az 3 farklı", "tam olarak 1", "Kısmi", "okunamadı", "3-g",
                    "ihalent", "mal alımı", "17 Kasım 2026", "yargı bildirmez"]:
         assert needle in y, needle
 
@@ -207,3 +208,33 @@ def test_wrangler_config():
     assert c["name"] == "ihale-gozlemevi" and c["workers_dev"] is True
     assert c["assets"] == {"directory": "./dist", "not_found_handling": "404-page"}
     assert "routes" not in c and "route" not in c
+
+
+def test_peer_comparison_line(dist):
+    h = _read(dist, "index.html")
+    assert ("Bu idare (n=12): %80 tek geçerli teklif · "
+            "Örnek ilindeki sağlık idareleri (mal, n=140): %43") in h
+    assert "Bu idare (n=8): %75 tek geçerli teklif · Tüm üniversiteler (mal, n=60): %35" in h
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "Bu idare (n=12): %80" in d and "Puan: 4" in d
+
+
+def test_peer_line_hidden_when_sample_small(dist):
+    assert "Bu idare" not in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")  # n=3
+    assert sitegen.peer_line({"idare_stats": {"records": 4, "tek_gecerli_teklif": 0.5}}) is None
+    assert sitegen.peer_line({"idare_stats": {"records": 5, "tek_gecerli_teklif": 0.5}}) == \
+        "Bu idare (n=5): %50 tek geçerli teklif"
+
+
+def test_score_parts_and_idare_orani_shown(dist):
+    h = _read(dist, "index.html")
+    assert sitegen.IDARE_ORANI_TEXT in h
+    assert "Puan: 4" in h and "Puan: 2" in h and "Puan: 1" not in h
+    assert "Bu yüklenici son 12 ayda" in h
+
+
+def test_yontem_score_and_peer(dist):
+    y = _read(dist, "yontem/index.html")
+    for needle in ['id="puan"', "+2 Tekrarlayan yüklenici", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
+                   "github.com/gulmezeren2-byte/ihalent", "yarısında"]:
+        assert needle in y, needle

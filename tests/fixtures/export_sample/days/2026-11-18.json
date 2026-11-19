@@ -54,15 +54,33 @@
     },
     {
      "code": "bedel_orani",
-     "value": 0.956,
-     "text": "Sözleşme bedeli yaklaşık maliyetin %95'i"
+     "value": 0.976,
+     "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"
     },
     {
      "code": "tekrarlayan_yuklenici",
      "value": 3,
      "text": "Bu yüklenici son 12 ayda bu idareden 3 sözleşme aldı (bu dahil)"
     }
-   ]
+   ],
+   "score": 4,
+   "score_parts": [
+    "tek_gecerli_teklif",
+    "bedel_orani",
+    "tekrarlayan_yuklenici"
+   ],
+   "idare_stats": {
+    "records": 12,
+    "tek_gecerli_teklif": 0.8,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   },
   {
    "id": "2026-11-18-mal-A-2",
@@ -115,7 +133,24 @@
      "value": 1.04,
      "text": "Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)"
     }
-   ]
+   ],
+   "score": 2,
+   "score_parts": [
+    "bedel_orani",
+    "idare_orani"
+   ],
+   "idare_stats": {
+    "records": 8,
+    "tek_gecerli_teklif": 0.75,
+    "window_days": 30,
+    "idare_turu": "üniversite",
+    "il": null,
+    "peer": {
+     "label": "Tüm üniversiteler (mal)",
+     "records": 60,
+     "tek_gecerli_teklif": 0.35
+    }
+   }
   },
   {
    "id": "2026-11-18-mal-A-3",
@@ -146,11 +181,11 @@
     "currency": "TRY"
    },
    "sozlesme_bedeli": {
-    "amount": 480000.0,
+    "amount": 485000.0,
     "currency": "TRY"
    },
-   "toplam_teklif": 2,
-   "gecerli_teklif": 2,
+   "toplam_teklif": 1,
+   "gecerli_teklif": 1,
    "kisim": {
     "records_in_ikn": 2
    },
@@ -163,11 +198,33 @@
    "unreadable": [],
    "flags": [
     {
+     "code": "tek_gecerli_teklif",
+     "value": 1,
+     "text": "Tek geçerli teklif"
+    },
+    {
      "code": "bedel_orani",
-     "value": 0.97,
-     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
+     "value": 0.981,
+     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %98'i"
     }
-   ]
+   ],
+   "score": 2,
+   "score_parts": [
+    "tek_gecerli_teklif",
+    "bedel_orani"
+   ],
+   "idare_stats": {
+    "records": 15,
+    "tek_gecerli_teklif": 0.4,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   },
   {
    "id": "2026-11-18-mal-A-4",
@@ -198,7 +255,7 @@
     "currency": "TRY"
    },
    "sozlesme_bedeli": {
-    "amount": 388000.0,
+    "amount": 398000.0,
     "currency": "TRY"
    },
    "toplam_teklif": 2,
@@ -216,10 +273,26 @@
    "flags": [
     {
      "code": "bedel_orani",
-     "value": 0.97,
-     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
+     "value": 0.981,
+     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %98'i"
     }
-   ]
+   ],
+   "score": 1,
+   "score_parts": [
+    "bedel_orani"
+   ],
+   "idare_stats": {
+    "records": 15,
+    "tek_gecerli_teklif": 0.4,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   },
   {
    "id": "2026-11-18-mal-B-1",
@@ -268,7 +341,23 @@
      "value": 1,
      "text": "3 teklif, 1 geçerli"
     }
-   ]
+   ],
+   "score": 1,
+   "score_parts": [
+    "tek_gecerli_teklif"
+   ],
+   "idare_stats": {
+    "records": 3,
+    "tek_gecerli_teklif": 0.67,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   },
   {
    "id": "2026-11-18-mal-B-2",
@@ -315,7 +404,21 @@
      "reason": "para birimi farklı"
     }
    ],
-   "flags": []
+   "flags": [],
+   "score": 0,
+   "score_parts": [],
+   "idare_stats": {
+    "records": 2,
+    "tek_gecerli_teklif": 0.5,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   }
   }
  ]
 }

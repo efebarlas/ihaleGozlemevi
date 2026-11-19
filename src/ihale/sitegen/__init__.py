@@ -27,12 +27,16 @@ TYPE_LABELS_LOWER = {"mal": "mal alımı", "hizmet": "hizmet alımı", "yapim": 
                      "danismanlik": "danışmanlık"}
 SECTION_LABELS = {"A": "4734 sayılı Kanun kapsamında", "B": "Kanun kapsamı dışı / diğer"}
 
-FLAG_ORDER = ["tek_gecerli_teklif", "bedel_orani", "tekrarlayan_yuklenici"]
+FLAG_ORDER = ["tek_gecerli_teklif", "bedel_orani", "tekrarlayan_yuklenici", "idare_orani"]
 FLAG_TITLES = {
     "tek_gecerli_teklif": "Tek geçerli teklif",
-    "bedel_orani": "Bedel ≥ %95 yaklaşık maliyet",
+    "bedel_orani": "Bedel ≥ %97 yaklaşık maliyet",
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
+    "idare_orani": "İdarede tek teklif oranı yüksek",
 }
+MIN_SHOWN_SCORE = 2      # Bugün shows records with score >= this (contract §4.1)
+MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
+IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun 2 katı veya daha fazla"
 # (export key, Turkish label) in display order for the detail page
 FIELD_LABELS = [
     ("ikn", "İhale kayıt no (İKN)"),
@@ -96,17 +100,36 @@ def tr_int(n) -> str:
 
 def _bedel_sort_value(t: dict) -> float:
     m = t.get("sozlesme_bedeli")
-    return float(m["amount"]) if m else -1.0
+    return float(m["amount"]) if m and m.get("currency") == "TRY" else -1.0
 
 
 def _sort_key(t: dict):
-    # most flags first, then largest bedel, then id for a stable order
-    return (-len(t["flags"]), -_bedel_sort_value(t), t["id"])
+    # highest score first, then TRY bedel (other currencies last), then id for a stable order
+    return (-int(t.get("score", 0)), -_bedel_sort_value(t), t["id"])
 
 
 def _flag_codes(t: dict) -> list[str]:
-    codes = {f["code"] for f in t["flags"]}
+    codes = {f["code"] for f in t["flags"]} | set(t.get("score_parts", []))
     return [c for c in FLAG_ORDER if c in codes] + sorted(codes - set(FLAG_ORDER))
+
+
+def _pct(x) -> str:
+    return f"%{round(float(x) * 100)}"
+
+
+def peer_line(t: dict) -> str | None:
+    """'Bu idare (n=12): %80 tek geçerli teklif · <peer label, n=140>: %43'; None when the idare sample is too small."""
+    st = t.get("idare_stats") or {}
+    n = st.get("records") or 0
+    if n < MIN_IDARE_RECORDS or st.get("tek_gecerli_teklif") is None:
+        return None
+    out = f"Bu idare (n={n}): {_pct(st['tek_gecerli_teklif'])} tek geçerli teklif"
+    peer = st.get("peer") or {}
+    if peer.get("label") and peer.get("records") and peer.get("tek_gecerli_teklif") is not None:
+        label, pn = peer["label"], peer["records"]
+        label = f"{label[:-1]}, n={pn})" if label.endswith(")") else f"{label} (n={pn})"
+        out += f" · {label}: {_pct(peer['tek_gecerli_teklif'])}"
+    return out
 
 
 def _unreadable(t: dict) -> dict[str, str]:
@@ -157,7 +180,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = env.get_template(template).render(**ctx_base, **ctx)
@@ -169,6 +192,9 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t = dict(t)
         t["_codes"] = _flag_codes(t)
         t["_name"] = t.get("konu") or t.get("title") or "(adsız ilan)"
+        t["_peer"] = peer_line(t)
+        t["_idare_orani"] = "idare_orani" in t.get("score_parts", [])
+        t["score"] = int(t.get("score", 0))
         return t
 
     day_ctx = {}
@@ -177,10 +203,10 @@ def build(export_dir: Path, out_dir: Path) -> None:
         for t in tenders:
             _safe(t["id"])
         c = (meta.get("counts") or {}).get(ds, {})
-        flagged = [t for t in tenders if t["flags"]]
-        day_ctx[ds] = dict(date=ds, tenders=tenders, flagged=flagged,
+        shown = [t for t in tenders if t["score"] >= MIN_SHOWN_SCORE]
+        day_ctx[ds] = dict(date=ds, tenders=tenders, flagged=shown,
                            records=c.get("records", len(tenders)),
-                           flagged_n=c.get("flagged", len(flagged)))
+                           flagged_n=c.get("flagged", sum(1 for t in tenders if t["flags"])))
 
     # Bugün
     d = day_ctx.get(latest)

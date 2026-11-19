@@ -49,3 +49,4 @@ h2{font-size:1.1rem;margin:1.5rem 0 .5rem}
 li{margin:.3rem 0}
 .foot{border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;padding:1rem 0 2rem}
 @media (min-width:40rem){.detail{grid-template-columns:14rem 1fr}.detail dt{margin-top:.5rem}.detail dd{margin-top:.5rem}.row{grid-template-columns:1fr auto}.rm,.flags.small{grid-column:1/-1}h1{font-size:1.8rem}}
+.peer{margin:.6rem 0 0;font-size:.9rem;color:var(--muted)}
