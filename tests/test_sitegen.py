@@ -46,16 +46,27 @@ def test_expected_pages(dist):
         assert (dist / rel).is_file(), rel
 
 
-def test_detail_page_for_every_record(dist):
+def _day_block(dist: Path, date: str, rid: str) -> str:
+    """The expandable <details> block of a record on its day page."""
+    h = _read(dist, f"gun/{date}/index.html")
+    i = h.index(f'id="{rid}"')
+    return h[i:h.index("</li>", i)]
+
+
+def test_detail_pages_only_for_score_ge_1_and_every_record_on_day_page(dist):
     tenders = _tenders()
     assert len(tenders) >= 8
     for t in tenders:
-        assert (dist / "ihale" / t["id"] / "index.html").is_file()
+        page = dist / "ihale" / t["id"] / "index.html"
+        assert page.is_file() == (t["score"] >= 1), t["id"]
+        day = _read(dist, f"gun/{t['source']['date']}/index.html")
+        assert f'id="{t["id"]}"' in day
+        assert ("<details>" in _day_block(dist, t["source"]["date"], t["id"])) == (t["score"] < 1)
 
 
 def test_robots_meta_on_every_page(dist):
     pages = _html(dist)
-    assert len(pages) >= 14
+    assert len(pages) >= 10
     for p in pages:
         assert '<meta name="robots" content="noindex, nofollow">' in p.read_text(encoding="utf-8"), p
 
@@ -122,7 +133,7 @@ def test_detail_flags_source_and_labels(dist):
 
 
 def test_unreadable_renders(dist):
-    d = _read(dist, "ihale/2026-11-18-mal-B-2/index.html")
+    d = _day_block(dist, "2026-11-18", "2026-11-18-mal-B-2")   # score 0: expandable block, no page
     assert d.count("okunamadı") >= 2  # yaklaşık maliyet + ihale tarihi
     assert "para birimi farklı" in d
 
@@ -253,5 +264,28 @@ def test_indicators_block(dist):
     g = _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
     assert "İstisna (4734 / 3-g) · açık olmayan usul" in g and "Karar süresi" not in g
     # no indicators at all -> no block, and indicators are not styled as flags
-    assert "Göstergeler" not in _read(dist, "ihale/2026-11-17-mal-A-1/index.html")
+    assert "Göstergeler" not in _day_block(dist, "2026-11-17", "2026-11-17-mal-A-1")
     assert 'class="flag' not in d.split("Göstergeler")[1].split("Kaynak")[0]
+
+
+def test_expandable_block_has_all_fields_and_source(dist):
+    b = _day_block(dist, "2026-11-17", "2026-11-17-mal-A-1")
+    for needle in ["<details>", "İhale kayıt no", "42.000,00 TRY", "Kaynak: Kamu İhale Bülteni, 17.11.2026, Mal – Sonuç İlanları, s. 7",
+                   "BultenIndirme.aspx"]:
+        assert needle in b, needle
+
+
+def test_sibling_link_points_to_anchor_when_no_page(dist):
+    # A-4 (score 1) has a page; its sibling A-3 has one too. A score-0 sibling would link to the day anchor.
+    assert "/ihale/2026-11-18-mal-A-4/" in _read(dist, "ihale/2026-11-18-mal-A-3/index.html")
+
+
+def test_file_count_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr(sitegen, "MAX_FILES", 10)
+    out = tmp_path / "dist"
+    with pytest.raises(sitegen.SiteTooLargeError, match="over the limit"):
+        sitegen.build(SAMPLE, out)
+    assert not (out / "index.html").exists()   # deploy can't pick up a half-valid dist
+    monkeypatch.setattr(sitegen, "MAX_FILES", 10_000)
+    sitegen.build(SAMPLE, out)
+    assert (out / "index.html").is_file()

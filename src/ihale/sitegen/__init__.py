@@ -36,6 +36,8 @@ FLAG_TITLES = {
     "idare_orani": "İdarede tek teklif oranı yüksek",
 }
 MIN_SHOWN_SCORE = 2      # Bugün shows records with score >= this (contract §4.1)
+MIN_DETAIL_SCORE = 1     # detail pages only for score >= this (keeps the file count bounded)
+MAX_FILES = 19000        # Cloudflare free Workers static assets: 20,000 files per deploy
 MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
 IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun 2 katı veya daha fazla"
 # (export key, Turkish label) in display order for the detail page
@@ -61,6 +63,10 @@ MONEY_FIELDS = {"yaklasik_maliyet", "esas_kisim_yaklasik_maliyet", "sozlesme_bed
 # Absent by design for single-lot tenders; not "okunamadı" when empty.
 OPTIONAL_FIELDS = {"esas_kisim_yaklasik_maliyet"}
 _SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+class SiteTooLargeError(RuntimeError):
+    pass
 
 
 def _safe(s: str) -> str:
@@ -195,6 +201,21 @@ def _field_value(t: dict, key: str):
     return t.get(key)
 
 
+_WS = re.compile(r"\s+")
+
+
+def _squeeze(html: str) -> str:
+    """Collapse whitespace runs (no <pre>/<textarea> in our templates) to keep big day pages small."""
+    return _WS.sub(" ", html)
+
+
+def _wipe(out_dir: Path) -> None:
+    """Empty out_dir but keep the directory itself (it may be some process's cwd, e.g. a dev server)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for child in out_dir.iterdir():
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
+
+
 def _env() -> Environment:
     env = Environment(loader=FileSystemLoader(PKG_DIR / "templates"),
                       autoescape=select_autoescape(["html", "xml"]),
@@ -216,9 +237,7 @@ def _load(export_dir: Path):
 def build(export_dir: Path, out_dir: Path) -> None:
     export_dir, out_dir = Path(export_dir), Path(out_dir)
     meta, days = _load(export_dir)
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+    _wipe(out_dir)
     env = _env()
 
     dates = sorted(days, reverse=True)
@@ -228,7 +247,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     ctx_base = dict(idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
-        html = env.get_template(template).render(**ctx_base, **ctx)
+        html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
         path = out_dir / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(html, encoding="utf-8", newline="\n")
@@ -264,15 +283,15 @@ def build(export_dir: Path, out_dir: Path) -> None:
                 chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
     write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips)
 
-    # day pages + archive
-    for ds in dates:
-        write(f"gun/{ds}/index.html", "day.html", page="arsiv", title=tr_date_long(ds), day=day_ctx[ds])
+    # archive
     write("arsiv/index.html", "arsiv.html", page="arsiv", title="Arşiv", rows=[day_ctx[ds] for ds in dates])
 
-    # detail pages
+    # per-record context, then detail pages (only for score >= 1: bounded file count)
     for ds in dates:
         by_ikn: dict[str, list[dict]] = {}
         for t in day_ctx[ds]["tenders"]:
+            t["_page"] = t["score"] >= MIN_DETAIL_SCORE
+            t["_href"] = f"/ihale/{t['id']}/" if t["_page"] else f"/gun/{ds}/#{t['id']}"
             by_ikn.setdefault(t.get("ikn") or "", []).append(t)
         for t in day_ctx[ds]["tenders"]:
             unread = _unreadable(t)
@@ -283,8 +302,6 @@ def build(export_dir: Path, out_dir: Path) -> None:
                 missing = v is None and key not in OPTIONAL_FIELDS
                 rows.append(dict(key=key, label=label, value=v, note=reason or "",
                                  unreadable=missing or (key in unread and reason == "")))
-            n_ikn = (t.get("kisim") or {}).get("records_in_ikn", 1)
-            siblings = [s for s in by_ikn.get(t.get("ikn") or "", []) if s["id"] != t["id"]]
             src = t.get("source") or {}
             type_label = TYPE_LABELS.get(src.get("type"), src.get("type") or "")
             src_text = ""
@@ -292,11 +309,18 @@ def build(export_dir: Path, out_dir: Path) -> None:
                 src_text = f"Kamu İhale Bülteni, {tr_date_short(src['date'])}, {type_label} – Sonuç İlanları"
                 if src.get("page"):
                     src_text += f", s. {src['page']}"
-            write(f"ihale/{t['id']}/index.html", "tender.html", page="ihale", title=t["_name"], t=t,
-                  rows=rows, n_ikn=n_ikn, siblings=siblings, src=src, src_text=src_text,
-                  section_label=SECTION_LABELS.get(t.get("section"), ""),
-                  src_date_short=tr_date_short(src["date"]) if src.get("date") else "",
-                  type_label=type_label, date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
+            t["_c"] = dict(rows=rows, n_ikn=(t.get("kisim") or {}).get("records_in_ikn", 1),
+                           siblings=[x for x in by_ikn.get(t.get("ikn") or "", []) if x["id"] != t["id"]],
+                           src=src, src_text=src_text, section_label=SECTION_LABELS.get(t.get("section"), ""),
+                           src_date_short=tr_date_short(src["date"]) if src.get("date") else "",
+                           type_label=type_label)
+    for ds in dates:
+        write(f"gun/{ds}/index.html", "day.html", page="arsiv", title=tr_date_long(ds), day=day_ctx[ds],
+              date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
+        for t in day_ctx[ds]["tenders"]:
+            if t["_page"]:
+                write(f"ihale/{t['id']}/index.html", "tender.html", page="ihale", title=t["_name"], t=t,
+                      date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
           earliest=min(dates) if dates else None, latest=latest)
@@ -305,6 +329,13 @@ def build(export_dir: Path, out_dir: Path) -> None:
     shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")
     (out_dir / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8", newline="\n")
     (out_dir / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8", newline="\n")
+
+    n_files = sum(1 for p in out_dir.rglob("*") if p.is_file())
+    if n_files > MAX_FILES:
+        _wipe(out_dir)  # never leave a dist that deploy could pick up
+        raise SiteTooLargeError(
+            f"site has {n_files} files, over the limit of {MAX_FILES} (Cloudflare free tier allows 20,000 "
+            f"per deploy). Reduce the number of pages (MIN_DETAIL_SCORE) or move to JSON-backed pages.")
 
 
 _URL_RE = re.compile(r"https://[A-Za-z0-9.-]+\.workers\.dev\S*")
