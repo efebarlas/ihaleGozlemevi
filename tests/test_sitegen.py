@@ -848,3 +848,13 @@ def test_live_build_never_contains_switch(dist):
     for p in dist.rglob("*.html"):
         t = p.read_text(encoding="utf-8")
         assert 'class="sw"' not in t and "?yon=" not in t and "localStorage" not in t, p
+
+
+def test_kurul_karari_line_and_ocp_note(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert ("<a href=\"https://ekap.kik.gov.tr/EKAP/Vatandas/KurulKararSorgu.aspx\">EKAP'ta kurul kararı ara</a>" in d
+            and "<code>2026/9000001</code>" in d)
+    assert "kurul kararı ara" not in _day_block(dist, "2026-11-17", "2026-11-17-mal-A-1")      # compact blocks stay short
+    y = _read(dist, "yontem/index.html")
+    i = y.index('id="gostergeler"')
+    assert "OCP Cardinal ile çapraz kontrol planlanmıştır; henüz çalıştırılmadı." in y[i:y.index("Sınırlar", i)]

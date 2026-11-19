@@ -282,7 +282,8 @@ def test_deploy_remote_order_and_placeholder_guard(tmp_path, monkeypatch):
         return "Published ihale-gozlemevi\n  https://ihale-gozlemevi.example.workers.dev\n" if args[0] == "deploy" else ""
     monkeypatch.setattr(sitegen, "_run_wrangler", fake)
     monkeypatch.setattr(sitegen, "log", lambda m: None)
-    with pytest.raises(RuntimeError, match="placeholder"):                     # the repo config still has the zero id
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: sitegen.PLACEHOLDER_D1_ID)
+    with pytest.raises(RuntimeError, match="placeholder"):
         sitegen.deploy(dist, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
     assert calls == []
     monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")

@@ -71,4 +71,7 @@
   <p><a href="{{ ekap_url }}">EKAP Bülten İndirme sayfası</a></p>
   {% if not compact %}<p class="muted">Bu sayfada ilgili günün tarihini{% if c.src_date_short %} ({{ c.src_date_short }}){% endif %} ve ihale türünü{% if c.type_label %} ({{ c.type_label }}){% endif %} seçip bülten dosyasını indirin; ilanı{% if c.src.page %} {{ c.src.page }}. sayfada{% endif %} bulabilirsiniz{% if c.src.file %} (dosya: {{ c.src.file }}){% endif %}.</p>{% endif %}
 </section>
+{% if not compact and t.ikn %}
+<p class="muted"><a href="{{ kurul_url }}">EKAP'ta kurul kararı ara</a> · İKN: <code>{{ t.ikn }}</code></p>
+{% endif %}
 {% endmacro %}

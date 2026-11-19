@@ -25,6 +25,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 PKG_DIR = Path(__file__).resolve().parent
 SITE_DIR = PKG_DIR.parents[2] / "site"
 EKAP_URL = "https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx"
+KURUL_URL = "https://ekap.kik.gov.tr/EKAP/Vatandas/KurulKararSorgu.aspx"   # plain search page; nothing is fetched
 REPO_URL = "https://github.com/efebarlas/ihaleGozlemevi"
 
 MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz",
@@ -481,7 +482,7 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(preview=preview_design, innocent=INNOCENT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(preview=preview_design, innocent=INNOCENT, repo_url=REPO_URL, ekap_url=EKAP_URL, kurul_url=KURUL_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
