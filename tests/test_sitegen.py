@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
 import json
 import re
 from pathlib import Path
@@ -289,3 +290,18 @@ def test_file_count_limit(tmp_path, monkeypatch):
     monkeypatch.setattr(sitegen, "MAX_FILES", 10_000)
     sitegen.build(SAMPLE, out)
     assert (out / "index.html").is_file()
+
+
+def test_no_raw_python_values_and_null_names(tmp_path):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    f = exp / "days" / "2026-11-18.json"
+    d = json.loads(f.read_text(encoding="utf-8"))
+    d["tenders"][0]["idare"] = {"name": None, "key": None}
+    d["tenders"][0]["flags"][1]["value"] = 1.0093869731800766
+    f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "o"
+    sitegen.build(exp, out)
+    for p in out.rglob("*.html"):
+        h = p.read_text(encoding="utf-8")
+        assert not re.search(r"\bNone\b|\bTrue\b|\bFalse\b|\d\.\d{5,}|değer:", h), p

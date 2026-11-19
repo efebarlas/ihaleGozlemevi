@@ -256,6 +256,8 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t = dict(t)
         t["_codes"] = _flag_codes(t)
         t["_name"] = t.get("konu") or t.get("title") or "(adsız ilan)"
+        t["_idare"] = (t.get("idare") or {}).get("name") or "okunamadı"
+        t["_yuklenici"] = (t.get("yuklenici") or {}).get("name") or "okunamadı"
         t["_peer"] = peer_line(t)
         t["_ind"] = indicators(t)
         t["_idare_orani"] = "idare_orani" in t.get("score_parts", [])

@@ -7,7 +7,7 @@
   <ul class="flags">
   {% for f in t.flags %}
     <li class="flag flag-{{ f.code }}">{{ f.text }}
-      <span class="num">({{ flag_titles.get(f.code, f.code) }}; değer: {{ f.value }})</span></li>
+      <span class="num">({{ flag_titles.get(f.code, f.code) }})</span></li>
   {% endfor %}
   {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ idare_orani_text }}</li>{% endif %}
   </ul>
