@@ -31,6 +31,25 @@ def usul_turu(usul: str | None) -> str | None:
     return "diger"
 
 
+def usul_label(code: str | None) -> str | None:
+    """Short human label for a usul_turu code: 'Açık', 'Pazarlık 21/b', '4734/3-g', ..."""
+    if code is None:
+        return None
+    if code == "acik":
+        return "Açık"
+    if code == "belli_istekliler":
+        return "Belli istekliler"
+    if code.startswith("pazarlik_21"):
+        return f"Pazarlık 21/{code[-1]}"
+    if code.startswith("istisna_3"):
+        return f"4734/3-{code[-1]}"
+    if code.startswith("dogrudan_temin_22"):
+        return f"Doğrudan temin 22/{code[-1]}"
+    if code == "dogrudan_temin":
+        return "Doğrudan temin"
+    return "Diğer usul"
+
+
 def acik_olmayan(usul_code: str | None) -> bool | None:
     return None if usul_code is None else usul_code not in OPEN_USUL
 

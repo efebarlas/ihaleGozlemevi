@@ -79,6 +79,22 @@ def possessive_suffix(n: int) -> str:
     return _TENS_SUFFIX[(n // 10) % 10]
 
 
+def money_tr(kurus: int, currency: str) -> str:
+    """406700 → '4.067,00 TRY' (Turkish separators)."""
+    return f"{kurus // 100:,}".replace(",", ".") + f",{kurus % 100:02d} {currency}"
+
+
+def percent_tr(total: int, est: int) -> str:
+    """total/est as a percent floored to one decimal with a decimal comma ('100,9'); more decimals (up to 4)
+    only while the figure would still read as exactly 100 although total > est."""
+    for d in range(1, 5):
+        v = total * 100 * 10 ** d // est
+        if v != 100 * 10 ** d or d == 4:
+            break
+    s = str(v).rjust(d + 1, "0")
+    return f"{s[:-d]},{s[-d:]}"
+
+
 def percent_possessive(n: int) -> str:
     """'%97'si', '%100'ü', ..."""
     return f"%{n}'{possessive_suffix(n)}"
@@ -130,6 +146,7 @@ class _Tender:
     sector: str
     tek: bool | None          # tek_gecerli_teklif (either flag); None = unknown
     elen: float | None = None  # elenen_orani when toplam >= 2
+    usul: str | None = None    # usul_turu code; None = unknown
 
 
 def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
@@ -150,12 +167,15 @@ def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
         counts_ok = r.confident("gecerli_teklif") and r.confident("toplam_teklif")
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
+        usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
         t = by_id.get(tid)
         if t is None:
             by_id[tid] = _Tender(r.bulletin_date, ik, peers.idare_turu(r.idare), peers.il_of(r.idare),
-                                 r.bulletin_type, tek, elen)
+                                 r.bulletin_type, tek, elen, usul)
         else:
             t.date = min(t.date, r.bulletin_date)
+            if t.usul is None:
+                t.usul = usul
             if t.tek is None:
                 t.tek, t.elen = tek, elen
     out: dict[str, list[_Tender]] = {}
@@ -170,7 +190,8 @@ def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
 class _Window:
     """Accumulators [awards, tek awards, eligible awards for elenen, sum of elenen] per scope, one (sector, date)."""
 
-    def __init__(self, tenders: list[_Tender], d: date):
+    def __init__(self, tenders: list[_Tender], d: date, usul: str | None = None):
+        """`usul` restricts the window to awards of that usul_turu (like with like)."""
         dates = [t.date for t in tenders]
         lo = bisect.bisect_right(dates, d - timedelta(days=IDARE_WINDOW_DAYS))
         hi = bisect.bisect_right(dates, d)
@@ -179,6 +200,8 @@ class _Window:
         self.turu: dict[str, list] = {}
         self.all = [0, 0, 0, 0.0]
         for t in tenders[lo:hi]:
+            if usul is not None and t.usul != usul:
+                continue
             for acc in (self.idare.setdefault(t.idare_key, [0, 0, 0, 0.0]), self.all,
                         self.turu.setdefault(t.turu, [0, 0, 0, 0.0]),
                         self.turu_il.setdefault((t.turu, t.il), [0, 0, 0, 0.0])):
@@ -198,14 +221,14 @@ def _candidates(win: _Window, turu: str, il: str | None) -> list[tuple[str, list
     return out
 
 
-def idare_stats(win: _Window, idare_name: str, sector: str, own_elen: float | None = None) -> tuple[dict, bool, dict]:
-    """(stats dict for export, idare_orani fires, {"peer": mean elenen_orani or None, "n": eligible peer awards})."""
+def idare_stats(win: _Window, idare_name: str, sector: str, usul: str) -> tuple[dict, bool]:
+    """(stats for export, idare_orani fires), within one usul_turu: `win` holds only awards of that usul."""
     ik = normalize_key(idare_name)
     turu, il = peers.idare_turu(idare_name), peers.il_of(idare_name)
     own = win.idare.get(ik, [0, 0, 0, 0.0])
     own_n, own_tek = own[0], own[1]
     stats = {"records": own_n, "tek_gecerli_teklif": None, "window_days": IDARE_WINDOW_DAYS,
-             "idare_turu": turu, "il": il, "peer": None}
+             "idare_turu": turu, "il": il, "usul_turu": usul, "usul_label": ind.usul_label(usul), "peer": None}
     if own_n >= IDARE_MIN_N:
         stats["tek_gecerli_teklif"] = round(own_tek / own_n, 4)
     cands = _candidates(win, turu, il)
@@ -213,18 +236,24 @@ def idare_stats(win: _Window, idare_name: str, sector: str, own_elen: float | No
     for scope, acc in cands:
         if acc[0] - own_n >= PEER_MIN_N:
             peer_n, peer_tek = acc[0] - own_n, acc[1] - own_tek
-            stats["peer"] = {"label": peers.peer_label(scope, turu, il, sector), "records": peer_n,
+            stats["peer"] = {"label": peers.peer_label(scope, turu, il, sector, ind.usul_label(usul)), "records": peer_n,
                              "tek_gecerli_teklif": round(peer_tek / peer_n, 4)}
             break
     fires = (own_n >= IDARE_MIN_N and stats["peer"] is not None and own_tek > 0
              and own_tek * peer_n >= IDARE_RATIO * peer_tek * own_n)
-    elen = {"peer": None, "n": 0}
-    for scope, acc in cands:        # same chain, own idare excluded, eligible awards only
+    return stats, fires
+
+
+def _elenen_peer(win: _Window, idare_name: str) -> dict:
+    """Mean elenen_orani of the peer chain (all procedures), own idare excluded, eligible awards only."""
+    ik = normalize_key(idare_name)
+    turu, il = peers.idare_turu(idare_name), peers.il_of(idare_name)
+    own = win.idare.get(ik, [0, 0, 0, 0.0])
+    for _, acc in _candidates(win, turu, il):
         n = acc[2] - own[2]
         if n >= ELENEN_PEER_MIN_N:
-            elen = {"peer": round((acc[3] - own[3]) / n, 4), "n": n}
-            break
-    return stats, fires, elen
+            return {"peer": round((acc[3] - own[3]) / n, 4), "n": n}
+    return {"peer": None, "n": 0}
 
 
 class _PayiIndex:
@@ -344,7 +373,8 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                 else:
                     lead = f"Bu ihalenin {len(members)} kısmının toplam bedeli"
                 if total > est_k:
-                    text = f"{lead} yaklaşık maliyetin üzerinde (%{pct})"
+                    text = (f"{lead} yaklaşık maliyetin {money_tr(total - est_k, est[1].currency)} üzerinde "
+                            f"(%{percent_tr(total, est_k)})")
                 else:
                     text = f"{lead} yaklaşık maliyetin {percent_possessive(pct)}"
                 res.flags.append({"code": "bedel_orani", "value": total / est_k, "text": text})
@@ -375,10 +405,16 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
         elen_peer = {"peer": None, "n": 0}
         ik = normalize_key(r.idare) if r.confident("idare") else None
         if ik:
-            wkey = (r.bulletin_type, r.bulletin_date)
+            wkey = (r.bulletin_type, r.bulletin_date, None)
             if wkey not in windows:
                 windows[wkey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date)
-            res.idare_stats, idare_fires, elen_peer = idare_stats(windows[wkey], r.idare, r.bulletin_type)
+            elen_peer = _elenen_peer(windows[wkey], r.idare)
+            usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+            if usul:     # idare comparison runs within the record's procedure (usul_turu)
+                ukey = (r.bulletin_type, r.bulletin_date, usul)
+                if ukey not in windows:
+                    windows[ukey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date, usul)
+                res.idare_stats, idare_fires = idare_stats(windows[ukey], r.idare, r.bulletin_type, usul)
         have = {f["code"] for f in res.flags}
         parts = [c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have]
         if "tekrarlayan_yuklenici" in have and parts:

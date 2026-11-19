@@ -76,9 +76,11 @@ def locative_ki(place: str) -> str:
 SECTOR_LABEL = {"mal": "mal", "hizmet": "hizmet", "yapim": "yapım"}
 
 
-def peer_label(scope: str, turu: str, il: str | None, sector: str) -> str:
-    """scope: 'turu_il' | 'turu' | 'sector'."""
+def peer_label(scope: str, turu: str, il: str | None, sector: str, usul: str | None = None) -> str:
+    """scope: 'turu_il' | 'turu' | 'sector'. `usul` (e.g. "4734/3-g") is added after the sector."""
     sec = SECTOR_LABEL.get(sector, sector)
+    if usul:
+        sec = f"{sec}, {usul}"
     if scope == "turu_il":
         return f"{locative_ki(il)} {TURU_PLURAL[turu]} ({sec})"
     if scope == "turu":

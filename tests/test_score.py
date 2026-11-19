@@ -55,7 +55,7 @@ def test_idare_orani_fires_with_local_peers():
     st = a.idare_stats
     assert st["records"] == 5 and st["tek_gecerli_teklif"] == 1.0
     assert st["idare_turu"] == "sağlık" and st["il"] == "Antalya" and st["window_days"] == 30
-    assert st["peer"] == {"label": "Antalya'daki sağlık idareleri (mal)", "records": 25, "tek_gecerli_teklif": 0.2}
+    assert st["peer"] == {"label": "Antalya'daki sağlık idareleri (mal, Açık)", "records": 25, "tek_gecerli_teklif": 0.2}
     assert "idare_orani" in a.score_parts and a.score == 2        # tek (+1) + idare_orani (+1)
 
 
@@ -82,10 +82,10 @@ def test_peer_fallback_chain_and_labels():
     # 10 same turu+il (<20), 15 other-il sağlık → turu nationwide has 25
     group = peers_of(10, 1, fmt=SUBE) + peers_of(15, 3, start=2000)
     st = first(own + group).idare_stats
-    assert st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal)" and st["peer"]["records"] == 25
+    assert st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, Açık)" and st["peer"]["records"] == 25
     # only non-sağlık peers → whole sector
     st = first(own + peers_of(22, 2, fmt="KONYA BELEDİYESİ {}", start=3000)).idare_stats
-    assert st["peer"]["label"] == "Tüm idareler (mal)" and st["peer"]["records"] == 22
+    assert st["peer"]["label"] == "Tüm idareler (mal, Açık)" and st["peer"]["records"] == 22
     # nothing big enough → no peer, no idare_orani
     a = first(own + peers_of(5, 0, fmt="KONYA BELEDİYESİ {}", start=3000))
     assert a.idare_stats["peer"] is None and "idare_orani" not in a.score_parts
@@ -94,7 +94,7 @@ def test_peer_fallback_chain_and_labels():
 def test_unknown_il_skips_the_il_group():
     own = [mk(i, "SAĞLIK BAKANLIĞI", True) for i in range(5)]
     st = first(own + peers_of(25, 5)).idare_stats
-    assert st["il"] is None and st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal)"
+    assert st["il"] is None and st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, Açık)"
 
 
 def test_peers_exclude_the_idare_itself_and_other_sectors():

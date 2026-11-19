@@ -111,7 +111,7 @@ def test_ratio_exactly_one():
 
 def test_ratio_above_one():
     f = bedel(bedel=104.9, maliyet=100.0).flags[0]
-    assert f["text"] == "Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)"
+    assert f["text"] == "Sözleşme bedeli yaklaşık maliyetin 4,90 TRY üzerinde (%104,9)"
 
 
 def test_display_floors_not_rounds():
@@ -198,7 +198,7 @@ def test_kismi_dedupe_same_ikn_yuklenici_bedel():
 def test_kismi_over_estimate_text():
     res = run(rec(1, ikn="2026/9", bedel=60.0, maliyet=100.0, yuklenici="A"),
               rec(2, ikn="2026/9", bedel=50.0, maliyet=100.0, yuklenici="B"))
-    assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin üzerinde (%110)"
+    assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin 10,00 TRY üzerinde (%110,0)"
 
 
 def test_kismi_with_unconfident_sibling_is_unreadable():

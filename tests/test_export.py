@@ -84,7 +84,7 @@ def test_export_matches_contract_shape():
     assert indic == {"elenen_orani": 0.0, "elenen_orani_peer": None, "elenen_orani_peer_n": 0,
                      "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": False,
                      "yuklenici_payi": None, "yuklenici_payi_n": 1}
-    assert set(stats) == set(c_stats) and stats["peer"] is None and stats["records"] == 1
+    assert set(stats) == set(c_stats) | {"usul_turu", "usul_label"} and stats["peer"] is None and stats["records"] == 1
     assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
     got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
