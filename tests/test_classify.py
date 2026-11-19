@@ -196,7 +196,8 @@ def test_shadow_log_records_disagreements_and_summary(tmp_path, monkeypatch, dat
     assert [d["idare"] for d in dis] == ["KONYA BELEDİYESİ", "MUĞLA BELEDİYESİ"]
     assert dis[0]["turu_differs"] and not dis[0]["il_differs"] and dis[1]["il_differs"] and not dis[1]["turu_differs"]
     assert summary["summary"] == {"date": "2026-11-18", "names": 4, "in_table": 3, "disagreements": 2,
-                                  "peer_classifier": "legacy"}
+                                  "misses": 1, "miss_rate": 0.25, "peer_classifier": "legacy"}
+    assert classify.new_names_path().read_text(encoding="utf-8").splitlines() == ["NOT IN TABLE"]
 
 
 def test_flag_run_writes_the_shadow_log(tmp_path, monkeypatch, data_dir):
@@ -278,3 +279,49 @@ def test_eval_without_two_runs_says_so(tmp_path, monkeypatch, capsys):
     ev = load_eval()
     assert ev.main(["--labels", str(labels)]) == 0                         # no table file at all
     assert "no turu_run1/turu_run2" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------- table_first, new-names log
+def test_table_first_uses_any_confidence_table_row(tmp_path, monkeypatch):
+    write_table(tmp_path, monkeypatch, [row("A BELEDİYESİ", "diger", "Van", 0.2)])
+    a = classify.classify("A BELEDİYESİ", "table_first")
+    assert (a.turu, a.il, a.confidence, a.source) == ("diger", "Van", 0.2, "table_first:table")   # unlike hybrid
+    assert classify.classify("A BELEDİYESİ", "hybrid").source == "hybrid:keywords"
+    miss = classify.classify("KONYA BELEDİYESİ", "table_first")
+    assert (miss.turu, miss.source) == ("belediye", "table_first:keywords")
+    assert "table_first" in classify.PEER_CLASSIFIERS and "table_first" in classify.IMPLEMENTATIONS
+
+
+def test_table_first_as_peer_classifier(tmp_path, monkeypatch):
+    write_table(tmp_path, monkeypatch, [row("Y KURUMU", "adalet", "Van", 0.3)])
+    monkeypatch.setenv(classify.PEER_ENV, "table_first")
+    assert (peers.idare_turu("Y KURUMU"), peers.il_of("Y KURUMU")) == ("adalet", "Van")
+    assert peers.idare_turu("KONYA BELEDİYESİ") == "belediye"
+
+
+def test_new_names_accumulate_unique_across_runs(tmp_path, monkeypatch, data_dir):
+    write_table(tmp_path, monkeypatch, [row("IN TABLE", "adalet")])
+    classify.shadow_log(["IN TABLE", "Z NEW", "A NEW"], D)
+    classify.shadow_log(["Z NEW", "B NEW", "IN TABLE"], date(2026, 11, 19))
+    lines = classify.new_names_path().read_text(encoding="utf-8").splitlines()
+    assert lines == ["A NEW", "Z NEW", "B NEW"] and len(lines) == len(set(lines))
+
+
+def test_miss_rate_without_a_table(data_dir):
+    p = classify.shadow_log(["A", "B"], D)
+    summary = json.loads(p.read_text(encoding="utf-8").splitlines()[-1])["summary"]
+    assert summary["misses"] == 2 and summary["miss_rate"] == 1.0 and summary["in_table"] == 0
+
+
+def test_eval_scores_table_first(tmp_path, monkeypatch):
+    write_table(tmp_path, monkeypatch, [row("KONYA BELEDİYESİ", "belediye", "Konya", 0.4),
+                                        row("ÖRNEK GAYRİ KURUM", "adalet", "Van", 0.95)])
+    ev = load_eval()
+    tf = ev.evaluate(LABELS, "table_first")
+    assert (tf["covered"], tf["turu_correct"], tf["il_correct"]) == (4, 4, 4)
+    hy = ev.evaluate(LABELS, "hybrid")
+    assert hy["turu_correct"] == 4
+    import io
+    buf = io.StringIO()
+    ev.report(LABELS, [], out=lambda s="": buf.write(s + "\n"))
+    assert "table_first" in buf.getvalue()

@@ -2,7 +2,7 @@
 
 Usage:  python scripts/eval_classify.py [--labels tests/labels/idare_types.jsonl] [--table data/idare_table.jsonl]
 
-For `keywords`, `table` and `hybrid` it reports, over the labeled idares:
+For `keywords`, `table`, `hybrid` and `table_first` it reports, over the labeled idares:
   * accuracy per field (turu, il) over ALL labeled rows (an implementation with no answer counts as wrong) and over
     the rows it covers; coverage = share of rows with an answer;
   * a confusion table for turu (labeled → predicted), compact: only the off-diagonal cells;

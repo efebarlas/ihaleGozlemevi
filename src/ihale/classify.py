@@ -4,6 +4,7 @@ Implementations behind one interface `classify(name, impl) -> Classification(tur
   * keywords  coded rules over the name (the taxonomy's tie-break order)
   * table     lookup in data/idare_table.jsonl by normalized idare key (built once by a build session)
   * hybrid    the table when its confidence >= 0.9, else keywords
+  * table_first  the table whenever the key is present (any confidence), keywords only on a table miss
 
 Which implementation feeds the peer groups is config (`IHALE_PEER_CLASSIFIER`): `legacy` (default; today's peer rules in
 peers.py, unchanged), `keywords`, `table` or `hybrid`. Promotion is decided on scripts/eval_classify.py numbers.
@@ -53,7 +54,7 @@ TURU_PLURAL: dict[str, str] = {
     "bakanlik_tasra": "bakanlık taşra birimleri", "merkezi_idare": "merkezi idareler", "diger": "diğer idareler",
 }
 
-IMPLEMENTATIONS = ("keywords", "table", "hybrid")
+IMPLEMENTATIONS = ("keywords", "table", "hybrid", "table_first")
 PEER_CLASSIFIERS = ("legacy",) + IMPLEMENTATIONS
 HYBRID_MIN_CONFIDENCE = 0.9
 PEER_ENV = "IHALE_PEER_CLASSIFIER"
@@ -209,7 +210,16 @@ def classify_hybrid(name: str | None) -> Classification:
     return Classification(k.turu, k.il, k.confidence, "hybrid:keywords")
 
 
-_IMPL = {"keywords": classify_keywords, "table": classify_table, "hybrid": classify_hybrid}
+def classify_table_first(name: str | None) -> Classification:
+    t = classify_table(name)
+    if t.turu is not None:
+        return Classification(t.turu, t.il, t.confidence, "table_first:table")
+    k = classify_keywords(name)
+    return Classification(k.turu, k.il, k.confidence, "table_first:keywords")
+
+
+_IMPL = {"keywords": classify_keywords, "table": classify_table, "hybrid": classify_hybrid,
+         "table_first": classify_table_first}
 
 
 @lru_cache(maxsize=65536)
@@ -237,6 +247,10 @@ def shadow_log_path(day) -> Path:
     return config.data_dir() / "logs" / f"classify-shadow-{day.isoformat()}.jsonl"
 
 
+def new_names_path() -> Path:
+    return config.data_dir() / "logs" / "classify-new-names.txt"
+
+
 def shadow_log(names, day) -> Path:
     """Compute keywords and table for every distinct idare name and log the disagreements (turu or il).
 
@@ -244,10 +258,11 @@ def shadow_log(names, day) -> Path:
     rewritten by each run (a flag run is a full recompute).
     """
     names = sorted({n for n in names if n})
-    lines, in_table, disagree = [], 0, 0
+    lines, in_table, disagree, missing = [], 0, 0, []
     for n in names:
         k, t = classify(n, "keywords"), classify(n, "table")
         if t.turu is None:
+            missing.append(n)
             continue
         in_table += 1
         if (k.turu, k.il) != (t.turu, t.il):
@@ -257,10 +272,28 @@ def shadow_log(names, day) -> Path:
                           "table": {"turu": t.turu, "il": t.il, "confidence": t.confidence},
                           "turu_differs": k.turu != t.turu, "il_differs": k.il != t.il})
     lines.append({"summary": {"date": day.isoformat(), "names": len(names), "in_table": in_table,
-                              "disagreements": disagree, "peer_classifier": peer_classifier()}})
+                              "disagreements": disagree, "misses": len(missing),
+                              "miss_rate": round(len(missing) / len(names), 4) if names else 0.0,
+                              "peer_classifier": peer_classifier()}})
     p = shadow_log_path(day)
     p.parent.mkdir(parents=True, exist_ok=True)
     tmp = p.with_name(p.name + ".tmp")
     tmp.write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in lines), encoding="utf-8")
     os.replace(tmp, p)
+    _remember_new_names(missing)
     return p
+
+
+def _remember_new_names(missing: list[str]) -> None:
+    """Accumulate unique names that are not in the table (one per line), so a build session can extend it."""
+    f = new_names_path()
+    try:
+        known = set(f.read_text(encoding="utf-8").splitlines())
+    except OSError:
+        known = set()
+    clean = lambda n: " ".join(n.split())  # one line per name
+    fresh = sorted({clean(n) for n in missing} - known)
+    if fresh:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        with open(f, "a", encoding="utf-8", newline=chr(10)) as fh:
+            fh.write("".join(n + chr(10) for n in fresh))
