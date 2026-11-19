@@ -1,10 +1,14 @@
 # Data contract: parse → store/flag → export → site
 
-Owner: the orchestrator. Builders implement against this. If it's wrong, report it rather than silently diverging. Python types are in `src/ihale/model.py`.
+Owner: the orchestrator. Updated 2026-11-19 for SPEC §4.1 (build on ihalent) and §1 (base rates, ranking). Builders implement against this. If it's wrong, report it rather than silently diverging. Python types are in `src/ihale/model.py`.
 
 ## 1. Parser output (M1)
 `ihale.parse.parse_bulletin(pdf_path: Path, bulletin_date: date, bulletin_type: str) -> list[Record]`
 
+- **Built on ihalent** (SPEC §4.1). `ihalent==0.5.1` is pinned, MIT. `ihale.parse` is a thin adapter: `ihalent.bulletin.read_bulletin_saved()` → `BulletinNotice`s → our `Record`s.
+  - Fix shortfalls in the adapter, using the notice's raw `(part, label, value)` fields. Fork ihalent only if a wrapper can't fix them.
+  - A notice ihalent rejects still becomes a `Record`, with whatever is recoverable, low confidence and a warning, so the day's count stays honest.
+  - Map ihalent's `section` ("4734" → `A`; "istisna"/"kapsam-disi" → `B`) and derive `seq` from document order within the section. Document the mapping in `parse.py`.
 - One `Record` per `SONUÇ İLANI`, in document order. Field semantics are in `model.py`; the layout facts are in `docs/bulletin-layout.md`.
 - **Confidence** is per field, in [0, 1]:
   - Use ≥ `CONFIDENT` (0.9) only when the label was found in the right group and the value matched its expected shape. Shapes: `YYYY/NNNNNNN[-n]` for ikn; `1.234,56 CUR` for money; an integer for counts; `DD.MM.YYYY` for dates; non-empty text for names.
@@ -31,7 +35,7 @@ A flag is computed only when **every input field is confident**. Otherwise the r
 | code | condition | text (Turkish, shown on the site) |
 |---|---|---|
 | `tek_gecerli_teklif` | `gecerli_teklif == 1` | `Tek geçerli teklif` (also show `toplam_teklif` when > 1: `2 teklif, 1 geçerli`) |
-| `bedel_orani` | ratio ≥ 0.95 (see below) | `Sözleşme bedeli yaklaşık maliyetin %97'si`; if > 1: `Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)` |
+| `bedel_orani` | ratio ≥ 0.97 (see below), i.e. ihalent's `low_discount` (kırım < 3%) | `Sözleşme bedeli yaklaşık maliyetin %97'si`; if > 1: `Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)` |
 | `tekrarlayan_yuklenici` | the same (idare key, yüklenici key) has ≥ 3 distinct ikns with a bulletin date within the 365 days up to and including this record's | `Bu yüklenici son 12 ayda bu idareden 3 sözleşme aldı (bu dahil)` |
 
 **Ratio for `bedel_orani`:**
@@ -40,6 +44,17 @@ A flag is computed only when **every input field is confident**. Otherwise the r
 - **ikn with several records (kısmi):** ratio = sum of `sozlesme_bedeli` over all stored records of that ikn, deduped by (ikn, yüklenici key, bedel) / estimate. The text then says `Bu ihalenin N kısmının toplam bedeli yaklaşık maliyetin %97'si`.
 - **Currency:** compute only when every bedel's currency equals the estimate's primary currency. Never convert. A mismatch puts `sozlesme_bedeli` under `unreadable` with the reason `para birimi farklı`.
 - Store the ratio as a float and round only for display: floor to a whole percent, so 0.999 shows as %99, not %100.
+
+### 4.1 Ranking: compound unusualness (SPEC §1 "Base rates")
+Flags alone fire on roughly half of all tenders, so Bugün ranks by a transparent `score`, an integer sum of these parts:
+- +1 `tek_gecerli_teklif`
+- +1 `bedel_orani`
+- +2 `tekrarlayan_yuklenici` when this record also has at least one of the two flags above (a repeat pair inside flagged tenders). A bare repeat adds +0, but the flag is still shown.
+- +1 `idare_orani`: the idare has ≥ 5 records in the loaded history and its share of `tek_gecerli_teklif` is ≥ 2× the share across all idares in the same history window.
+
+Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli (TRY). Thresholds are provisional. `scripts/base_rates.py` prints the measured base rates from the DB (share of tek teklif, bedel ≥ 0.97, repeat pairs, per usul and section). Revisit the thresholds once ~30 days are loaded.
+
+**Peer comparison.** Every record carries `idare_stats` so the site can show the figure next to its peers, e.g. `Bu idare: 12 ihalenin %80'i tek geçerli teklif · Tüm idareler: %43`. The bulletin has no sector or province field, so v1 peers are "all idares in the loaded history". Sector/province peers are M4 work.
 
 `tekrarlayan_yuklenici` needs history, so it becomes meaningful once ~30 days of bulletins are loaded (a small backfill in M2/M3, full backfill in M5).
 
@@ -70,7 +85,9 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
    "kisim": {"records_in_ikn": 1},
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
-   "flags": [{"code": "bedel_orani", "value": 0.956, "text": "Sözleşme bedeli yaklaşık maliyetin %95'i"}]}
+   "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
+   "score": 1, "score_parts": ["bedel_orani"],
+   "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "peers_tek_gecerli_teklif": 0.43, "window_days": 30}}
  ]}
 ```
 - `id` = `<date>-<type>-<section>-<seq>`. It is URL-safe and stable for that bulletin.
@@ -81,10 +98,10 @@ Written under `<data>/export/`, UTF-8, `ensure_ascii=False`.
 ## 6. Site (M3)
 - **Generator:** `ihale.sitegen.build(export_dir: Path, out_dir: Path)`, plain Python with Jinja2. It writes static HTML to `site/dist/`, which is gitignored. Wrangler config is `site/wrangler.jsonc`: an assets-only Worker named `ihale-gozlemevi`.
 - **Pages:**
-  - `/`: **Bugün**. The latest date's flagged records, with a one-line summary of counts.
+  - `/`: **Bugün**. The latest date's records with `score ≥ 2`, ranked by score (§4.1), with a one-line summary of counts and the peer comparison on each card.
   - `/gun/<date>/`: every record of that day.
   - `/ihale/<id>/`: **İhale detayı**. All fields, the flags with their numbers, `okunamadı` for unreadable fields, and the source block: `Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18`, with a link to `https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx` and how to download it.
-  - `/yontem/`: **Yöntem**. How each flag is computed and its limits.
+  - `/yontem/`: **Yöntem**. How each flag and the score are computed, and their limits. It credits **ihalent** (MIT, link to github.com/gulmezeren2-byte/ihalent) as the bulletin reader.
   - M4 adds `/idare/<key-slug>/` and `/yuklenici/<key-slug>/`.
 - **Unlisted (SPEC §6):**
   - `<meta name="robots" content="noindex, nofollow">` on every page.
