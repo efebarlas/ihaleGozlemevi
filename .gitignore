@@ -20,3 +20,8 @@ node_modules/
 
 # built site
 /site/dist/
+
+# Efe's design guidance and anything derived from it stays private (SPEC §9.2)
+/design/BRIEF.md
+/design/private/
+/design/guided/

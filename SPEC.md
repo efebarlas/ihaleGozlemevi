@@ -285,6 +285,7 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 - The site gets a hidden switch to flip between the token sets, so Efe can look at all of them on his phone.
 
 - No reviewer reads another project's design files. In particular, clearpile's `design/BRIEF.md` holds Efe's taste.
+- Efe's own design guidance is private and never enters this public repo. The guidance itself, and Phase 2 work that quotes or reflects it, stay outside git; `.gitignore` guards `design/BRIEF.md`, `design/private/` and `design/guided/`. Only the unguided baseline and neutral outcomes are committed.
 - After the direction is applied, a fresh reviewer runs a design audit of every page in light and dark at phone width, judged against these rules.
 
 **Freeze the baseline** once Phase 1 and its audit are done:
