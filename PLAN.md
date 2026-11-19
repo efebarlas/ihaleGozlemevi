@@ -10,12 +10,14 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-19: SPEC §4.1, so we build on ihalent (pinned 0.5.1, MIT). We keep our own downloader: ihalent's waits only 2 s. License audit found `certifi` (MPL-2.0) via `requests`, so `requests` is being replaced by stdlib urllib, with a license test added. Bugün ranks by a compound score (contract §4.1). Sector/province peers are deferred to M4 because the bulletin has no such fields.
 
+- 2026-11-19: M1 done. M2/M3 code landed. Running a 30-day mal backfill (polite, sequential) for base rates and the repeat-winner flag, then first deploy and the scheduled task.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
-| M1 | Adopt ihalent | in progress (adapter over ihalent 0.5.1 + independent labeler; requests→urllib for the license gate) |
-| M2 | Store and flag | in progress |
+| M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
+| M2 | Store and flag | code done (93564e7; 414 tests pass); verifying on real data via backfill |
 | M3 | Site v1, unlisted, with the daily run | in progress (site generator; deploy and scheduling after M1/M2 land) |
 | M4 | Breadth | not started |
 | M5 | History | not started |
