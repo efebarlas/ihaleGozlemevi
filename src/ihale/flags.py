@@ -6,6 +6,7 @@ Keys are recomputed from the raw names here (not read from the DB), so a normali
 from __future__ import annotations
 
 import bisect
+import math
 import statistics
 from dataclasses import dataclass, field, fields
 from datetime import date, timedelta
@@ -20,8 +21,11 @@ from .model import CONFIDENT, Money, Record
 from .store import StoredRecord
 
 CURRENCY_MISMATCH = "para birimi farklı"
-SCORE_WEIGHTS = {"tek_teklif": 1, "diger_teklifler_elendi": 2, "bedel_orani": 1,
-                 "tekrarlayan_yuklenici": 2, "idare_orani": 1}
+PART_CODES = ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik", "idare_orani")
+MIN_GROUP_N = 100                 # a usul_turu group needs >= 100 records, else the all-records rate is used
+P_FLOOR = 0.001                   # no part exceeds ln(1000) = 6.9 points
+BUGUN_CUTOFF = 3.0                # Bugün shows score >= 3.0 (about ln 20); the site applies it
+ALL_GROUP = "hepsi"
 RATIO_THRESHOLD_PCT = 97          # ratio >= 0.97 (ihalent's low_discount: kırım < 3%)
 REPEAT_MIN_IKNS = 3
 REPEAT_WINDOW_DAYS = 365          # bulletin dates in [d - 365 days, d]
@@ -109,11 +113,16 @@ class FlagResult:
     flags: list[dict] = field(default_factory=list)
     unreadable: list = field(default_factory=list)   # field names and {"field", "reason"} objects
     kisim_n: int = 1
-    score: int = 0
+    score: float = 0.0
     score_parts: list = field(default_factory=list)
     idare_stats: dict | None = None
     indicators: dict | None = None
     structural: dict | None = None     # {"id", "text"} of the matching structural rule (§4.1.1)
+    usul_group: str | None = None      # usul_turu used for the base rates (None = unknown)
+
+    @property
+    def part_codes(self) -> list[str]:
+        return [p["code"] if isinstance(p, dict) else p for p in self.score_parts]
 
 
 def _estimate(r: Record) -> tuple[str, Money] | None:
@@ -342,6 +351,35 @@ class _PayiIndex:
 
 def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
     """Flags for every stored record (id → result). Pure: no DB access."""
+    return compute_flags_full(stored)[0]
+
+
+def _score_all(results: dict[int, FlagResult]) -> dict:
+    """Rarity-weighted score (§4.1): each part earns ln(1/p), p = the part's rate among records with the same
+    usul_turu (all-records rate when that group has n < 100; p floored at 0.001). Returns the part_rates table."""
+    counts: dict[str, dict[str, int]] = {}
+    sizes: dict[str, int] = {}
+    for res in results.values():
+        for g in {ALL_GROUP, res.usul_group} - {None}:
+            sizes[g] = sizes.get(g, 0) + 1
+            c = counts.setdefault(g, dict.fromkeys(PART_CODES, 0))
+            for code in res.score_parts:
+                c[code] += 1
+    for res in results.values():
+        g = res.usul_group if res.usul_group and sizes.get(res.usul_group, 0) >= MIN_GROUP_N else ALL_GROUP
+        parts, total = [], 0.0
+        for code in res.score_parts:
+            p = max(counts[g][code] / sizes[g], P_FLOOR)
+            points = round(math.log(1 / p), 2)
+            total += points
+            parts.append({"code": code, "points": points, "p": round(p, 4), "p_group": g})
+        res.score_parts, res.score = parts, round(total, 2)
+    return {g: {**{c: round(counts[g][c] / sizes[g], 4) for c in PART_CODES}, "n": sizes[g]}
+            for g in sorted(sizes)}
+
+
+def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult], dict]:
+    """(flags/score per record id, part_rates table for meta.json)."""
     # ikn groups (kısmi): deduped by (ikn, yüklenici key, bedel)
     groups: dict[str, dict[tuple, StoredRecord]] = {}
     for s in stored:
@@ -447,6 +485,7 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
         idare_fires = False
         elen_peer = {"peer": None, "n": 0}
         bedel_peer = (None, 0)
+        usul = None
         ik = normalize_key(r.idare) if r.confident("idare") else None
         if ik:
             wkey = (r.bulletin_type, r.bulletin_date, None)
@@ -471,16 +510,16 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
         have = {f["code"] for f in res.flags}
         if res.structural and structural.NO_SINGLE_BID_POINTS in rule.effects:
             have -= {"tek_teklif", "diger_teklifler_elendi"}      # still shown as flags, but no points
-        parts = [c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have]
-        if "tekrarlayan_yuklenici" in have and parts:
-            parts.append("tekrarlayan_yuklenici")
+        parts = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
         if idare_fires:
-            parts.append("idare_orani")
-        res.score_parts = parts
-        res.score = sum(SCORE_WEIGHTS[p] for p in parts)
+            parts.add("idare_orani")
+        if "tekrarlayan_yuklenici" in have and parts:     # a bare repeat earns nothing (the flag is still shown)
+            parts.add("tekrarlayan_eslesik")
+        res.score_parts = [c for c in PART_CODES if c in parts]      # codes for now; _score_all adds the points
+        res.usul_group = usul if ik else None
         res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer)
         results[s.id] = res
-    return results
+    return results, _score_all(results)
 
 
 def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, payi_idx: "_PayiIndex",

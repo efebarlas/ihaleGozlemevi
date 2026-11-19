@@ -41,7 +41,7 @@ def test_dmo_3g_is_not_unusual_against_other_3g_buyers():
     assert st["records"] == 6 and st["tek_gecerli_teklif"] == 1.0
     assert st["peer"]["records"] == 25 and st["peer"]["tek_gecerli_teklif"] == 1.0
     assert st["peer"]["label"] == "Türkiye'deki diğer idareler (mal, 4734/3-g)"
-    assert "idare_orani" not in a.score_parts
+    assert "idare_orani" not in a.part_codes
 
 
 def test_without_the_procedure_split_the_same_idare_would_stand_out():
@@ -49,14 +49,14 @@ def test_without_the_procedure_split_the_same_idare_would_stand_out():
     dmo = [mk(i, DMO, True, G) for i in range(6)]
     others_acik = group(40, 4, "Açık", "KONYA BELEDİYESİ {}", 500)
     a = run(*dmo, *others_acik)[0]
-    assert a.idare_stats["peer"] is None and "idare_orani" not in a.score_parts
+    assert a.idare_stats["peer"] is None and "idare_orani" not in a.part_codes
 
 
 def test_idare_orani_fires_within_the_same_procedure():
     own = [mk(i, DMO, True, G) for i in range(6)]
     peers = group(25, 5, G, "KONYA BELEDİYESİ {}", 100)                      # 20% tek among 3-g peers
     a = run(*own, *peers)[0]
-    assert "idare_orani" in a.score_parts
+    assert "idare_orani" in a.part_codes
 
 
 def test_idare_rate_counts_only_awards_of_that_procedure():
@@ -81,7 +81,7 @@ def test_unknown_procedure_has_no_idare_stats():
     r = mk(1, DMO, True)
     r.confidence["ihale_usulu"] = 0.2
     (a,) = run(r)
-    assert a.idare_stats is None and "idare_orani" not in a.score_parts
+    assert a.idare_stats is None and "idare_orani" not in a.part_codes
 
 
 def test_elenen_peer_still_uses_all_procedures():

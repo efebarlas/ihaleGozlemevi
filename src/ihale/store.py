@@ -162,6 +162,16 @@ class Store:
             elif int(row["value"]) != SCHEMA_VERSION:
                 raise RuntimeError(f"database schema {row['value']} != supported {SCHEMA_VERSION}; migrate or rebuild")
 
+    def set_meta(self, key: str, value) -> None:
+        with self._conn() as c:
+            c.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                      (key, json.dumps(value, ensure_ascii=False)))
+
+    def get_meta(self, key: str, default=None):
+        with self._conn() as c:
+            row = c.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        return json.loads(row["value"]) if row else default
+
     def schema_version(self) -> int:
         with self._conn() as c:
             return int(c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()["value"])

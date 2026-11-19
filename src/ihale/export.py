@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from . import config, structural
+from .flags import BUGUN_CUTOFF
 from .keys import normalize_key
 from .model import Money
 from .store import Store, StoredRecord
@@ -57,7 +58,7 @@ def tender_json(s: StoredRecord) -> dict:
         "source": {"date": day, "type": r.bulletin_type, "file": r.source_file, "page": r.page_start},
         "unreadable": s.unreadable or [],
         "flags": s.flags or [],
-        "score": s.score or 0, "score_parts": s.score_parts or [],
+        "score": s.score or 0.0, "score_parts": s.score_parts or [],
         "indicators": s.indicators,
         "structural": s.structural,
         "idare_stats": s.idare_stats,
@@ -105,5 +106,6 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
     _write_json(out / "meta.json", {
         "schema": SCHEMA, "generated_at": (now or istanbul_now()).isoformat(timespec="seconds"),
         "latest_date": dates[0] if dates else None, "dates": dates, "counts": counts,
-        "structural_rules": structural.rules_meta()})
+        "structural_rules": structural.rules_meta(), "bugun_cutoff": BUGUN_CUTOFF,
+        "part_rates": store.get_meta("part_rates", {})})
     return out

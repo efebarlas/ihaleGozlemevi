@@ -13,8 +13,8 @@ from . import config
 from .export import _write_json, istanbul_now, tender_json
 from .store import Store
 
-MIN_SCORE, MAX_SCORE = 1, 3          # the band around the Bugün cut-off (score >= 2)
-MAX_SCORE_GAP = 1
+MIN_SCORE, MAX_SCORE = 2.0, 4.5      # the band around the Bugün cut-off (score >= 3.0)
+MAX_SCORE_GAP = 1.0
 MIN_PAIRS, MAX_PAIRS = 3, 5
 POOL_LIMIT = 400                     # pair search is quadratic: keep the highest-bedel records (deterministic)
 QUESTION = "Hangisi bir muhabirin zamanına daha çok değer?"
@@ -33,6 +33,14 @@ def _single_swap(pa: set, pb: set) -> bool:
     return len(pa - pb) == 1 and len(pb - pa) == 1
 
 
+def _codes(t: dict) -> list[str]:
+    return [p["code"] if isinstance(p, dict) else p for p in t["score_parts"]]
+
+
+def _tr_num(x: float) -> str:
+    return f"{x:.2f}".replace(".", ",")
+
+
 def _parts_text(parts) -> str:
     return " + ".join(parts) if parts else "(işaret yok)"
 
@@ -40,8 +48,8 @@ def _parts_text(parts) -> str:
 def select_pairs(tenders: list[dict]) -> list[tuple[dict, dict]]:
     """Deterministic selection over day-export tender dicts (see §5.1).
 
-    Pool: 1 <= score <= 3, one representative per ikn (the highest TRY bedel; kısmi lots are near-duplicates).
-    Eligible pair: scores differ by <= 1 and the score_parts sets differ. Rank: single-swap first, then equal
+    Pool: 2.0 <= score <= 4.5, one representative per ikn (the highest TRY bedel; kısmi lots are near-duplicates).
+    Eligible pair: scores differ by <= 1.0 and the score_parts sets differ. Rank: single-swap first, then equal
     scores, then higher combined TRY bedel, then ids. Greedy, each record used at most once, up to 5 pairs.
     """
     best: dict = {}
@@ -56,12 +64,12 @@ def select_pairs(tenders: list[dict]) -> list[tuple[dict, dict]]:
 
     ranked = []
     for a, b in combinations(pool, 2):
-        if abs(a["score"] - b["score"]) > MAX_SCORE_GAP:
+        if round(abs(a["score"] - b["score"]), 2) > MAX_SCORE_GAP:
             continue
-        pa, pb = set(a["score_parts"]), set(b["score_parts"])
+        pa, pb = set(_codes(a)), set(_codes(b))
         if pa == pb:
             continue
-        ranked.append(((not _single_swap(pa, pb), abs(a["score"] - b["score"]),
+        ranked.append(((not _single_swap(pa, pb), round(abs(a["score"] - b["score"]), 2),
                         -(_try_amount(a) + _try_amount(b)), a["id"], b["id"]), a, b))
     ranked.sort(key=lambda x: x[0])
 
@@ -79,17 +87,18 @@ def select_pairs(tenders: list[dict]) -> list[tuple[dict, dict]]:
 
 
 def _describe(a: dict, b: dict) -> tuple[str, str]:
-    pa, pb = set(a["score_parts"]), set(b["score_parts"])
-    if a["score"] == b["score"]:
-        why = f"aynı skor ({a['score']}), farklı işaret karışımı: "
+    ca, cb = _codes(a), _codes(b)
+    pa, pb = set(ca), set(cb)
+    if abs(a["score"] - b["score"]) < 0.005:
+        why = f"aynı skor ({_tr_num(a['score'])}), farklı işaret karışımı: "
     else:
-        why = f"skorlar {a['score']} ve {b['score']}, farklı işaret karışımı: "
-    why += f"{_parts_text(a['score_parts'])} / {_parts_text(b['score_parts'])}"
+        why = f"skorlar {_tr_num(a['score'])} ve {_tr_num(b['score'])}, farklı işaret karışımı: "
+    why += f"{_parts_text(ca)} / {_parts_text(cb)}"
     if _single_swap(pa, pb):
         (x,), (y,) = sorted(pa - pb), sorted(pb - pa)
         would = f"{x} ağırlığı ile {y} ağırlığı arasındaki sıra"
     else:
-        would = (f"{_parts_text(a['score_parts'])} ile {_parts_text(b['score_parts'])} "
+        would = (f"{_parts_text(ca)} ile {_parts_text(cb)} "
                  "karışımlarının göreli ağırlıkları")
     return why, would
 

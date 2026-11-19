@@ -18,7 +18,7 @@ PEER_NOTE = "Kendi geçmişiyle karşılaştırılır"
 @dataclass(frozen=True)
 class Rule:
     id: str
-    prefix: str            # idare name prefix, Turkish-casefolded match
+    prefix: str | None     # idare name prefix, Turkish-casefolded match; None = any idare
     usul_turu: str
     effects: tuple[str, ...]
     reason_tr: str
@@ -41,6 +41,16 @@ RULES: tuple[Rule, ...] = (
         match_tr="İdare adı «DEVLET MALZEME OFİSİ» ile başlar ve usul 4734/3-g'dir",
         added="2026-11-19",
     ),
+    Rule(
+        id="istisna-3e",
+        prefix=None,
+        usul_turu="istisna_3e",
+        effects=(NO_SINGLE_BID_POINTS,),
+        reason_tr=("4734 sayılı Kanun md. 3/e: alım, Kanunda adı sayılan kamu kuruluşundan (ör. ceza infaz "
+                   "kurumu işyurtları, DMO, TCDD, Et ve Balık Kurumu) yapılır; tek tedarikçi Kanun gereğidir."),
+        match_tr="Usul 4734/3-e'dir (idare fark etmez)",
+        added="2026-11-19",
+    ),
 )
 
 
@@ -54,7 +64,7 @@ def match(idare: str | None, usul_turu: str | None) -> Rule | None:
         return None
     name = _fold(idare)
     for rule in RULES:
-        if usul_turu == rule.usul_turu and name.startswith(_fold(rule.prefix)):
+        if usul_turu == rule.usul_turu and (rule.prefix is None or name.startswith(_fold(rule.prefix))):
             return rule
     return None
 

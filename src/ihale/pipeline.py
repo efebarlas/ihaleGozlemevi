@@ -14,7 +14,7 @@ from pathlib import Path
 
 from . import config, ekap
 from .export import TR_TZ, export_all, export_dir
-from .flags import compute_flags
+from .flags import compute_flags_full
 from .store import Store
 
 log = logging.getLogger("ihale")
@@ -127,7 +127,8 @@ def parse_and_store(day: date, type_: str, store: Store | None = None) -> int:
 def flag_all(store: Store | None = None) -> dict[str, int]:
     store = store or Store()
     stored = store.all_records()
-    results = compute_flags(stored)
+    results, part_rates = compute_flags_full(stored)
+    store.set_meta("part_rates", part_rates)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
                          "score_parts": r.score_parts, "idare_stats": r.idare_stats, "indicators": r.indicators,
                          "structural": r.structural} for i, r in results.items()})

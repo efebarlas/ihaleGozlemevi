@@ -13,7 +13,7 @@ from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
-from ihale.flags import compute_flags
+from ihale.flags import BUGUN_CUTOFF, PART_CODES, compute_flags_full
 from ihale.store import Store
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -26,12 +26,12 @@ def pct(n: int, d: int) -> str:
 
 def table(title: str, groups: dict[str, list]) -> None:
     print(f"\n{title}")
-    print(f"  {'group':<28}{'records':>8}  {'tek':>7}  {'bedel>=.97':>10}  {'repeat':>7}  {'score>=2':>8}")
+    print(f"  {'group':<28}{'records':>8}  {'tek':>7}  {'bedel>=.97':>10}  {'repeat':>7}  {'score>=3':>8}")
     for k, rows in sorted(groups.items(), key=lambda kv: -len(kv[1])):
         n = len(rows)
         print(f"  {k[:27]:<28}{n:>8}  {pct(sum(r['tek'] for r in rows), n)}  "
               f"{pct(sum(r['bedel'] for r in rows), n):>10}  {pct(sum(r['rep'] for r in rows), n)}  "
-              f"{pct(sum(r['score'] >= 2 for r in rows), n):>8}")
+              f"{pct(sum(r['score'] >= BUGUN_CUTOFF for r in rows), n):>8}")
 
 
 def _quantiles(vals: list[float]) -> str:
@@ -41,6 +41,25 @@ def _quantiles(vals: list[float]) -> str:
     q = lambda p: v[min(len(v) - 1, int(p * (len(v) - 1) + 0.5))]  # noqa: E731
     return (f"n={len(v):<6} mean={sum(v) / len(v):8.3f}  p10={q(.1):8.3f}  p50={q(.5):8.3f}  "
             f"p90={q(.9):8.3f}  max={v[-1]:8.3f}")
+
+
+def part_rate_tables(part_rates: dict, rows: list[dict]) -> None:
+    """Each score part's base rate p per usul_turu (what the rarity weights come from), and the share of records
+    over the Bugün cut-off per usul_turu."""
+    short = {"tek_teklif": "tek", "diger_teklifler_elendi": "diğer", "bedel_orani": "bedel",
+             "tekrarlayan_eslesik": "tekrar", "idare_orani": "idare"}
+    print(f"\nPart base rates p by usul_turu (ln(1/p) points; groups with n < 100 use 'hepsi')")
+    print(f"  {'usul_turu':<20}{'n':>7}  " + "  ".join(f"{short[c]:>7}" for c in PART_CODES)
+          + f"  {'score>=' + str(BUGUN_CUTOFF):>9}")
+    by_group: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        by_group[r["usul_turu"]].append(r)
+        by_group["hepsi"].append(r)
+    for g in sorted(part_rates, key=lambda k: (k != "hepsi", -part_rates[k]["n"])):
+        rs = by_group.get(g, [])
+        over = pct(sum(1 for r in rs if r["score"] >= BUGUN_CUTOFF), len(rs)) if rs else "    - "
+        print(f"  {g:<20}{part_rates[g]['n']:>7}  " + "  ".join(f"{part_rates[g][c]:>7.4f}" for c in PART_CODES)
+              + f"  {over:>9}")
 
 
 def indicator_tables(rows: list[dict]) -> None:
@@ -67,7 +86,7 @@ def main(argv=None) -> int:
 
     store = Store(args.db)
     stored = store.all_records()
-    res = compute_flags(stored)
+    res, part_rates = compute_flags_full(stored)
     rows = []
     for s in stored:
         r, f = s.record, res[s.id]
@@ -80,7 +99,8 @@ def main(argv=None) -> int:
             "tek_teklif": "tek_teklif" in have, "diger": "diger_teklifler_elendi" in have,
             "ind": f.indicators or {}, "bedel": "bedel_orani" in have,
             "rep": "tekrarlayan_yuklenici" in have, "score": f.score,
-            "unread": bool(f.unreadable), "parts": tuple(f.score_parts)})
+            "unread": bool(f.unreadable), "parts": tuple(p["code"] for p in f.score_parts),
+            "usul_turu": f.usul_group or "(bilinmiyor)"})
     if not rows:
         print("no records stored")
         return 0
@@ -102,7 +122,7 @@ def main(argv=None) -> int:
     tn = len(tenders)
     print(f"\nper ikn ({tn} tenders): tek {pct(sum(t['tek'] for t in tenders.values()), tn)}, "
           f"bedel>=.97 {pct(sum(t['bedel'] for t in tenders.values()), tn)}, "
-          f"score>=2 {pct(sum(t['score'] >= 2 for t in tenders.values()), tn)}")
+          f"score>={BUGUN_CUTOFF} {pct(sum(t['score'] >= BUGUN_CUTOFF for t in tenders.values()), tn)}")
 
     by_usul, by_section = defaultdict(list), defaultdict(list)
     for r in rows:
@@ -111,6 +131,7 @@ def main(argv=None) -> int:
     table("By usul", by_usul)
     table("By section", by_section)
 
+    part_rate_tables(part_rates, rows)
     indicator_tables(rows)
 
     print("\nScore distribution (records)")
@@ -123,7 +144,7 @@ def main(argv=None) -> int:
     for part, c in Counter(p for r in rows for p in r["parts"]).most_common():
         print(f"  {part:<24}{c:>6}  ({pct(c, n)})")
     print(f"\nRepeat pairs: {len(reps)} records flagged tekrarlayan; "
-          f"{sum(1 for r in reps if r['tek'] or r['bedel'])} of them also carry tek/bedel (scored +2)")
+          f"{sum(1 for r in rows if 'tekrarlayan_eslesik' in r['parts'])} of them are paired with another scored part")
     return 0
 
 

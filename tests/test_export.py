@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from ihale import config
 from ihale.export import TR_TZ, export_all
-from ihale.flags import compute_flags
+from ihale.flags import compute_flags_full
 from ihale.model import Money
 from ihale.store import Store
 
@@ -32,7 +32,7 @@ CONTRACT_DAY = json.loads("""
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
    "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
-   "score": 1, "score_parts": ["bedel_orani"],
+   "score": 2.5, "score_parts": [{"code": "bedel_orani", "points": 2.5, "p": 0.08, "p_group": "acik"}],
    "indicators": {"elenen_orani": 0.0, "elenen_orani_peer": 0.18, "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": false,
                   "yuklenici_payi": 0.12, "yuklenici_payi_n": 12},
    "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
@@ -53,7 +53,8 @@ def shape(x):
 def load_all(day=date(2026, 11, 18)):
     store = Store()
     stored = store.all_records()
-    res = compute_flags(stored)
+    res, rates = compute_flags_full(stored)
+    store.set_meta("part_rates", rates)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
                          "score_parts": r.score_parts, "idare_stats": r.idare_stats,
                          "indicators": r.indicators, "structural": r.structural} for i, r in res.items()})
@@ -79,6 +80,10 @@ def test_export_matches_contract_shape():
     # idare_stats: a lone record has no peer group, so compare that block's keys separately
     stats, c_stats = d["tenders"][0].pop("idare_stats"), CONTRACT_DAY["tenders"][0].pop("idare_stats")
     assert d["tenders"][0].pop("structural") is None            # §4.1.1: null unless a rule matches
+    sc, sp = d["tenders"][0].pop("score"), d["tenders"][0].pop("score_parts")
+    c_sc, c_sp = CONTRACT_DAY["tenders"][0].pop("score"), CONTRACT_DAY["tenders"][0].pop("score_parts")
+    assert isinstance(sc, float) and set(sp[0]) == set(c_sp[0]) == {"code", "points", "p", "p_group"}
+    assert [x["code"] for x in sp] == ["bedel_orani"]
     indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)
     assert set(indic) == set(c_indic) | {"elenen_orani_peer_n", "bedel_orani", "bedel_orani_peer_median",
@@ -92,7 +97,10 @@ def test_export_matches_contract_shape():
     assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
     got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
-    assert set(meta) == set(CONTRACT_META) | {"structural_rules"}
+    assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates"}
+    assert meta["bugun_cutoff"] == 3.0
+    assert set(meta["part_rates"]["hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
+                                                "tekrarlayan_eslesik", "idare_orani", "n"}
     t = d["tenders"][0]
     expected = CONTRACT_DAY["tenders"][0]
     expected["flags"][0]["value"] = t["flags"][0]["value"]
