@@ -8,11 +8,13 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-18 night: M0 done. EKAP answers a plain HTTP form post (no browser, no CAPTCHA). Data dir moved to `%USERPROFILE%\ihaleGozlemevi-data` because the Claude app silently redirects AppData writes, which Task Scheduler would not see. Shared contract for parser/flags/site: `docs/data-contract.md`, `src/ihale/model.py`. Next: M1 parser, M2 store/flag, M3 site generator, built in parallel against that contract.
 
+- 2026-11-19: SPEC §4.1, so we build on ihalent (pinned 0.5.1, MIT). We keep our own downloader: ihalent's waits only 2 s. License audit found `certifi` (MPL-2.0) via `requests`, so `requests` is being replaced by stdlib urllib, with a license test added. Bugün ranks by a compound score (contract §4.1). Sector/province peers are deferred to M4 because the bulletin has no such fields.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
-| M1 | Parse result bulletins (mal) | in progress (parser builder + independent labeler) |
+| M1 | Adopt ihalent | in progress (adapter over ihalent 0.5.1 + independent labeler; requests→urllib for the license gate) |
 | M2 | Store and flag | in progress |
 | M3 | Site v1, unlisted, with the daily run | in progress (site generator; deploy and scheduling after M1/M2 land) |
 | M4 | Breadth | not started |
