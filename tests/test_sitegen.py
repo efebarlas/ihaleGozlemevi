@@ -12,7 +12,7 @@ import pytest
 from ihale import sitegen
 
 SAMPLE = Path(__file__).parent / "fixtures" / "export_sample"
-FORBIDDEN = ["şüphe", "yolsuz", "usulsüz", "rüşvet", "hile", "sahte", "kayırma"]
+FORBIDDEN = ["şüphe", "yolsuz", "usulsüz", "rüşvet", "hile", "sahte", "kayırma", "kırmızı bayrak", "red flag", "redflag"]
 
 
 def _lower_tr(s: str) -> str:
@@ -645,7 +645,7 @@ def test_srcline_everywhere(dist):
     t = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
     assert t.index('class="srcline"') < t.index("İhale detayı")               # directly under the title
     h = _read(dist, "index.html")
-    assert h.count('class="srcline"') == 4                                  # one per card
+    assert h.count('class="srcline"') == 6                                  # 4 cards + 2 folded entries
     day = _day_text(dist, "2026-11-18")
     assert day.count('class="row"') == day.count('class="srcline"') == 8        # every row has a source line
 
@@ -811,3 +811,30 @@ def test_index_pages_paginate_and_sort(tmp_path):
 def test_file_count_report_for_sample(dist):
     n = sum(1 for p in dist.rglob("*") if p.is_file())
     assert n < sitegen.MAX_FILES
+
+
+def test_fold_entries_have_source_money_and_no_ocp_red_flag_wording(dist):
+    h = _read(dist, "index.html")
+    fold = h[h.index('class="card fold'):]
+    fold = fold[:fold.index("</details>")]
+    entries = re.findall(r'<li class="ent">.*?</li>', fold, flags=re.S)
+    assert len(entries) == 2
+    for e in entries:
+        assert 'class="srcline"' in e and 'class="money"' in e and "TRY" in e
+    assert "OCP göstergesi R018" in _read(dist, "yontem/index.html")
+
+
+def test_stacked_tables_carry_data_labels(dist):
+    for rel in ("yontem/index.html", "idare/ornek-il-mudurlugu/index.html", "gun/2026-11-18/index.html"):
+        t = _read(dist, rel)
+        for tbl in re.findall(r'<table class="rules stack">.*?</table>', t, flags=re.S):
+            assert "data-label=" in tbl, rel
+    assert "@media (max-width:39.99rem)" in (dist / "style.css").read_text(encoding="utf-8")
+    css = (dist / "style.css").read_text(encoding="utf-8")
+    assert "min-height:2.75rem" in css and "tabular-nums" in css      # 44 px source link, aligned figures
+
+
+def test_live_build_never_contains_switch(dist):
+    for p in dist.rglob("*.html"):
+        t = p.read_text(encoding="utf-8")
+        assert 'class="sw"' not in t and "?yon=" not in t and "localStorage" not in t, p

@@ -67,3 +67,21 @@ details[open]>summary::before{content:"▾"}
 .srcline{margin:.6rem 0 0;padding:.35rem .6rem;border:1px solid var(--line);background:var(--card);font-size:.9rem;overflow-wrap:anywhere}
 .srcline .lbl{font-weight:700;margin-right:.4rem}
 .row .srcline{margin-top:.4rem}.clist .srcline{margin-top:.3rem}
+
+/* audit fixes: aligned money, 44 px source link, stacked tables on phones */
+body{font-variant-numeric:tabular-nums}
+.rb,.money{text-align:right;font-weight:700}
+.ent{display:grid;grid-template-columns:1fr auto;gap:.15rem .8rem;align-items:baseline;list-style:none;padding:.5rem 0;border-top:1px solid var(--line)}
+.clist{padding-left:0;list-style:none}
+.ent .sub,.ent .srcline{grid-column:1/-1}
+.srcline a{display:inline-flex;align-items:center;min-height:2.75rem}
+@media (max-width:39.99rem){
+  .rules.stack thead{position:absolute;left:-9999px}
+  .rules.stack,.rules.stack tbody,.rules.stack tr{display:block;width:100%}
+  .rules.stack tr{border:1px solid var(--line);margin:0 0 .6rem;padding:.3rem .5rem}
+  .rules.stack td{display:flex;justify-content:space-between;gap:1rem;border:0;padding:.15rem 0;text-align:right}
+  .rules.stack td::before{content:attr(data-label);color:var(--muted);text-align:left;flex:0 1 50%}
+  .rules.stack td:first-child{display:block;font-weight:700;text-align:left}
+  .rules.stack td:first-child::before{content:none}
+  .rules.stack td.z{display:none}
+}

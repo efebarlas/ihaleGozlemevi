@@ -78,3 +78,24 @@ Page heights at 375 px: Bugün 15667, Gün summary 1702, Gün page 2 15388, deta
 - Verify after fixing #1 that the fold entries still render in two lines each; the open fold is about 2500 px high today.
 - Raw internal code `tekrarlayan_eslestik` mentioned in the earlier direction review no longer appears (searched index, mal-A-160, mal-B-7).
 - Not measured: real-device rendering on iOS/Android (only Windows Edge, Segoe UI); focus rings; screen reader behaviour; wide layouts.
+
+## Fixes applied
+
+Commit: see `git log -- design/unguided/audit.md` (the commit that adds this table). "Live" = the normal build, "preview" = `ihale build --design-preview`. Screenshots of the affected pages (375 px, light and dark): `screenshots/applied/fix-*.jpg`.
+
+| # | Finding | Where fixed | Status |
+|---|---|---|---|
+| 1 | Fold entries had no source line | live + preview: fold and cluster entries are `.ent` items with money, flags, Puan and `srcline` (test: every fold entry has `srcline` and `money`) | fixed |
+| 2 | Source link only 19 px high | live + preview CSS: `.srcline a{display:inline-flex;align-items:center;min-height:2.75rem}` (measured 44 px in the preview) | fixed |
+| 3 | Cluster entries were run-on sentences | live + preview: link line, own money element (right-aligned), muted flag/Puan line, source line | fixed |
+| 4 | Fold entries were run-on sentences | same markup as #3 | fixed |
+| 5 | Money left-aligned in Gün rows | live + preview: `.rb,.money` right-aligned, tabular figures on body | fixed |
+| 6 | Yöntem tables clipped at 375 px | live + preview: `.rules.stack` reflows to stacked label/value rows below 40 rem (also applied to the Gün summary and the idare and yüklenici tables); no horizontal scroll | fixed |
+| 7 | "OCP kırmızı bayrak" wording | live: now "OCP göstergesi R018/R035/R038"; "kırmızı bayrak" and "red flag" are in the forbidden-words test | fixed |
+| 8 | Switch shipping in the live build | switch link and script are emitted only with `preview_design`; tests assert the live build never contains `class="sw"`, `?yon=`, `localStorage`, tokens or `data-direction`; `deploy()` refuses preview output | confirmed |
+| 9 | Peer line and flags too quiet | preview only: `.peer` at body colour and size, `.flags .flag` at weight 600 | fixed (preview) |
+| 10 | Money weight in the detail field list | not done (nice) | open |
+| 11 | Source repeated three times on detail pages | not done: the bold "Kaynak: ..." line is kept because the spec text requires that exact string | open |
+| 12 | Chips wrap to five rows | not done (nice) | open |
+| 13 | Breadcrumb width, focus-state skip link | not done (nice) | open |
+| 14 | "belirgin biçimde" in the idare-rate flag text | wording is the spec owner's call; flagged, not changed | open |

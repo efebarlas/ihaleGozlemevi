@@ -150,3 +150,23 @@ details[open]>summary::before{content:"▾"}
 .cluster{border-left:4px solid var(--c-line-strong)}
 a.sw{display:inline-block;min-width:var(--touch);min-height:var(--touch);color:var(--c-muted);text-decoration:none}
 .row .srcline{margin-top:var(--sp-2)}
+
+/* audit fixes (preview): tap target, hierarchy, aligned money, stacked tables */
+.srcline a{display:inline-flex;align-items:center;min-height:2.75rem}
+.peer{color:var(--c-fg);font-size:var(--fs-base)}
+.flags .flag{font-weight:600}
+.rb,.money{text-align:right;font-weight:var(--money-weight)}
+.money{font-size:var(--money-fs)}
+.ent{display:grid;grid-template-columns:1fr auto;gap:var(--sp-1) var(--sp-4);align-items:baseline;list-style:none;padding:var(--sp-2) 0;border-top:1px solid var(--c-line)}
+.clist{padding-left:0;list-style:none}
+.ent .sub,.ent .srcline{grid-column:1/-1}
+@media (max-width:39.99rem){
+  .rules.stack thead{position:absolute;left:-9999px}
+  .rules.stack,.rules.stack tbody,.rules.stack tr{display:block;width:100%}
+  .rules.stack tr{border:1px solid var(--c-line);margin:0 0 var(--sp-3);padding:var(--sp-2) var(--sp-3)}
+  .rules.stack td{display:flex;justify-content:space-between;gap:var(--sp-4);border:0;padding:var(--sp-1) 0;text-align:right}
+  .rules.stack td::before{content:attr(data-label);color:var(--c-muted);text-align:left;flex:0 1 50%}
+  .rules.stack td:first-child{display:block;font-weight:700;text-align:left}
+  .rules.stack td:first-child::before{content:none}
+  .rules.stack td.z{display:none}
+}

@@ -9,12 +9,12 @@
 </dl>
 
 <h2>Toplamlar</h2>
-<table class="rules">
+<table class="rules stack">
   <thead><tr><th>Tür</th><th>Kayıt</th><th>İhale (İKN)</th><th>Toplam (TRY)</th><th>Ortanca bedel (TRY)</th></tr></thead>
   <tbody>
   {% for typ, t in d.totals.items() %}
-    <tr><td>{{ type_labels.get(typ, typ) }}</td><td>{{ t.records | tr_int }}</td><td>{{ t.awards | tr_int }}</td>
-        <td>{{ t.try_total | tr_money_plain }}</td><td>{% if t.median_bedel_try is not none %}{{ t.median_bedel_try | tr_money_plain }}{% else %}—{% endif %}</td></tr>
+    <tr><td>{{ type_labels.get(typ, typ) }}</td><td data-label="Kayıt">{{ t.records | tr_int }}</td><td data-label="İhale (İKN)">{{ t.awards | tr_int }}</td>
+        <td data-label="Toplam (TRY)">{{ t.try_total | tr_money_plain }}</td><td data-label="Ortanca bedel (TRY)">{% if t.median_bedel_try is not none %}{{ t.median_bedel_try | tr_money_plain }}{% else %}—{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -27,21 +27,21 @@
   {% for w in mix %}{% set y = loop.index0 * 6 %}{% for s in w.segs %}<rect x="{{ s.x }}" y="{{ y }}" width="{{ s.w }}" height="4.6" fill="currentColor" fill-opacity="{{ s.op }}"><title>{{ w.week }} · {{ s.label }}: {{ s.n }}</title></rect>{% endfor %}{% endfor %}
 </svg>
 <p class="muted">{% for l in legend %}<span style="white-space:nowrap"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" fill="currentColor" fill-opacity="{{ l.op }}"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>Hafta</th>{% for l in legend %}<th>{{ l.label }}</th>{% endfor %}<th>Toplam</th></tr></thead>
-  <tbody>{% for w in mix %}<tr><td>{{ w.week }}</td>{% for c in w.cells %}<td>{{ c | tr_int }}</td>{% endfor %}<td>{{ w.total | tr_int }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for w in mix %}<tr><td>{{ w.week }}</td>{% for c in w.cells %}<td data-label="{{ legend[loop.index0].label }}"{% if not c %} class="z"{% endif %}>{{ c | tr_int }}</td>{% endfor %}<td data-label="Toplam">{{ w.total | tr_int }}</td></tr>{% endfor %}</tbody>
 </table></div>
 {% else %}<p>Bu idare için haftalık dağılım yok.</p>{% endif %}
 
 <h2>Tek geçerli teklif payı (usule göre)</h2>
 {% if groups %}
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>Usul</th><th>Bu idare</th><th>Karşılaştırma grubu</th></tr></thead>
   <tbody>
   {% for g in groups %}
     <tr><td>{{ g.label }}</td>
-      <td>{% if g.enough and g.rate is not none %}{{ g.rate | tr_pct }} (n={{ g.records | tr_int }}){% else %}n={{ g.records | tr_int }} (oran için örnek yetersiz){% endif %}</td>
-      <td>{% if g.peer_label and g.peer_rate is not none %}{{ g.peer_label }}: {{ g.peer_rate | tr_pct }} (n={{ g.peer_n | tr_int }}){% elif g.peer_note %}{{ g.peer_note }}{% else %}—{% endif %}</td></tr>
+      <td data-label="Bu idare">{% if g.enough and g.rate is not none %}{{ g.rate | tr_pct }} (n={{ g.records | tr_int }}){% else %}n={{ g.records | tr_int }} (oran için örnek yetersiz){% endif %}</td>
+      <td data-label="Karşılaştırma grubu">{% if g.peer_label and g.peer_rate is not none %}{{ g.peer_label }}: {{ g.peer_rate | tr_pct }} (n={{ g.peer_n | tr_int }}){% elif g.peer_note %}{{ g.peer_note }}{% else %}—{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table></div>
@@ -49,13 +49,13 @@
 <p class="note">{{ note }}</p>
 
 <h2>Bu idareden en çok iş alan yükleniciler</h2>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>Sözleşme sayısına göre</th><th>Sayı</th></tr></thead>
-  <tbody>{% for y in top_count %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td>{{ y.count | tr_int }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for y in top_count %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td data-label="Sayı">{{ y.count | tr_int }}</td></tr>{% endfor %}</tbody>
 </table></div>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>TRY toplamına göre</th><th>Toplam (TRY)</th></tr></thead>
-  <tbody>{% for y in top_try %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td>{{ y.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for y in top_try %}<tr><td>{% if y.href %}<a href="{{ y.href }}">{{ y.name }}</a>{% else %}{{ y.name }}{% endif %}</td><td data-label="Toplam (TRY)">{{ y.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
 </table></div>
 
 <h2>Sözleşme dökümü (yeniden eskiye)</h2>

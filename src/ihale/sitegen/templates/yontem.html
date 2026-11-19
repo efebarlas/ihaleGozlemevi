@@ -16,9 +16,9 @@
 <p>İşaret, bir kaydın belirli bir rakamsal koşulu sağladığını söyler. Hiçbir işaret bir değerlendirme değildir; birçok olağan ihalede de görülür.</p>
 <dl class="method">
   <dt>Tek teklif</dt>
-  <dd>Kural: toplam teklif sayısı tam olarak 1. Metin: «Tek teklif verildi». (OCP kırmızı bayrak R018.)</dd>
+  <dd>Kural: toplam teklif sayısı tam olarak 1. Metin: «Tek teklif verildi». (OCP göstergesi R018.)</dd>
   <dt>Diğer teklifler elendi</dt>
-  <dd>Kural: toplam teklif sayısı 1'den büyük ve geçerli teklif sayısı tam olarak 1. Metin, rakamlarla birlikte: «4 teklif verildi, yalnızca kazananınki geçerli sayıldı». (OCP kırmızı bayrak R035.)</dd>
+  <dd>Kural: toplam teklif sayısı 1'den büyük ve geçerli teklif sayısı tam olarak 1. Metin, rakamlarla birlikte: «4 teklif verildi, yalnızca kazananınki geçerli sayıldı». (OCP göstergesi R035.)</dd>
   <dt>Bedel / yaklaşık maliyet</dt>
   <dd>Kural: sözleşme bedeli ÷ yaklaşık maliyet ≥ 0,97 (yani indirim, kırım, %3'ten az). Yaklaşık maliyet olarak, okunabiliyorsa «esas kısım yaklaşık maliyeti», yoksa «yaklaşık maliyet» kullanılır. Oran 1'i aşıyorsa fark da yazılır: «yaklaşık maliyetin 406.700,00 TRY üzerinde (%100,9)». Gösterilen yüzde aşağı yuvarlanır: 0,999 oranı %99 olarak görünür, %100 olarak değil.</dd>
   <dt>Tekrarlayan yüklenici</dt>
@@ -36,11 +36,11 @@
 {% if part_rates %}
 <h3 id="oranlar">İşaretlerin usule göre görülme oranları</h3>
 <p>Aşağıdaki tablo, her işaretin yüklenmiş kayıtlarda usul başına görülme oranını (p) gösterir; puanlar bu oranlardan türetilir. «Tüm usuller», usulü için yeterli kayıt bulunmadığında kullanılan genel orandır.</p>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>Usul</th>{% for code in rate_codes %}<th>{{ flag_titles[code] }}</th>{% endfor %}</tr></thead>
   <tbody>
   {% for g, rates in part_rates %}
-    <tr><td>{{ g }}</td>{% for code in rate_codes %}<td>{% if rates.get(code) is not none %}{{ rates[code] | tr_pct }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+    <tr><td>{{ g }}</td>{% for code in rate_codes %}<td data-label="{{ flag_titles[code] }}">{% if rates.get(code) is not none %}{{ rates[code] | tr_pct }}{% else %}—{% endif %}</td>{% endfor %}</tr>
   {% endfor %}
   </tbody>
 </table></div>
@@ -62,7 +62,7 @@
 <p>Kayıt sayfasındaki «Göstergeler» bölümü, puana <strong>dahil olmayan</strong> ek rakamları gösterir. Bir değer okunamıyorsa ya da hesaplanamıyorsa ilgili gösterge hiç görünmez. Eşikler, yeterli gün yüklenince ölçülen dağılımlara göre belirlenecektir.</p>
 <dl class="method">
   <dt>Elenen teklif oranı</dt>
-  <dd>(Toplam teklif − geçerli teklif) ÷ toplam teklif; yalnızca toplam teklif sayısı 2 veya daha fazlaysa. Benzer idarelerin ortalamasıyla (en az 5 kayıt) yan yana gösterilir. Kaynak: OCP kırmızı bayrak R038.</dd>
+  <dd>(Toplam teklif − geçerli teklif) ÷ toplam teklif; yalnızca toplam teklif sayısı 2 veya daha fazlaysa. Benzer idarelerin ortalamasıyla (en az 5 kayıt) yan yana gösterilir. Kaynak: OCP göstergesi R038.</dd>
   <dt>Karar süresi</dt>
   <dd>İhale tarihi ile sözleşme tarihi arasındaki gün sayısı; iki tarih de güvenle okunmuşsa ve fark negatif değilse. Kaynak: Government Transparency Institute (GTI) göstergeleri.</dd>
   <dt>Usul türü</dt>
@@ -83,11 +83,11 @@
 {% if rules %}
 <h2 id="yapisal">Yapısal tek teklif durumları</h2>
 <p>Bazı tek teklif örüntülerinin bilinen yapısal bir nedeni vardır. Bu durumlar aşağıdaki tabloda açıkça listelenir; gizli istisna yoktur. Tabloya yalnızca belirtilmiş bir gerekçeyle giriş eklenir. İşaretler yine gösterilir, ancak etkisi sütununda yazanlar uygulanır.</p>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>Kapsam</th><th>Etki</th><th>Gerekçe</th><th>Eklenme tarihi</th></tr></thead>
   <tbody>
   {% for r in rules %}
-    <tr><td>{{ r.match_tr }}</td><td>{{ r.effects_tr | join("; ") }}</td><td>{{ r.reason_tr }}</td><td>{{ r.added | tr_date_long if r.added else "" }}</td></tr>
+    <tr><td>{{ r.match_tr }}</td><td data-label="Etki">{{ r.effects_tr | join("; ") }}</td><td data-label="Gerekçe">{{ r.reason_tr }}</td><td data-label="Eklenme tarihi">{{ r.added | tr_date_long if r.added else "" }}</td></tr>
   {% endfor %}
   </tbody>
 </table></div>

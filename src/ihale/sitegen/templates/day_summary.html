@@ -5,11 +5,11 @@
 <p class="muted">Tüm kayıtlar aşağıdaki sayfalarda, puana ve sonra TRY sözleşme bedeline göre sıralı listelenir. İlan bülteninin nasıl indirileceği her kaydın kaynak satırındaki <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> sayfasında açıklanır: günün tarihini ve ihale türünü seçip dosyayı indirin. <a href="/">Bugün sayfası</a> · <a href="/arsiv/">Arşiv</a></p>
 
 <h2>Usule göre</h2>
-<table class="rules">
+<table class="rules stack">
   <thead><tr><th>Usul</th><th>Kayıt</th><th>Puanı sıfırdan büyük</th></tr></thead>
   <tbody>
   {% for label, n, scored in groups %}
-    <tr><td>{{ label }}</td><td>{{ n | tr_int }}</td><td>{{ scored | tr_int }}</td></tr>
+    <tr><td>{{ label }}</td><td data-label="Kayıt">{{ n | tr_int }}</td><td data-label="Puanı sıfırdan büyük">{{ scored | tr_int }}</td></tr>
   {% endfor %}
   </tbody>
 </table>

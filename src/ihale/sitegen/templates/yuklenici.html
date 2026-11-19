@@ -5,9 +5,9 @@
 <p class="summary">{{ total_rows | tr_int }} kayıt</p>
 
 <h2>İdarelere göre toplamlar</h2>
-<div class="tw"><table class="rules">
+<div class="tw"><table class="rules stack">
   <thead><tr><th>İdare</th><th>Sözleşme</th><th>Toplam (TRY)</th></tr></thead>
-  <tbody>{% for t in totals %}<tr><td>{% if t.href %}<a href="{{ t.href }}">{{ t.name }}</a>{% else %}{{ t.name }}{% endif %}</td><td>{{ t.count | tr_int }}</td><td>{{ t.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
+  <tbody>{% for t in totals %}<tr><td>{% if t.href %}<a href="{{ t.href }}">{{ t.name }}</a>{% else %}{{ t.name }}{% endif %}</td><td data-label="Sözleşme">{{ t.count | tr_int }}</td><td data-label="Toplam (TRY)">{{ t.try_total | tr_money_plain }}</td></tr>{% endfor %}</tbody>
 </table></div>
 <p class="note">{{ note }}</p>
 
