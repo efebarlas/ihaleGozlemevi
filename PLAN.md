@@ -28,7 +28,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - 2026-11-19: unguided design baseline frozen (tag `design-unguided`). Nothing design-related is deployed.
 - 2026-11-19: D1 live. Database `ihale-pages` (free, eeur): 13,541 bulk pages, 30,464 rows, 155 MB. About 45 static core pages. Core pages and D1 pages verified live (noindex, 404s). Debarment parked: Resmî Gazete notices give no usable second identifier (2696f1f).
 - **M5 storage note:** the D1 pages take about 124 MB per 30 days. D1 free allows 500 MB per database, 10 databases, 5 GB total. The 2010 backfill needs compression (gzip BLOBs) or Worker-side rendering from data rows. Plan this before M5.
-- M4 classifier experiment (SPEC §11) started: taxonomy plus seam (M2 builder), then an independent hand label and a lookup-table build.
+- M4 classifier experiment (SPEC §11): on 200 independent hand labels, keywords score 89.0% turu / 99.0% il, the lookup table (2,938 names, built once, two passes 99.9% consistent) 97.5% / 100%, and hybrid 90.0% / 99.5%. Next: a `table_first` mode in shadow for a few daily runs, then promote for peers. Table extended periodically from the new-names log.
 
 ## Milestones
 | | Milestone | State |
@@ -37,7 +37,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
-| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Open: classifier experiment, simulated-user check. |
+| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Open: simulated-user check. |
 | M5 | History | not started |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
