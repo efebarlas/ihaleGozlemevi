@@ -16,7 +16,7 @@ python -m venv .venv
 
 `--type`: `mal`, `yapim`, `hizmet`, `danismanlik`. Already downloaded bulletins are not downloaded again (`--force` re-downloads).
 
-Veri klasörü / data directory: `%LOCALAPPDATA%\ihaleGozlemevi` (override with the `IHALE_DATA_DIR` environment variable). Bulletins land in `<data>/bulletins/<yyyy-mm-dd>/<TYPE>.zip` plus the extracted PDFs. Data is deliberately kept out of the repo and out of OneDrive.
+Veri klasörü / data directory: `%USERPROFILE%\ihaleGozlemevi-data` (override with the `IHALE_DATA_DIR` environment variable). Bulletins land in `<data>/bulletins/<yyyy-mm-dd>/<TYPE>.zip` plus the extracted PDFs. Data is deliberately kept out of the repo and out of OneDrive.
 
 EKAP'a nazik davranılır / polite to EKAP (enforced in `src/ihale/ekap.py`): at least 10 s between any two requests (shared across processes), at most 20 requests per run, sequential downloads, honest `User-Agent`. On HTTP 403/429, a CAPTCHA or a login wall the program stops (exit code 3) and never retries or works around it.
 

@@ -4,12 +4,14 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 ## Status
 - 2026-11-18: direction set with Efe (SPEC.md). Next: M0 Fresh base. The 2022 code is disposable.
-- 2026-11-18 evening: orchestrator started. M0 builder running (skeleton, polite plain-HTTP EKAP fetch, fixtures, layout notes). Wrangler is already logged in on Efe's account. Data lives off OneDrive in `%LOCALAPPDATA%\ihaleGozlemevi` (override with `IHALE_DATA_DIR`).
+- 2026-11-18 evening: orchestrator started. M0 builder running (skeleton, polite plain-HTTP EKAP fetch, fixtures, layout notes). Wrangler is already logged in on Efe's account. Data lives off OneDrive in `%USERPROFILE%\ihaleGozlemevi-data` (override with `IHALE_DATA_DIR`).
+
+- 2026-11-18 night: M0 done. EKAP answers a plain HTTP form post (no browser, no CAPTCHA). Data dir moved to `%USERPROFILE%\ihaleGozlemevi-data` because the Claude app silently redirects AppData writes, which Task Scheduler would not see. Shared contract for parser/flags/site: `docs/data-contract.md`, `src/ihale/model.py`. Next: M1 parser, M2 store/flag, M3 site generator, built in parallel against that contract.
 
 ## Milestones
 | | Milestone | State |
 |---|---|---|
-| M0 | Fresh base | in progress |
+| M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
 | M1 | Parse result bulletins (mal) | not started |
 | M2 | Store and flag | not started |
 | M3 | Site v1, unlisted, with the daily run | not started |

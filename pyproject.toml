@@ -7,7 +7,7 @@ name = "ihale"
 version = "0.1.0"
 description = "Ihale Gozlemevi: public-interest watchdog over Turkish public procurement (EKAP)"
 requires-python = ">=3.12"
-dependencies = ["requests", "pdfplumber", "pypdf"]
+dependencies = ["requests", "pdfplumber", "pypdf", "jinja2"]
 
 [project.optional-dependencies]
 dev = ["pytest"]

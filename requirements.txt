@@ -1,4 +1,5 @@
 requests
 pdfplumber
 pypdf
+jinja2
 pytest

@@ -9,13 +9,15 @@ USER_AGENT = "ihaleGozlemevi/0.1 (+https://github.com/efebarlas/ihaleGozlemevi)"
 
 
 def data_dir() -> Path:
-    """Data root: $IHALE_DATA_DIR, else LOCALAPPDATA/ihaleGozlemevi (~/.local/share fallback)."""
+    """Data root: $IHALE_DATA_DIR, else ~/ihaleGozlemevi-data.
+
+    Not %LOCALAPPDATA%: inside the packaged Claude desktop app, AppData writes are
+    silently redirected to the app's private package folder, so runs from the app and
+    from Task Scheduler would see different data. The profile root is not redirected
+    and is not synced by OneDrive.
+    """
     override = os.environ.get(ENV_VAR)
-    if override:
-        root = Path(override)
-    else:
-        base = os.environ.get("LOCALAPPDATA")
-        root = Path(base) / "ihaleGozlemevi" if base else Path.home() / ".local" / "share" / "ihaleGozlemevi"
+    root = Path(override) if override else Path.home() / "ihaleGozlemevi-data"
     return root.expanduser().resolve()
 
 

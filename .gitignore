@@ -17,3 +17,6 @@ __pycache__/
 node_modules/
 .wrangler/
 .env
+
+# built site
+/site/dist/
