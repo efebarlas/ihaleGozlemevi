@@ -37,7 +37,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
-| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Open: simulated-user check. |
+| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Simulated-user check done (5 personas, about 85 requests, no blockers, no broken links). The fix batch (units, chip counts, rounding, the 'yakın' label above 100%, kısmi caveat, il filter, pazarlık share vs peers) is with the builders, to ship in one deploy. |
 | M5 | History | not started |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
@@ -50,7 +50,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - Launch is pull-only: no bots or push alerts aimed at named bodies.
 
 ## Decisions needed (Efe)
-- none
+- (spec owner) Who publishes the site: the footer GitHub link, which shows Efe's account, was removed until this is decided (G-Public item).
 
 ## Human checks queued
 - **Cloudflare login for the daily job (one-time, about 1 minute).** Double-click `scripts\cloudflare_login.cmd` in the repo folder (outside the Claude app), then click "Allow" in the browser. Optional: until then a session deploys after each daily run. Why: the Claude app keeps its own private copy of the Cloudflare login, and Windows Task Scheduler can't see it. Until this is done, the daily job still downloads and processes bulletins, but the site only updates when a session deploys it.
