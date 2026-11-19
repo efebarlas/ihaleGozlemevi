@@ -258,7 +258,9 @@ Efe gives at most **one verification a day**. It is the project's scarcest resou
 - **The format:**
   - one question, answered with buttons in under a minute, on his phone;
   - skipping is fine, and three skips in a row lower the frequency;
-  - prefer pairwise choices ("Which of A and B is more worth a reporter's time?") over ratings.
+  - prefer pairwise choices over ratings. Ask about the thing the score measures, not novelty: "Rakamlara bakınca hangisi daha yakından incelenmeyi hak ediyor?" ("Looking at the figures, which deserves a closer look?"). Learned 2026-11-19: "more worth a reporter's time" mixed up exotic with warrants-checking, and Efe couldn't choose.
+  - always offer "Ayırt edemiyorum" ("can't tell"), and log the reason. A can't-tell answer is data about the cards: they may lack the context needed to judge.
+  - show each tender with the same context side by side: bid counts, bedel/yaklaşık maliyet with the peer median, the idare's rate with n, and what the item is.
 - **Blinding:** when asking about newsworthiness, hide which party runs the idare.
 - **Log every answer.** The spec owner writes it to `oracle/log.jsonl` in the local data folder (outside the public repo and the site, because these are Efe's own judgments) with the date, the question, the options shown, the answer and what it was meant to change. The answers are one rater's judgment, not ground truth.
 - **Priority of questions:**
