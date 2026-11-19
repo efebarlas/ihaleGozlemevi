@@ -56,14 +56,23 @@ A flag is computed only when **every input field is confident**. Otherwise the r
 - Store the ratio as a float and round only for display: floor to a whole percent, so 0.999 shows as %99, not %100.
 
 ### 4.1 Ranking: compound unusualness (SPEC §1 "Base rates")
-Flags alone fire on roughly half of all tenders, so Bugün ranks by a transparent `score`, an integer sum of these parts:
-- +1 `tek_teklif`
-- +2 `diger_teklifler_elendi` (weighted above R018: other bids existed and were disqualified)
-- +1 `bedel_orani`
-- +2 `tekrarlayan_yuklenici` when this record also has at least one of the flags above (a repeat pair inside flagged tenders). A bare repeat adds +0, but the flag is still shown.
-- +1 `idare_orani`: the idare has ≥ 5 records in the window, and its share of `tek_gecerli_teklif` is ≥ 2× its peer group's share (see Peer comparison below).
+Flags alone fire on roughly half of all tenders, and their base rates differ a lot by procedure. For example, tek teklif is 48% in 21/f but 11.6% in açık. So each score part is **weighted by its rarity within the record's procedure**. This is the interim rule until the M5 weight fit.
 
-Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli (TRY). Thresholds are provisional. `scripts/base_rates.py` prints the measured base rates from the DB (share of tek teklif, bedel ≥ 0.97, repeat pairs, per usul and section). Revisit the thresholds once ~30 days are loaded.
+**Parts.** Each part is computed only if its condition holds and it isn't excluded by §4.1.1:
+- `tek_teklif`
+- `diger_teklifler_elendi`
+- `bedel_orani`
+- `tekrarlayan_eslesik`: `tekrarlayan_yuklenici` AND at least one other non-excluded part on the record. A bare repeat earns 0 points, but the flag is still shown.
+- `idare_orani`: the idare's tek-geçerli share within its usul_turu is ≥ 2× the share of its per-procedure peers (min n as in Peer comparison).
+
+**Points per part.** points = ln(1 / p), where p is that part's base rate among stored records with the same `usul_turu`.
+- If that group has n < 100, use the all-records rate.
+- Recompute p on every `flag` run from the whole stored history.
+- Floor p at 0.001, so no part exceeds about 6.9 points.
+
+**Score.** The sum of points, a float. Export `score` rounded to 2 decimals and `score_parts` as `[{"code", "points", "p", "p_group"}]`, where `p_group` is the usul_turu used, or `"hepsi"` for the fallback.
+
+**Bugün** shows records with `score ≥ 3.0` (≈ ln 20: at least as rare as a 1-in-20 event), sorted by score, then TRY bedel, with at most 2 cards per idare. The cut-off is provisional. `scripts/base_rates.py` prints each part's p per usul_turu (also shown in Yöntem) and the share of records over the cut-off per usul_turu. The goal is that no single procedure crowds Bugün just by being that procedure.
 
 **Peer comparison.** Every record carries `idare_stats` so the site can show the figure next to its peers, e.g. `Bu idare: 12 ihalenin %80'i tek geçerli teklif · Antalya'daki sağlık idareleri (mal, n=140): %43`.
 - **Minimum sample:** no idare-level rate counts (for the score or for display) unless that idare has ≥ 5 awards in the window. Always show n next to every rate.
@@ -92,6 +101,12 @@ The first entry:
 - `effects`:
   - `no_single_bid_points`: the `tek_teklif` and `diger_teklifler_elendi` flags are still shown as facts, but they add no score points. They stay out of `score_parts` and don't count as "another flag" for the tekrarlayan +2.
   - `own_peer_group`: the idare is compared only with its own history. In v1 that means `idare_stats.peer = null`, with `peer_note: "Kendi geçmişiyle karşılaştırılır"`, so `idare_orani` cannot fire. M5 adds drift against its own past.
+
+A second entry, `istisna-3e`, was added 2026-11-19 from the law text, not the rate:
+- match: any idare, `usul_turu == istisna_3e`
+- effect: `no_single_bid_points`
+- reason: `4734 sayılı Kanun md. 3/e: alım, Kanunda adı sayılan kamu kuruluşundan (ör. ceza infaz kurumu işyurtları, DMO, TCDD, Et ve Balık Kurumu) yapılır; tek tedarikçi Kanun gereğidir.`
+- `own_peer_group` does not apply.
 
 Every other component still counts: `bedel_orani`, the tekrarlayan pair when combined with a non-excluded flag, and later indicators.
 
