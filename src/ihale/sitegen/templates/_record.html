@@ -1,0 +1,65 @@
+{# Shared record body: used by detail pages (score >= 1) and by expandable blocks on day pages. Needs `with context`. #}
+{% macro body(t, compact=false) %}
+{% set c = t._c %}
+{% if t.flags or t._idare_orani %}
+<section aria-label="İşaretler">
+  <h2>İşaretler</h2>
+  <ul class="flags">
+  {% for f in t.flags %}
+    <li class="flag flag-{{ f.code }}">{{ f.text }}
+      <span class="num">({{ flag_titles.get(f.code, f.code) }}; değer: {{ f.value }})</span></li>
+  {% endfor %}
+  {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ idare_orani_text }}</li>{% endif %}
+  </ul>
+  {% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
+  <p class="muted">Puan: {{ t.score }}{% if not compact %} (<a href="/yontem/#puan">nasıl hesaplanıyor?</a>){% endif %}</p>
+</section>
+{% else %}
+<p>Bu kayıtta hesaplanan bir işaret yok.</p>
+{% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
+{% endif %}
+
+{% if t._ind %}
+<section aria-label="Göstergeler">
+  <h2>Göstergeler</h2>
+  {% if not compact %}<p class="muted">Bunlar puana dahil değildir; kaydı başka rakamlarla birlikte okumak için verilir. <a href="/yontem/#gostergeler">Ne anlama geliyor?</a></p>{% endif %}
+  <dl class="detail">
+  {% for label, text in t._ind %}
+    <dt>{{ label }}</dt><dd>{{ text }}</dd>
+  {% endfor %}
+  </dl>
+</section>
+{% endif %}
+
+{% if c.n_ikn > 1 %}
+<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.
+{% if c.siblings %}Diğer kayıtlar:
+{% for s in c.siblings[:5] %}<a href="{{ s._href }}">{{ s.id }}</a>{{ ", " if not loop.last }}{% endfor %}{% if c.siblings | length > 5 %} ve {{ c.siblings | length - 5 }} kayıt daha{% endif %}.{% endif %}</p>
+{% endif %}
+
+<section aria-label="Bilgiler">
+  <h2>Bilgiler</h2>
+  <dl class="detail">
+  {% for r in c.rows %}
+    <dt>{{ r.label }}</dt>
+    <dd>
+    {% if r.unreadable %}<span class="unread">okunamadı</span>
+    {% elif r.value is none %}—
+    {% elif r.key in money_fields %}{{ r.value | tr_money }}
+    {% elif r.key in date_fields %}{{ r.value | tr_date_short }}
+    {% else %}{{ r.value }}{% endif %}
+    {% if r.note %}<span class="reason">({{ r.note }}; bu alan işaret hesabında kullanılmadı)</span>{% endif %}
+    </dd>
+  {% endfor %}
+    <dt>Bülten bölümü</dt>
+    <dd>{{ t.section }}{% if c.section_label %} – {{ c.section_label }}{% endif %}</dd>
+  </dl>
+</section>
+
+<section class="source" aria-label="Kaynak">
+  <h2>Kaynak</h2>
+  {% if c.src_text %}<p><strong>Kaynak: {{ c.src_text }}</strong></p>{% endif %}
+  <p><a href="{{ ekap_url }}">EKAP Bülten İndirme sayfası</a></p>
+  {% if not compact %}<p class="muted">Bu sayfada ilgili günün tarihini{% if c.src_date_short %} ({{ c.src_date_short }}){% endif %} ve ihale türünü{% if c.type_label %} ({{ c.type_label }}){% endif %} seçip bülten dosyasını indirin; ilanı{% if c.src.page %} {{ c.src.page }}. sayfada{% endif %} bulabilirsiniz{% if c.src.file %} (dosya: {{ c.src.file }}){% endif %}.</p>{% endif %}
+</section>
+{% endmacro %}
