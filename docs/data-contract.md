@@ -75,6 +75,30 @@ Bugün shows records with `score ≥ 2`, sorted by score, then sözleşme bedeli
   - The group's Turkish label is exported, so the site never guesses it.
 - The Yöntem page explains this proxy and its limits.
 
+### 4.1.1 Structural single-bid table (SPEC §6.1)
+Some single-bid patterns have a known structural cause. These are listed in a small table, `src/ihale/structural.py`. They are never hidden special cases. Each entry has:
+- `id`
+- a match rule: an idare name prefix, Turkish-casefolded, plus a `usul_turu`
+- `effects`
+- `reason_tr`: one Turkish sentence, shown on the record and in Yöntem
+- `added`: a date
+
+Add an entry only together with a stated reason.
+
+The first entry:
+- `id`: `dmo-3g`
+- match: idare name starts with `DEVLET MALZEME OFİSİ`, with `usul_turu == istisna_3g`
+- `reason_tr`: `Devlet Malzeme Ofisi merkezî alım kurumudur; 4734/3-g kapsamındaki seri, markaya özgü alımlarında tek teklif yapısı gereğidir.`
+- `effects`:
+  - `no_single_bid_points`: the `tek_teklif` and `diger_teklifler_elendi` flags are still shown as facts, but they add no score points. They stay out of `score_parts` and don't count as "another flag" for the tekrarlayan +2.
+  - `own_peer_group`: the idare is compared only with its own history. In v1 that means `idare_stats.peer = null`, with `peer_note: "Kendi geçmişiyle karşılaştırılır"`, so `idare_orani` cannot fire. M5 adds drift against its own past.
+
+Every other component still counts: `bedel_orani`, the tekrarlayan pair when combined with a non-excluded flag, and later indicators.
+
+Export:
+- Per record: `"structural": {"id": "dmo-3g", "text": "<reason_tr>"}`, or null.
+- In `meta.json`: `"structural_rules": [{"id", "match_tr", "effects", "reason_tr", "added"}]`, so Yöntem renders the table from data.
+
 ### 4.2 Indicators: stored as values, not yet in the score
 From the sonuç fields (SPEC §1 "Borrowed from abroad", GTI and OCP). Computed and exported per record, shown on the detail page with peer medians where n ≥ 5. They are **not added to `score`** until `scripts/base_rates.py` has run on ~30 days of data and the thresholds are chosen.
 - `elenen_orani` (OCP R038): `(toplam_teklif - gecerli_teklif) / toplam_teklif` when `toplam_teklif ≥ 2`. Export the peer group's mean too (same peer chain as §4.1, min n ≥ 5).
