@@ -200,6 +200,36 @@ Efe gives at most **one verification a day**. It is the project's scarcest resou
   4. Signal-discovery verdicts (M7).
 - **The pipeline supplies candidates.** Each daily run writes `oracle/candidates.json` to the local data folder: a few tender pairs where the current score is least certain. Every tender has its fields and source link.
 
+### 9.2 Visual direction (after M3, before G-Public)
+Adapted from clearpile's R-Visual mechanism, made lighter.
+
+**The look carries credibility.** It should read like a careful public record: a newspaper data desk or an annotated official document. It should not read like a startup dashboard.
+
+**Neutral visual language is a rule, not taste:**
+- No alarm red, warning icons or siren colors on flags. Flags look like marginal annotations on a document. A flag in alarm red is a verdict, whatever the words say.
+- No color tied to political parties.
+- The source link is always visually present, not buried.
+
+**The direction pass, once real data is live:**
+- A fresh-context reviewer proposes 2–3 distinct directions, each grounded in this product rather than generic app conventions.
+- Each direction is a **set of design tokens** (colors in light and dark, type scale, spacing, flag treatment) applied to the real Bugün and İhale detayı pages with real tenders. No static mocks.
+- The site gets a hidden switch to flip between token sets, so Efe can compare them on his phone.
+- Efe's pick comes through Günün sorusu ("A or B, as a reporter reading this?"), one pair per day if needed.
+- The builder applies the reviewer's recommendation as the default meanwhile, so nothing blocks.
+- The winner is written up in `design/DIRECTION.md`.
+
+**"Default look" tells to avoid**, taken from clearpile's list and extended by the reviewer:
+- generic rounded cards with soft shadows everywhere;
+- indigo or purple gradients;
+- emoji as icons;
+- pill chips for everything;
+- uniform spacing with no hierarchy;
+- dark mode as a plain inversion.
+
+**Ties:** readability and the neutral visual language win ties over style. That means WCAG AA contrast, 44 pt touch targets, numbers you can scan, and the source link present.
+
+**One audit pass before G-Public:** screenshots of every page in light and dark, judged against the chosen direction and these rules.
+
 ## 10. Milestones
 - **M0 Fresh base:**
   - Set up a clean project skeleton. Starting from scratch is fine.
@@ -219,6 +249,7 @@ Efe gives at most **one verification a day**. It is the project's scarcest resou
   - Run the pipeline daily on Efe's PC.
   - This gives the first daily check with real data.
   - Export `oracle/candidates.json` so Günün sorusu can start (§9.1).
+  - Right after deploy: the visual direction pass (§9.2), running in parallel with M4.
 
 The order from here was set by the spec owner on 2026-11-19, under Efe's delegation. The reasoning: trust and ranking quality first, breadth second, public-facing features last.
 
