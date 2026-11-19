@@ -30,6 +30,8 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - **M5 storage note:** the D1 pages take about 124 MB per 30 days. D1 free allows 500 MB per database, 10 databases, 5 GB total. The 2010 backfill needs compression (gzip BLOBs) or Worker-side rendering from data rows. Plan this before M5.
 - M4 classifier experiment (SPEC §11): on 200 independent hand labels, keywords score 89.0% turu / 99.0% il, the lookup table (2,938 names, built once, two passes 99.9% consistent) 97.5% / 100%, and hybrid 90.0% / 99.5%. `table_first` (6366a7d) is in shadow from the 2026-11-19 evening run. **Promote** (`IHALE_PEER_CLASSIFIER=table_first` in the scheduled task) after 3 shadow runs, around 2026-11-22. The spec owner approved promotion without a Günün sorusu. When it switches, report the before/after Bugün counts and the top 5 score movers. The table gets extended from `<data>/logs/classify-new-names.txt`. DETSİS independent check: dropped (site unreachable, 3 requests, a4a361f).
 
+- 2026-11-19: Efe chose Sütun in the blind comparison. Ported to the live build as the only direction (42c47e9), plus usul-share tables (513589f), simulated-user fixes (3e761af) and the identity guard (48f305a). **Not live yet:** the combined deploy failed safely ("File could not be uploaded" on the first D1 batch; nothing written; live site unchanged), and it needs ~48k D1 rows against the 100k/day free limit. The site builder is fixing batch size and compressing pages, and adding a dry-run. **Retry after UTC midnight** (next day's budget) with a dry-run first.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
