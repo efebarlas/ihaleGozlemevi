@@ -26,6 +26,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 ## Queued for later milestones (SPEC §6.2 release policy)
 - M4: each İdare page shows its procedure mix over time (açık / pazarlık incl. 21/b / istisna) and its volume trend, so displacement stays visible.
+- M4: reconcile our single-valid-bid rate (29.1% per tender, mal only, 21 days, 65% of records 3-g) with İhaleGlobal's ~43% once hizmet and yapım are loaded; compute the comparable figure and explain any gap in Yöntem.
 - M5: drift monitoring (incl. DMO against its own history, contract §4.1.1).
 - G-Limited (new, before G-Public): invited readers behind Cloudflare Access.
 - G-Public: dated t0 baseline snapshot; legal review; who publishes; validated weights.
