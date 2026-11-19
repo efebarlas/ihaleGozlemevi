@@ -158,6 +158,49 @@ All the code named below is permissive; licenses were checked on GitHub.
   - If EKAP blocks us, adds a CAPTCHA or requires a login, stop scraping and report. Never work around it.
 - **The repo is public.** Never commit secrets, tokens or bulk raw PDFs. Bulletins stay local and gitignored, except the small test fixtures.
 
+### 6.1 Effects on those named (2026-11-19)
+Every flag lands on someone. A wrong or decontextualized flag costs that organization, and the people in it, far more than it costs us. In Turkey it can also bring a defamation complaint, a disinformation charge, or a court-ordered access ban (erişim engeli) against the site. The rules below follow from that.
+
+**Scrutinize the buyer, not the seller.** The idare is a public body that is legally accountable for its procurement, and it makes the decisions: specs, disqualifications, procedure. The yüklenici is a private party.
+- Scores, rates and scorecards are only ever computed for idares.
+- Yüklenici pages show history (awards, totals, timelines) with no score, no rank and no "risky firm" label.
+- A firm appears in a flag only as a fact of the record. Example: "the same firm's third award from this idare in 12 months."
+
+**Natural persons.** A yüklenici whose name has no company form (no Ltd., Şti., A.Ş., Kooperatif or similar) is probably a person.
+- In lists, cards, rankings and anything shareable, show them as "Gerçek kişi yüklenici".
+- Their name appears only on the tender detail page, exactly as the state printed it.
+- Never name officials or commission members, even where a source prints them.
+
+**Proportionality:**
+- An idare-level rate needs n≥5 awards, and a ranking needs stacked evidence (already in place).
+- Dosyalar and scorecards need enough history before any comparative statement is made.
+- The bigger the claim, the more evidence it needs.
+
+**Innocent explanations go next to every flag.** Each flag type carries its common legitimate reasons, on the Yöntem page and inline. Examples:
+- DMO 3/g catalog buys are single-supplier by design.
+- 21/b can follow a real emergency.
+- A repeat winner may be the only local supplier.
+
+Where the data shows a known innocent cause, such as the procedure type or a declared emergency, say so or exclude the case.
+
+**Anticipate gaming.** Flagged organizations adapt. They might arrange cover bids to avoid "tek teklif", split tenders, or move purchases into istisna or doğrudan temin, where they're out of view.
+- Watch for drift. For example: single-bid rates fall while bedel stays near 100% of the estimate. Or an idare's EKAP volume drops while its istisna share rises.
+- Treat it as a known limit of bulletin-only data, and say so on the Yöntem page.
+
+**Don't provoke data closure.** If the bulletins come to look like a liability, the cheapest response for the state is to publish less. That would hurt everyone, not just us. So:
+- keep a low, constructive profile;
+- don't sensationalize;
+- keep up the EKAP politeness rules (§6).
+
+**Corrections.** Any figure found wrong is fixed and marked as corrected, with the date. Before G-Public there must be a working correction and reply channel.
+
+**G-Public gate.** All of these must be true before Efe can say yes:
+1. A Turkish media or press lawyer has reviewed the site, the wording and the method. This costs money, so it's Efe's call.
+2. Efe has decided who publishes: him personally or an entity. Today the public repo is under his own name.
+3. The correction and reply channel works.
+4. The M5 weights are validated against outcomes. Unvalidated hand-set rankings don't go public.
+5. A plan exists in case Turkey blocks access to the site.
+
 ## 7. Autonomy
 **Standing OKs:**
 - Commit and push to `main` on the public GitHub repo.
@@ -292,7 +335,7 @@ The order from here was set by the spec owner on 2026-11-19, under Efe's delegat
   - Agents propose new risk patterns and test each against outcomes in the data.
   - Only patterns that pass reach Efe as Günün sorusu, and his verdict is the final gate.
   - The goal is a set of red flags validated for Turkey and documented on the Yöntem page.
-- **G-Public:** Efe decides whether to go public.
+- **G-Public:** Efe decides whether to go public, once the §6.1 gate conditions hold.
 - **After G-Public only:**
   - a read-only MCP tool server over our data, so people can bring their own agent;
   - usability tests with real journalists and council members;
