@@ -25,6 +25,49 @@ A public-interest **watchdog over Turkish public procurement**. Every day it rea
 - **Show the peer comparison next to each figure**, e.g. "this idare: 80% tek teklif; peers in the same sector and province: 35%".
 - **Measure the real base rates from our own data** before choosing thresholds.
 
+### Users, signals and surfaces (2026-11-19)
+**Positioning: the nonpartisan evidence layer.** Turkish procurement reporting already exists, but it is slow and partisan:
+- Reporters build a firm's history by hand from EKAP's search.
+- They read Sayıştay audit reports separately from the tender data.
+- Stories often start from one party's tip about another party's municipality.
+
+We apply the same measures to every idare regardless of party, join the public sources, and make every figure one tap from its official source.
+
+**Users:**
+1. Journalists.
+2. Municipal council members and auditors of any party, who are often the source of those tips.
+3. Local residents curious about their own municipality or hospital.
+
+**Signals worth showing.** Prefer signals that are concrete, local, comparable and checkable over outrage:
+- **Compound and peer-relative unusualness** (see Base rates above).
+- **Rule-anchored behavior.** Exceptions the law says should be rare. Examples: frequent 21/b urgent negotiation since its 2025 narrowing, or an idare's share of pazarlık usulü vs. its peers. These rest on the rule, not on opinion.
+- **Continuity timelines.** For example, "this firm won 14 of 15 cleaning tenders at this hospital since 2019." Show it as a dated sequence, not a verdict.
+- **Unit price vs. a public reference price.** Starting categories:
+  - fuel per liter vs. the EPDK pump price on that date;
+  - vehicle rental per month;
+  - later, construction items vs. the ministry's official birim fiyatlar.
+
+  Show a category only once its quantity parsing is reliable.
+- **What happened next.** KİK board decisions on the same tender, cancellations and re-tenders. Close loops; don't stop at the first flag.
+
+**Surfaces:**
+- **Bugün:** the daily ranked list of unusual awards. Aimed at journalists.
+- **Dosyalar:** a page per idare and per firm. All its awards and totals, plus linked Sayıştay findings, KİK decisions and debarment status. This replaces an afternoon of manual EKAP lookups.
+- **Kartlar:** shareable, self-contained fact cards. One figure, one comparison, one source link, in neutral Turkish. They work as an image on social media and invite the reader to check them.
+
+**Public sources to join.** Check each source's terms before use, and fetch politely:
+- EKAP result bulletins (we have these).
+- Sayıştay audit reports, one per idare per year.
+- KİK board decisions.
+- EKAP's debarment list (yasaklılar).
+- KİK's semiannual statistics, for baselines.
+- EPDK fuel prices.
+- The ministry's construction unit prices.
+
+**Not now:**
+- **Ticaret Sicili** (company founders and partners) is person-level enrichment, which goes against §6. Revisit only with Efe, after G-Public.
+- **Automated social posting** (a bot) counts as going public, so it is a hard stop.
+
 ## 2. Non-goals
 - Lead finding or alerts for bidders.
 - Accusations. The site states facts and never gives verdicts.
@@ -121,6 +164,13 @@ Efe opens the live site on his phone. The spec owner gives him a 3-line note: wh
   - Deploy Bugün, İhale detayı and Yöntem on Cloudflare.
   - Run the pipeline daily on Efe's PC.
   - This gives the first daily check with real data.
-- **M4 Breadth:** İdare and Yüklenici pages, plus *hizmet* and *yapım* bulletins.
-- **M5 History:** backfill at a polite rate, and add trends.
+- **M4 Dosyalar:** İdare and Yüklenici pages with continuity timelines, plus *hizmet* and *yapım* bulletins. Link KİK board decisions and debarment status.
+- **M5 Rules and history:**
+  - Backfill at a polite rate.
+  - Add rule-anchored signals (21/b and pazarlık share vs. peers).
+  - Link Sayıştay findings per idare.
+- **M6 Kartlar:**
+  - Shareable fact cards.
+  - Unit price vs. reference price, starting with fuel vs. EPDK.
+  - Cards stay unlisted, like the site, until G-Public.
 - **G-Public:** Efe decides whether to go public.
