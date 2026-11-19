@@ -1,0 +1,219 @@
+diff --git a/src/ihale/sitegen/dossiers.py b/src/ihale/sitegen/dossiers.py
+index f03df86..5e95561 100644
+--- a/src/ihale/sitegen/dossiers.py
++++ b/src/ihale/sitegen/dossiers.py
+@@ -16,7 +16,7 @@ ROW_BYTES_FIRST = 80_000     # timeline rows that share the first page with the
+ ROW_BYTES_NEXT = 100_000
+ ROW_MAX = 50
+ LIST_BYTES = 100_000
+-MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # neutral shading only (no hues)
++MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # one entry per category slot (k); tones and hatch patterns in the template, no hues
+ IDARE_NOTE = "Bir idarenin tablosu tek başına bir sonuç değildir; usul ve alım türü farklılıkları rakamları etkiler."
+ YUK_NOTE = "Bir firmanın sözleşme listesi tek başına bir sonuç değildir; firmanın faaliyet alanı ve idarelerin alım hacmi listeyi etkiler."
+ 
+@@ -69,17 +69,18 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
+             n = counts.get(c["code"], 0)
+             if n:
+                 wd = 100.0 * n / peak
+-                segs.append(dict(x=round(x, 2), w=round(wd, 2), op=MIX_GRAYS[min(i, len(MIX_GRAYS) - 1)],
++                segs.append(dict(x=round(x, 2), w=round(wd, 2), k=min(i, len(MIX_GRAYS) - 1),
+                                  label=c["label"], n=n))
+                 x += wd
+         rows.append(dict(week=w["week"], start=w.get("start"), total=total,
+                          cells=[counts.get(c["code"], 0) for c in cats], segs=segs))
+-    legend = [dict(label=c["label"], op=MIX_GRAYS[min(i, len(MIX_GRAYS) - 1)]) for i, c in enumerate(cats)]
++    legend = [dict(label=c["label"], k=min(i, len(MIX_GRAYS) - 1)) for i, c in enumerate(cats)]
+     return rows, legend, peak
+ 
+ 
+ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment, ctx_base: dict, href_by_id: dict,
+-                   idare_href: dict, yuk_href: dict, idare_parent: dict, fmt: dict, paginate_list) -> None:
++                   idare_href: dict, yuk_href: dict, idare_parent: dict, fmt: dict, paginate_list,
++                   src_by_id: dict | None = None) -> None:
+     """Write all dossier pages. `idare_href` / `yuk_href`: display name -> page path (for linking)."""
+     flag_titles = ctx_base["flag_titles"]
+     idx_i = meta.get("idare_index") or []
+@@ -92,6 +93,10 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
+     def render_rows(rows: list[dict]) -> list[str]:
+         return [render_fragment(row_tpl, r=r) for r in rows]
+ 
++    def src_for(a: dict) -> str:
++        """Citation for a timeline row (SPEC 9.2: the source on every row); falls back to the row's own date."""
++        return (src_by_id or {}).get(a["id"]) or f"Kamu İhale Bülteni, {tr_date_short(a['date'])}"
++
+     def link_for(rid: str) -> str | None:
+         return href_by_id.get(rid)
+ 
+@@ -105,7 +110,8 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
+                 href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
+                 who=who, who_href=(f"/yuklenici/{ys}/" if ys and ys in yuks else None),
+                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı",
+-                flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None))
++                flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None,
++                src=src_for(a)))
+         rendered = render_rows(rows)
+         pages = _chunk([len(x.encode("utf-8")) for x in rendered], ROW_BYTES_FIRST, ROW_BYTES_NEXT)
+         mix, legend, peak = mix_rows(d)
+@@ -146,7 +152,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
+                 href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
+                 who=ih.get("name") or "okunamadı", who_href=(idare_href.get(ih.get("name"))),
+                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı", flags=[],
+-                second=a.get("usul")))
++                second=a.get("usul"), src=src_for(a)))
+         rendered = render_rows(rows)
+         pages = _chunk([len(x.encode("utf-8")) for x in rendered], ROW_BYTES_FIRST, ROW_BYTES_NEXT)
+         tot = [dict(name=t.get("idare"), href=idare_href.get(t.get("idare")), count=t.get("count"),
+diff --git a/src/ihale/sitegen/templates/day.html b/src/ihale/sitegen/templates/day.html
+index dcf82d9..1705fa2 100644
+--- a/src/ihale/sitegen/templates/day.html
++++ b/src/ihale/sitegen/templates/day.html
+@@ -1,7 +1,7 @@
+ {% extends "base.html" %}
+ {% block content %}
+ <p class="crumbs"><a href="/gun/{{ day.date }}/">{{ day.date | tr_date_long }}</a> › Sayfa {{ pn }} / {{ npages }}</p>
+-<h1>{{ day.date | tr_date_long }} · sayfa {{ pn }}</h1>
++<h1>{{ day.date | tr_date_long }} <span class="pg">· sayfa {{ pn }}</span></h1>
+ <p class="muted">Kayıtlar puana, sonra TRY sözleşme bedeline göre sıralıdır. Ayrıntı sayfası yalnızca puanı sıfırdan büyük olan kayıtlar için vardır; diğerlerinin bilgileri satıra tıklayınca açılır.</p>
+ <ul class="rows">
+ {{ rows_html }}
+diff --git a/src/ihale/sitegen/templates/idare.html b/src/ihale/sitegen/templates/idare.html
+index cfdac63..63315af 100644
+--- a/src/ihale/sitegen/templates/idare.html
++++ b/src/ihale/sitegen/templates/idare.html
+@@ -23,10 +23,17 @@
+ <h2>Haftalık usul dağılımı</h2>
+ {% if mix %}
+ <p class="muted">Her satır bir ISO haftasıdır; çubuk uzunluğu o haftanın kayıt sayısıyla orantılıdır. Açık usulden pazarlığa ya da istisnaya kayma varsa tabloda görünür.</p>
+-<svg viewBox="0 0 100 {{ mix | length * 6 }}" role="img" aria-label="Haftalık usul dağılımı çubukları; sayılar aşağıdaki tabloda" width="100%" preserveAspectRatio="none" style="max-height:{{ mix | length * 22 + 8 }}px">
+-  {% for w in mix %}{% set y = loop.index0 * 6 %}{% for s in w.segs %}<rect x="{{ s.x }}" y="{{ y }}" width="{{ s.w }}" height="4.6" fill="currentColor" fill-opacity="{{ s.op }}"><title>{{ w.week }} · {{ s.label }}: {{ s.n }}</title></rect>{% endfor %}{% endfor %}
++{% set rh = 24 %}{% set gut = 74 %}{% set bw = 266 %}{% set fills = ['currentColor','currentColor','url(#mx6)','url(#mx3)','url(#mx4)','url(#mx5)','currentColor'] %}
++<svg class="mixsvg" viewBox="0 0 340 {{ mix | length * rh + 2 }}" role="img" aria-label="Haftalık usul dağılımı çubukları; sayılar aşağıdaki tabloda" width="100%" style="max-width:340px">
++  <defs>
++    <pattern id="mx3" class="mxp3" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M-1 7L7 -1M-1 1L1 -1M5 7L7 5" stroke="currentColor" stroke-width="1.6" fill="none"/></pattern>
++    <pattern id="mx4" class="mxp4" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.4" fill="currentColor"/></pattern>
++    <pattern id="mx5" class="mxp5" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3H6M3 0V6" stroke="currentColor" stroke-width="1.2" fill="none"/></pattern>
++    <pattern id="mx6" class="mxp6" width="6" height="4" patternUnits="userSpaceOnUse"><path d="M0 2H6" stroke="currentColor" stroke-width="1.8" fill="none"/></pattern>
++  </defs>
++  {% for w in mix %}{% set y = loop.index0 * rh + 1 %}<text class="mxl" x="0" y="{{ y + 14 }}" font-size="12" fill="currentColor">{{ w.week }}</text>{% for sg in w.segs %}<rect class="mx{{ sg.k }}" x="{{ (gut + sg.x * bw / 100) | round(2) }}" y="{{ y }}" width="{{ (sg.w * bw / 100) | round(2) }}" height="19" fill="{{ fills[sg.k] }}" stroke="currentColor" stroke-width=".75"><title>{{ w.week }} · {{ sg.label }}: {{ sg.n }}</title></rect>{% endfor %}{% endfor %}
+ </svg>
+-<p class="muted">{% for l in legend %}<span style="white-space:nowrap"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect width="12" height="12" fill="currentColor" fill-opacity="{{ l.op }}"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
++<p class="muted legend">{% for l in legend %}<span style="white-space:nowrap"><svg width="22" height="14" viewBox="0 0 22 14" aria-hidden="true"><rect class="mx{{ l.k }}" x=".5" y=".5" width="21" height="13" fill="{{ fills[l.k] }}" stroke="currentColor" stroke-width="1"/></svg> {{ l.label }}</span>{{ " · " if not loop.last }}{% endfor %}</p>
+ <div class="tw"><table class="rules stack">
+   <thead><tr><th>Hafta</th>{% for l in legend %}<th>{{ l.label }}</th>{% endfor %}<th>Toplam</th></tr></thead>
+   <tbody>{% for w in mix %}<tr><td>{{ w.week }}</td>{% for c in w.cells %}<td data-label="{{ legend[loop.index0].label }}"{% if not c %} class="z"{% endif %}>{{ c | tr_int }}</td>{% endfor %}<td data-label="Toplam">{{ w.total | tr_int }}</td></tr>{% endfor %}</tbody>
+diff --git a/src/ihale/sitegen/templates/index.html b/src/ihale/sitegen/templates/index.html
+index d642a8b..57b13be 100644
+--- a/src/ihale/sitegen/templates/index.html
++++ b/src/ihale/sitegen/templates/index.html
+@@ -43,8 +43,10 @@
+       {% for t in it.cluster %}
+         <li class="ent"><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a>
+           <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
+-          <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
+-          {{ srcline(t) }}</li>
++          {{ flags_list(t, true) }}
++          <span class="sub muted">Puan: {{ t.score | tr_score }}</span>
++          {{ srcline(t) }}
++          <p class="more sub"><a href="/ihale/{{ t.id }}/">Ayrıntı →</a></p></li>
+       {% endfor %}
+       </ul>
+       <p class="muted">En yüksek puan: {{ it.score | tr_score }}</p>
+@@ -58,8 +60,10 @@
+         {% for t in it.fold %}
+           <li class="ent"><a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
+             <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
+-            <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
+-            {{ srcline(t) }}</li>
++            {{ flags_list(t, true) }}
++            <span class="sub muted">Puan: {{ t.score | tr_score }}</span>
++            {{ srcline(t) }}
++            <p class="more sub"><a href="/ihale/{{ t.id }}/">Ayrıntı →</a></p></li>
+         {% endfor %}
+         </ul>
+       </details>
+diff --git a/src/ihale/sitegen/templates/tender.html b/src/ihale/sitegen/templates/tender.html
+index 6f10fbc..1d2f566 100644
+--- a/src/ihale/sitegen/templates/tender.html
++++ b/src/ihale/sitegen/templates/tender.html
+@@ -1,10 +1,11 @@
+ {% extends "base.html" %}
+ {% from "_record.html" import body with context %}
+-{% from "_macros.html" import srcline with context %}
++{% from "_macros.html" import srcline, facts with context %}
+ {% block content %}
+ <p class="crumbs"><a href="/">Bugün</a> › <a href="/gun/{{ t._c.src.date or t.id[:10] }}/">{{ (t._c.src.date or t.id[:10]) | tr_date_long }}</a></p>
+-<h1>{{ t._name }}</h1>
++<h1 class="rec">{{ t._name }}</h1>
+ {{ srcline(t) }}
++{{ facts(t) }}
+ <p class="muted">İhale detayı · {{ t.id }}</p>
+ {{ body(t) }}
+ {% endblock %}
+diff --git a/tests/test_sitegen.py b/tests/test_sitegen.py
+index 3662e92..e2e7140 100644
+--- a/tests/test_sitegen.py
++++ b/tests/test_sitegen.py
+@@ -353,7 +353,8 @@ from ihale.sitegen.persons import PERSON_LABEL, is_natural_person  # noqa: E402
+     ("Fresenıus Medikal Hizmetler Anonim Şirketi", False),
+     ("Örnek Yapı Ltd.Şti.", False), ("Örnek Gıda A.Ş.", False), ("ÖRNEK İNŞAAT SAN. VE TİC. LTD. ŞTİ.", False),
+     ("Örnek Kooperatifi", False), ("Örnek Belediyesi", False), ("X Ortak Girişim", False),
+-    ("Ahmet Yılmaz Gıda", False), ("Tek", False), ("", False), (None, False),
++    ("Ahmet Yılmaz Gıda", False),
++    ("Ahmet Melikşah Çakar Nokta Yapı İnşaat", True), ("Suphi Kınaş Uzman Mühendislik", True), ("Ekin İnşaat", False), ("Örnek Yapı İnşaat Ltd. Şti.", False), ("Tek", False), ("", False), (None, False),
+ ])
+ def test_is_natural_person(name, expected):
+     assert is_natural_person(name) is expected
+@@ -380,7 +381,7 @@ def test_no_threshold_labels_outside_yontem(dist):
+             continue
+         t = p.read_text(encoding="utf-8")
+         assert "≥ %" not in t and "%97" not in t, p
+-    assert "Yaklaşık maliyete yakın (" in _read(dist, "index.html")
++    assert "Bedel / yaklaşık maliyet (" in _read(dist, "index.html")
+ 
+ 
+ def test_bedel_ratio_with_peer_context(dist):
+@@ -538,7 +539,7 @@ def test_cluster_card_on_bugun(tmp_path):
+     sitegen.build(_tmp_export(tmp_path, edit), tmp_path / "o")
+     h = (tmp_path / "o/index.html").read_text(encoding="utf-8")
+     assert "3 DHMİ ihalesi" in h and "Ortak ifade: «Malzemesi Alımı»" in h
+-    assert "Hepsinde: Tek teklif, Yaklaşık maliyete yakın" in h
++    assert "Hepsinde: Tek teklif, Bedel / yaklaşık maliyet" in h
+     for rid in ("A-3", "B-3", "B-4"):                      # every member linked from inside the cluster card
+         assert f'href="/ihale/2026-11-18-mal-{rid}/"' in h
+     assert "En yüksek puan: 3,5" in h
+@@ -664,14 +665,14 @@ def test_live_build_has_no_design_direction_or_switch(dist):
+ def test_design_preview_build_and_deploy_refuses_it(tmp_path):
+     out = tmp_path / "preview"
+     sitegen.build(SAMPLE, out, preview_design=True)
+-    for n in ("defter", "gazete", "evrak"):
++    for n in ("sutun", "yon2", "yon3"):
+         css = out / "tokens" / f"{n}.css"
+         assert css.is_file() and css.stat().st_size < 8000
+     h = _read(out, "index.html")
+-    assert 'data-direction="defter"' in h and 'href="/tokens/defter.css"' in h
++    assert 'data-direction="sutun"' in h and 'href="/tokens/sutun.css"' in h
+     assert "yon" in h and "tema" in h and "localStorage" in h and "try{" in h      # switch script, guarded
+     assert 'class="sw"' in _read(out, "yontem/index.html") and 'class="sw"' not in h
+-    assert "--c-bg" in (out / "style.css").read_text(encoding="utf-8")
++    assert "var(--bg)" in (out / "style.css").read_text(encoding="utf-8")
+     assert '<p class="srcline">' in h                                              # rule fixes are in both builds
+     with pytest.raises(RuntimeError, match="design preview"):
+         sitegen.deploy(out)
+@@ -681,7 +682,7 @@ def test_deploy_refuses_data_direction_without_tokens(tmp_path):
+     out = tmp_path / "d"
+     sitegen.build(SAMPLE, out)
+     idx = out / "index.html"
+-    idx.write_text(idx.read_text(encoding="utf-8").replace('<html lang="tr">', '<html lang="tr" data-direction="defter">'),
++    idx.write_text(idx.read_text(encoding="utf-8").replace('<html lang="tr">', '<html lang="tr" data-direction="sutun">'),
+                    encoding="utf-8")
+     with pytest.raises(RuntimeError, match="design preview"):
+         sitegen.deploy(out)
+@@ -817,7 +818,7 @@ def test_fold_entries_have_source_money_and_no_ocp_red_flag_wording(dist):
+     h = _read(dist, "index.html")
+     fold = h[h.index('class="card fold'):]
+     fold = fold[:fold.index("</details>")]
+-    entries = re.findall(r'<li class="ent">.*?</li>', fold, flags=re.S)
++    entries = re.findall(r'<li class="ent">.*?(?=<li class="ent">|\Z)', fold, flags=re.S)
+     assert len(entries) == 2
+     for e in entries:
+         assert 'class="srcline"' in e and 'class="money"' in e and "TRY" in e

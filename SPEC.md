@@ -299,6 +299,8 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 
 **Phase 2** is run by the spec owner after the freeze, apart from the main build. Its outcome, and what Efe decides from it, is recorded in `design/DIRECTION.md`. Until then, the live site keeps its pre-design style.
 
+**Outcome (2026-11-19):** Efe chose Sütun blind. See `design/DIRECTION.md`; the files are in `design/chosen/`. The build ports it to the live site as the only direction, with no switch, and reruns the rule checks above.
+
 ### 9.3 Hold-off (all feedback, design included)
 Adopted from clearpile (Efe, 2026-11-19).
 - Efe may mark a piece of feedback as **"hold-off"**. The spec owner records it privately, outside the repo and the data folder, and **never relays it** to builders or reviewers.
