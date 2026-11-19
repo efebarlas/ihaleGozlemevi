@@ -33,6 +33,18 @@
       <p class="muted">Puan: {{ t.score | tr_score }}</p>
       <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı ve kaynak →</a></p>
     </li>
+  {% elif it.cluster %}
+    <li class="card cluster {% for c in it.codes %}c-{{ c }} {% endfor %}">
+      <h2>{{ it.cluster | length }} {{ it.parent }} ihalesi</h2>
+      {% if it.phrase %}<p class="muted">Ortak ifade: «{{ it.phrase }}»</p>{% endif %}
+      {% if it.all_codes %}<p class="muted">Hepsinde: {% for c in it.all_codes %}{{ flag_titles.get(c, c) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+      <ul class="clist">
+      {% for t in it.cluster %}
+        <li><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}{% for f in t.flags %} · {{ f.text }}{% endfor %} · Puan: {{ t.score | tr_score }}</li>
+      {% endfor %}
+      </ul>
+      <p class="muted">En yüksek puan: {{ it.score | tr_score }}</p>
+    </li>
   {% else %}
     <li class="card fold {% for c in it.codes %}c-{{ c }} {% endfor %}">
       <details>

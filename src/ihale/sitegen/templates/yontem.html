@@ -32,6 +32,7 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 <p>Tekrarlayan yüklenici işareti, aynı kayıtta başka bir işaret de varsa puan ekler; tek başına görülmesi puan eklemez ama işaret yine gösterilir. İdarede tek teklif oranı yüksek işareti, idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının belirgin biçimde üzerindeyse puan ekler.</p>
 <p>Bugün sayfası, puanı {{ cutoff }} veya daha yüksek olan kayıtları puana, ardından TRY sözleşme bedeline göre sıralı gösterir. Bu kesim noktası geçicidir; yeterli gün yüklendikçe ölçülen oranlara göre gözden geçirilecektir. Puanı sıfırdan büyük her kaydın kendi sayfası vardır; tüm kayıtlar «günün tümü» sayfasında yer alır.</p>
 <p><strong>Çeşitlilik kuralı:</strong> Bugün sayfasında aynı idareden en fazla 2 kart gösterilir (o idarenin en yüksek puanlı 2 kaydı). Aynı idarenin diğer kayıtları hiçbir zaman silinmez; ikinci kartın altında «Bu idareden bugün N kayıt daha» satırında, açılır listede bağlantılarıyla durur. Süzme düğmelerinin sayıları tüm kayıtları sayar.</p>
+<p>Aynı kurumun (örn. bir genel müdürlüğün bölge birimleri) aynı gün ve aynı işaret kümesiyle öne çıkan kayıtları tek bir «N ihale» kartında toplanır; kartın içinde her ihale kendi birimi, bedeli ve işaretleriyle ve kendi sayfasına bağlantıyla listelenir. Böyle bir küme çeşitlilik kuralında tek kart sayılır ve sırası en yüksek puanlı üyesine göredir. Üst kurumu bilinmeyen kayıtlar hiçbir zaman kümelenmez.</p>
 {% if part_rates %}
 <h3 id="oranlar">İşaretlerin usule göre görülme oranları</h3>
 <p>Aşağıdaki tablo, her işaretin yüklenmiş kayıtlarda usul başına görülme oranını (p) gösterir; puanlar bu oranlardan türetilir. «Tüm usuller», usulü için yeterli kayıt bulunmadığında kullanılan genel orandır.</p>
@@ -76,6 +77,7 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 {% for code, title in flag_titles.items() %}
   <li><strong>{{ title }}:</strong> {{ innocent[code] }}</li>
 {% endfor %}
+  <li><strong>Marka veya model belirtilmiş alım:</strong> {{ innocent_brand }} Konu metninde marka ya da model kodu geçen kayıtlarda, tek teklif işaretinin altında bu not da görünür.</li>
 </ul>
 
 {% if rules %}

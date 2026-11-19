@@ -62,3 +62,4 @@ details[open]>summary::before{content:"▾"}
 .why{display:block;color:var(--muted);font-size:.85rem;margin-top:.15rem}
 .rules{width:100%;border-collapse:collapse;font-size:.9rem}.rules th,.rules td{border:1px solid var(--line);padding:.35rem .5rem;text-align:left;vertical-align:top}.tw{overflow-x:auto}
 .parts{margin:.2rem 0 0;padding-left:1.1rem;color:var(--muted);font-size:.9rem}
+.pager{display:flex;gap:1rem;flex-wrap:wrap;margin:1.2rem 0}.clist{padding-left:1.1rem;margin:.4rem 0}.cluster{border-left:4px solid var(--accent)}

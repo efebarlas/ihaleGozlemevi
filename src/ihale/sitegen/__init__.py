@@ -13,6 +13,9 @@ import subprocess
 from datetime import date
 from pathlib import Path
 
+from markupsafe import Markup
+
+from .brands import is_series_brand_purchase
 from .persons import PERSON_LABEL, is_natural_person
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -44,6 +47,9 @@ INNOCENT = {  # one neutral "also common when…" line per flag type (detail pag
     "tekrarlayan_yuklenici": "Bölgedeki tek veya az sayıdaki tedarikçi aynı idareden sık sık iş alabilir.",
     "idare_orani": "Merkezî alım kurumları (ör. DMO 4734/3-g) ve acil durum alımları (21/b) yapıları gereği tek teklifle sonuçlanabilir.",
 }
+INNOCENT_BRAND = "Marka ve modeli belirtilmiş alımlarda tek teklif, yetkili satıcı yapısından kaynaklanabilir."
+PAGE_MAX_RECORDS = 50    # day pages: records per page (also bounded by bytes)
+PAGE_MAX_BYTES = 110_000  # keep every HTML page well under ~150 KB
 EFFECT_LABELS = {
     "no_single_bid_points": "Tek teklif işaretleri gösterilir ama puan eklemez",
     "own_peer_group": "İdare yalnızca kendi geçmişiyle karşılaştırılır",
@@ -302,26 +308,104 @@ def _squeeze(html: str) -> str:
     return _WS.sub(" ", html)
 
 
+def _group_key(t: dict) -> str:
+    """Cap/cluster grouping: the parent key when the idare has one, else the idare key."""
+    idare = t.get("idare") or {}
+    return (idare.get("parent") or {}).get("key") or idare.get("key") or t["_idare"]
+
+
+def _words(text: str) -> list[str]:
+    return text.split()
+
+
+def _norm_word(w: str) -> str:
+    return re.sub(r"[^\w]", "", w.translate(str.maketrans({"İ": "i", "I": "ı"})).lower())
+
+
+def common_phrase(names: list[str]) -> str | None:
+    """Longest run of >= 2 words shared (case-insensitively) by every name; None when there is none."""
+    if len(names) < 2:
+        return None
+    first = _words(names[0])
+    others = [[_norm_word(w) for w in _words(n)] for n in names[1:]]
+    nf = [_norm_word(w) for w in first]
+    for size in range(len(first), 1, -1):
+        for i in range(0, len(first) - size + 1):
+            seq = nf[i:i + size]
+            if all(any(o[j:j + size] == seq for j in range(len(o) - size + 1)) for o in others):
+                return " ".join(first[i:i + size])
+    return None
+
+
+def _score_codes(t: dict) -> frozenset:
+    return frozenset(pt["code"] for pt in _parts(t))
+
+
 def fold_cards(flagged: list[dict]) -> list[dict]:
-    """Ranked cards with at most MAX_CARDS_PER_IDARE per idare; the rest fold into one entry after the last
-    kept card of that idare. Nothing is dropped. Entries: {'card': t} or {'fold': [t...], 'codes': [...]}."""
+    """Bugün entries from the ranked records (highest score first).
+
+    1. Records of the same parent idare with the same set of score-part codes (same day) form one cluster;
+       records without a parent never cluster.
+    2. A cluster counts once under the cap of MAX_CARDS_PER_IDARE units per group (parent key, else idare key);
+       its rank is its highest score. Units over the cap are folded into one entry after the group's last kept
+       unit. Nothing is dropped.
+    Entries: {'card': t} | {'cluster': [t...], ...} | {'fold': [t...], 'codes': [...], 'idare': name}.
+    """
+    groups: dict[tuple, list[dict]] = {}
+    for t in flagged:
+        par = (t.get("idare") or {}).get("parent") or {}
+        if par.get("key"):
+            groups.setdefault((par["key"], _score_codes(t)), []).append(t)
+    units: list[dict] = []
+    emitted: set = set()
+    for t in flagged:
+        par = (t.get("idare") or {}).get("parent") or {}
+        k = (par.get("key"), _score_codes(t))
+        if par.get("key") and len(groups[k]) >= 2:
+            if k in emitted:
+                continue
+            emitted.add(k)
+            ms = groups[k]
+            codes = sorted(_score_codes(ms[0]), key=lambda c: FLAG_ORDER.index(c) if c in FLAG_ORDER else 99)
+            units.append({"cluster": ms, "parent": par.get("name") or par["key"], "gkey": par["key"],
+                          "phrase": common_phrase([m["_name"] for m in ms]),
+                          "all_codes": codes, "score": max(m["score"] for m in ms),
+                          "codes": sorted({c for m in ms for c in m["_codes"]},
+                                          key=lambda c: FLAG_ORDER.index(c) if c in FLAG_ORDER else 99)})
+        else:
+            units.append({"card": t, "gkey": _group_key(t)})
     kept: dict[str, int] = {}
     hidden: dict[str, list[dict]] = {}
     last_idx: dict[str, int] = {}
     items: list[dict] = []
-    for t in flagged:
-        key = (t.get("idare") or {}).get("key") or t["_idare"]
-        n = kept.get(key, 0)
-        if n < MAX_CARDS_PER_IDARE:
-            kept[key] = n + 1
-            items.append({"card": t})
+    for u in units:
+        key = u["gkey"]
+        if kept.get(key, 0) < MAX_CARDS_PER_IDARE:
+            kept[key] = kept.get(key, 0) + 1
+            items.append(u)
             last_idx[key] = len(items) - 1
         else:
-            hidden.setdefault(key, []).append(t)
+            hidden.setdefault(key, []).extend(u["cluster"] if "cluster" in u else [u["card"]])
     for key, hs in sorted(hidden.items(), key=lambda kv: -last_idx[kv[0]]):
         codes = sorted({c for h in hs for c in h["_codes"]}, key=lambda c: FLAG_ORDER.index(c) if c in FLAG_ORDER else 99)
         items.insert(last_idx[key] + 1, {"fold": hs, "codes": codes, "idare": hs[0]["_idare"]})
     return items
+
+
+def paginate(sizes: list[int]) -> list[list[int]]:
+    """Greedy split of row indexes into pages by record count and byte size."""
+    pages: list[list[int]] = []
+    cur: list[int] = []
+    size = 0
+    for i, n in enumerate(sizes):
+        if cur and (len(cur) >= PAGE_MAX_RECORDS or size + n > PAGE_MAX_BYTES):
+            pages.append(cur)
+            cur, size = [], 0
+        cur.append(i)
+        size += n
+    if cur:
+        pages.append(cur)
+    return pages
 
 
 def _wipe(out_dir: Path) -> None:
@@ -337,6 +421,7 @@ def _env() -> Environment:
                       trim_blocks=True, lstrip_blocks=True)
     env.filters.update(tr_date_long=tr_date_long, tr_date_short=tr_date_short,
                        tr_money=tr_money, tr_int=tr_int, tr_score=tr_score, tr_pct=tr_pct)
+    env.globals["innocent_brand"] = INNOCENT_BRAND
     return env
 
 
@@ -383,6 +468,8 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
         t["score"] = float(t.get("score", 0))
         t["_parts"] = part_lines(t)
+        t["_brand"] = (any(f["code"] == "tek_teklif" for f in t["flags"])
+                       and is_series_brand_purchase(t.get("konu") or t.get("title") or ""))
         has_check = any(f.get("source_check") for f in t["flags"])
         t["_typo_note"] = ((t.get("indicators") or {}).get("source_check") == "typo" and not has_check)
         wl = weight_line(t, meta.get("part_rates"))
@@ -445,10 +532,44 @@ def build(export_dir: Path, out_dir: Path) -> None:
                            src=src, src_text=src_text, section_label=SECTION_LABELS.get(t.get("section"), ""),
                            src_date_short=tr_date_short(src["date"]) if src.get("date") else "",
                            type_label=type_label)
+    # day pages: summary + paginated lists (every HTML page stays small); records without a detail page
+    # get their anchor on a list page
+    row_tpl = env.get_template("day_row.html")
+    day_rows: dict[str, list[str]] = {}
+    day_pages: dict[str, list[list[int]]] = {}
     for ds in dates:
-        write(f"gun/{ds}/index.html", "day.html", page="arsiv", title=tr_date_long(ds), day=day_ctx[ds],
-              date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
-        for t in day_ctx[ds]["tenders"]:
+        tenders = day_ctx[ds]["tenders"]
+
+        def render_rows() -> list[str]:
+            return [_squeeze(row_tpl.render(**ctx_base, t=t, date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS))
+                    for t in tenders]
+
+        rows = render_rows()                               # first pass: sizes (links are placeholders)
+        pages = paginate([len(r.encode("utf-8")) for r in rows])
+        for pn, idxs in enumerate(pages, 1):
+            for i in idxs:
+                t = tenders[i]
+                t["_pageno"] = pn
+                if not t["_page"]:
+                    t["_href"] = f"/gun/{ds}/{pn}/#{t['id']}"
+        day_rows[ds], day_pages[ds] = render_rows(), pages  # second pass: final links
+    for ds in dates:
+        tenders = day_ctx[ds]["tenders"]
+        pages = day_pages[ds]
+        counts: dict[str, list[int]] = {}
+        for t in tenders:
+            g = _usul_turu_label((t.get("indicators") or {}).get("usul_turu") or "") if (t.get("indicators") or {}).get("usul_turu") else "Belirtilmemiş"
+            c = counts.setdefault(g, [0, 0])
+            c[0] += 1
+            c[1] += 1 if t["score"] > 0 else 0
+        groups = sorted(((g, n, sc) for g, (n, sc) in counts.items()), key=lambda x: -x[1])
+        write(f"gun/{ds}/index.html", "day_summary.html", page="arsiv", title=tr_date_long(ds), day=day_ctx[ds],
+              groups=groups,
+              pages=[(pn, len(ix), tenders[ix[0]]["score"], tenders[ix[-1]]["score"]) for pn, ix in enumerate(pages, 1)])
+        for pn, idxs in enumerate(pages, 1):
+            write(f"gun/{ds}/{pn}/index.html", "day.html", page="arsiv", title=f"{tr_date_long(ds)} · sayfa {pn}",
+                  day=day_ctx[ds], pn=pn, npages=len(pages), rows_html=Markup("\n".join(day_rows[ds][i] for i in idxs)))
+        for t in tenders:
             if t["_page"]:
                 write(f"ihale/{t['id']}/index.html", "tender.html", page="ihale", title=t["_name"], t=t,
                       date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)

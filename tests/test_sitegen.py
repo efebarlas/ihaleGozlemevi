@@ -47,9 +47,15 @@ def test_expected_pages(dist):
         assert (dist / rel).is_file(), rel
 
 
+def _day_text(dist: Path, date: str) -> str:
+    """All list pages of a day, concatenated."""
+    pages = sorted((dist / "gun" / date).glob("*/index.html"), key=lambda p: int(p.parent.name))
+    return "\n".join(p.read_text(encoding="utf-8") for p in pages)
+
+
 def _day_block(dist: Path, date: str, rid: str) -> str:
     """The expandable <details> block of a record on its day page."""
-    h = _read(dist, f"gun/{date}/index.html")
+    h = _day_text(dist, date)
     i = h.index(f'id="{rid}"')
     return h[i:h.index("</li>", i)]
 
@@ -60,7 +66,7 @@ def test_detail_pages_only_for_score_ge_1_and_every_record_on_day_page(dist):
     for t in tenders:
         page = dist / "ihale" / t["id"] / "index.html"
         assert page.is_file() == (t["score"] >= 1), t["id"]
-        day = _read(dist, f"gun/{t['source']['date']}/index.html")
+        day = _day_text(dist, t["source"]["date"])
         assert f'id="{t["id"]}"' in day
         assert ("<details>" in _day_block(dist, t["source"]["date"], t["id"])) == (t["score"] < 1)
 
@@ -363,8 +369,8 @@ def test_person_names_only_on_own_detail_page(dist):
                 assert only and p == dist / only, (n, p)
     assert "Ayşe ÖRNEK" in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
     assert PERSON_LABEL in _read(dist, "index.html")                       # Bugün card
-    assert PERSON_LABEL in _read(dist, "gun/2026-11-17/index.html")        # expandable block, no page
-    assert PERSON_LABEL in _read(dist, "gun/2026-11-18/index.html")
+    assert PERSON_LABEL in _day_text(dist, "2026-11-17")        # expandable block, no page
+    assert PERSON_LABEL in _day_text(dist, "2026-11-18")
 
 
 def test_no_threshold_labels_outside_yontem(dist):
@@ -482,3 +488,129 @@ def test_source_check_typo_note(tmp_path):
     assert note in (tmp_path / "o/ihale/2026-11-18-mal-A-3/index.html").read_text(encoding="utf-8")
     assert note not in (tmp_path / "o/ihale/2026-11-18-mal-A-1/index.html").read_text(encoding="utf-8")
     assert note not in (tmp_path / "o/ihale/2026-11-18-mal-A-4/index.html").read_text(encoding="utf-8")
+
+
+from ihale.sitegen.brands import is_series_brand_purchase  # noqa: E402
+
+
+@pytest.mark.parametrize("konu,expected", [
+    ("20 Adet Iveco Daily 35C21D Kamyonet", True), ("1 Adet Kubota U56-5 Mini Ekskavatör", True),
+    ("Ford Tourneo Courier Araç Alımı", True), ("MAN TGS 18.440 Çekici", True), ("Crown SC 5200 İstif Makinesi", True),
+    ("145 HP Traktör Alımı", False), ("J0952-Dinoproston Alımı", False), ("A4 Kağıt Alımı", False),
+    ("Man power hizmeti", False), ("Case dosyası", False), ("Temizlik Malzemesi Alımı", False),
+])
+def test_is_series_brand_purchase(konu, expected):
+    assert is_series_brand_purchase(konu) is expected
+
+
+def _tmp_export(tmp_path, edit):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    for f in sorted((exp / "days").glob("*.json")):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        edit(f.stem, d)
+        f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    return exp
+
+
+def test_brand_innocent_line(tmp_path):
+    def edit(day, d):
+        for t in d["tenders"]:
+            if t["id"] == "2026-11-18-mal-A-1":
+                t["konu"] = "20 Adet Iveco Daily 35C21D Kamyonet"
+    sitegen.build(_tmp_export(tmp_path, edit), tmp_path / "o")
+    assert sitegen.INNOCENT_BRAND in (tmp_path / "o/ihale/2026-11-18-mal-A-1/index.html").read_text(encoding="utf-8")
+    # sample: no brand in konu -> no line; and never on records without a tek_teklif flag
+    other = (tmp_path / "o/ihale/2026-11-18-mal-A-3/index.html").read_text(encoding="utf-8")
+    assert sitegen.INNOCENT_BRAND not in other
+
+
+def _parent(t, key="dhmi", name="DHMİ"):
+    t["idare"] = dict(t["idare"], parent={"key": key, "name": name})
+
+
+def test_cluster_card_on_bugun(tmp_path):
+    def edit(day, d):
+        for t in d["tenders"]:
+            if t["id"] in ("2026-11-18-mal-A-3", "2026-11-18-mal-B-3", "2026-11-18-mal-B-4"):
+                _parent(t)
+    sitegen.build(_tmp_export(tmp_path, edit), tmp_path / "o")
+    h = (tmp_path / "o/index.html").read_text(encoding="utf-8")
+    assert "3 DHMİ ihalesi" in h and "Ortak ifade: «Malzemesi Alımı»" in h
+    assert "Hepsinde: Tek teklif, Yaklaşık maliyete yakın" in h
+    for rid in ("A-3", "B-3", "B-4"):                      # every member linked from inside the cluster card
+        assert f'href="/ihale/2026-11-18-mal-{rid}/"' in h
+    assert "En yüksek puan: 3,5" in h
+    # a cluster is one unit: no separate cards for its members, and the idare-level fold is gone
+    assert "kayıt daha" not in h
+    cards = re.findall(r'<li class="card (?:cluster )?[^"]*">\s*<h2>(?:<a href="/ihale/([^/]+)/|(\d+) DHM)', h)
+    assert [c[0] or "cluster" for c in cards] == ["2026-11-18-mal-A-1", "cluster", "2026-11-18-mal-B-1", "2026-11-18-mal-A-2"]
+
+
+def test_records_without_parent_never_cluster(dist):
+    assert "ihalesi</h2>" not in _read(dist, "index.html")
+
+
+def _mk(i, score, codes, idare="x", parent=None):
+    t = {"id": i, "_idare": idare, "idare": {"key": idare}, "_codes": list(codes), "score": score, "_name": f"Konu {i}",
+         "score_parts": [{"code": c} for c in codes]}
+    if parent:
+        t["idare"]["parent"] = {"key": parent, "name": parent.upper()}
+    return t
+
+
+def test_fold_cards_cluster_counts_once_and_ranks_by_max():
+    recs = [_mk("a", 9, ["tek_teklif"], "i1", "p"), _mk("b", 8, ["bedel_orani"], "i2", "p"),
+            _mk("c", 7, ["tek_teklif"], "i3", "p"), _mk("d", 6, ["tek_teklif"], "i4", "p"),
+            _mk("e", 5, ["tek_teklif"], "z")]
+    items = sitegen.fold_cards(recs)
+    kinds = [("cluster", [m["id"] for m in x["cluster"]]) if "cluster" in x
+             else ("card", x["card"]["id"]) if "card" in x else ("fold", [m["id"] for m in x["fold"]]) for x in items]
+    # a,c,d share parent+codes -> one cluster (rank 9); b is its own unit; cap is 2 units per parent -> both kept
+    assert kinds == [("cluster", ["a", "c", "d"]), ("card", "b"), ("card", "e")]
+    recs.append(_mk("f", 4, ["diger_teklifler_elendi"], "i5", "p"))
+    items = sitegen.fold_cards(recs)
+    assert [("fold", [m["id"] for m in x["fold"]]) for x in items if "fold" in x] == [("fold", ["f"])]
+
+
+def test_common_phrase():
+    assert sitegen.common_phrase(["Havalimanı Elektrik Malzemesi Alımı", "X Havalimanı Elektrik Malzemesi"]) == "Havalimanı Elektrik Malzemesi"
+    assert sitegen.common_phrase(["Alfa Beta", "Gama Delta"]) is None
+
+
+def _big_export(tmp_path, n=300):
+    def edit(day, d):
+        if day != "2026-11-17":
+            return
+        base = d["tenders"][0]
+        for k in range(n):
+            t = json.loads(json.dumps(base))
+            t.update(id=f"2026-11-17-mal-C-{k}", ikn=f"2026/{800000 + k}",
+                     konu=f"Örnek Uzun Konu Metni {k} " + "kelime " * 30, score=0.0 if k % 3 else 1.0 + k / 1000,
+                     score_parts=[], flags=[], indicators={"usul_turu": "acik"})
+            d["tenders"].append(t)
+    return _tmp_export(tmp_path, edit)
+
+
+def test_day_pages_paginated_small_and_anchors_resolve(tmp_path):
+    out = tmp_path / "o"
+    sitegen.build(_big_export(tmp_path), out)
+    pages = sorted((out / "gun/2026-11-17").glob("*/index.html"))
+    assert len(pages) > 1
+    assert "/gun/2026-11-17/2/" in (out / "gun/2026-11-17/index.html").read_text(encoding="utf-8")
+    for p in out.rglob("*.html"):
+        assert p.stat().st_size <= 150_000, (p, p.stat().st_size)
+    ids = {}
+    for p in pages:
+        for rid in re.findall(r'<li class="row" id="([^"]+)"', p.read_text(encoding="utf-8")):
+            ids[rid] = p.parent.name
+    assert len(ids) == 303
+    for p in out.rglob("*.html"):
+        for n, rid in re.findall(r'href="/gun/2026-11-17/(\d+)/#([^"]+)"', p.read_text(encoding="utf-8")):
+            assert ids[rid] == n, (p, rid)
+    assert "Gün özeti" in pages[0].read_text(encoding="utf-8") and "Sonraki" in pages[0].read_text(encoding="utf-8")
+
+
+def test_all_pages_of_sample_build_under_150kb(dist):
+    for p in dist.rglob("*.html"):
+        assert p.stat().st_size <= 150_000, p
