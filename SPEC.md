@@ -229,7 +229,7 @@ Pressure can move bad behavior out of view: into procedures, channels or tricks 
 ## 7. Autonomy
 **Standing OKs:**
 - Commit and push to `main` on the public GitHub repo.
-- Create and deploy a free-tier Cloudflare Worker for this project on Efe's account.
+- Create and deploy a free-tier Cloudflare Worker for this project on Efe's account. Every deploy, manual or scheduled, goes through the dry-run budget guard. If today's D1 writes plus the projected rows would exceed 80% of the free daily writes, it writes nothing, prints both numbers and leaves the live site as it is. Budgets are enforced in code, not by estimates.
 - Run the scraper on Efe's PC, and register its daily scheduled task. Tell him when it's registered.
 
 **Hard stops** (escalate to Efe, work on other things meanwhile):
