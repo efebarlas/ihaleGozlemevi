@@ -16,6 +16,8 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-19: M3 live. Bugün 19 Nov: 51 of 591 records shown. Scheduled task runs the pipeline daily; auto-deploy needs Efe's one-time Cloudflare login (optional; a session deploys meanwhile). Next: §9.2 unguided visual pass, then M4.
 
+- 2026-11-19: M4 hizmet/yapım parsing verified (80970e3): ≥96.9% on every core field over 32 hizmet + 27 yapım hand labels (100% after one label correction); ToC complete for both. 30-day hizmet/yapım backfill running. Dosyalar data export landed (1507573). Unguided design: direction proposed and applied to a non-deployed preview; audit running.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
