@@ -283,8 +283,8 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 **Phase 1, unguided.** Runs once real data is live.
 - A fresh-context reviewer proposes 2–3 distinct directions, each grounded in this product rather than generic app conventions.
 - Each direction is a **set of design tokens** (colors in light and dark, type scale, spacing, flag treatment) applied to the real Bugün and İhale detayı pages with real tenders. No static mocks.
-- The builder applies the reviewer's recommendation as the default. Efe is not asked to pick: a pick would already be guidance.
-- The site gets a hidden switch to flip between the token sets, so Efe can look at all of them on his phone.
+- The builder applies the reviewer's recommendation, but only on a non-deployed preview. Efe is not asked to pick: a pick would already be guidance.
+- **Blind until the comparison (Efe, 2026-11-19).** Efe must see neither version, nor descriptions of either, before both are presented to him unlabeled. The live site keeps its pre-design style until then: no direction, no switch. Design reports to the spec owner are status only, with no direction names or descriptions.
 
 - No reviewer reads another project's design files. In particular, clearpile's `design/BRIEF.md` holds Efe's taste.
 - Efe's own design guidance is private and never enters this public repo. The guidance itself, and Phase 2 work that quotes or reflects it, stay outside git; `.gitignore` guards `design/BRIEF.md`, `design/private/` and `design/guided/`. Only the unguided baseline and neutral outcomes are committed.
@@ -297,7 +297,7 @@ Adapted from clearpile's R-Visual mechanism, made lighter.
 
 **Freeze requirement:** also save the exact briefs given to the direction reviewer and the audit reviewer, verbatim, in `design/unguided/briefs/`.
 
-**Phase 2** is run by the spec owner after the freeze, apart from the main build. Its outcome, and what Efe decides from it, is recorded in `design/DIRECTION.md`. Until then, the Phase 1 direction stays the default.
+**Phase 2** is run by the spec owner after the freeze, apart from the main build. Its outcome, and what Efe decides from it, is recorded in `design/DIRECTION.md`. Until then, the live site keeps its pre-design style.
 
 ### 9.3 Hold-off (all feedback, design included)
 Adopted from clearpile (Efe, 2026-11-19).
