@@ -1,0 +1,16 @@
+{% macro flags_list(t) %}
+<ul class="flags">
+{% for f in t.flags %}
+  <li class="flag flag-{{ f.code }}">{{ f.text }}</li>
+{% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro facts(t) %}
+<dl class="facts">
+  <div><dt>İdare</dt><dd>{{ t.idare.name if t.idare else 'okunamadı' }}</dd></div>
+  <div><dt>Yüklenici</dt><dd>{{ t.yuklenici.name if t.yuklenici else 'okunamadı' }}</dd></div>
+  <div><dt>Sözleşme bedeli</dt><dd>{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</dd></div>
+  <div><dt>Usul</dt><dd>{{ t.usul or 'okunamadı' }}</dd></div>
+</dl>
+{% endmacro %}

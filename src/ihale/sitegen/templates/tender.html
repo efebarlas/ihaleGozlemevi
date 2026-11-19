@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumbs"><a href="/">Bugün</a> › <a href="/gun/{{ src.date or t.id[:10] }}/">{{ (src.date or t.id[:10]) | tr_date_long }}</a></p>
+<h1>{{ t._name }}</h1>
+<p class="muted">İhale detayı · {{ t.id }}</p>
+
+{% if t.flags %}
+<section aria-labelledby="h-isaret">
+  <h2 id="h-isaret">İşaretler</h2>
+  <ul class="flags">
+  {% for f in t.flags %}
+    <li class="flag flag-{{ f.code }}">{{ f.text }}
+      <span class="num">({{ flag_titles.get(f.code, f.code) }}; değer: {{ f.value }})</span></li>
+  {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p>Bu kayıtta hesaplanan bir işaret yok.</p>
+{% endif %}
+
+{% if n_ikn > 1 %}
+<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ n_ikn }} kayıt var. Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.
+{% if siblings %}Diğer kayıtlar:
+{% for s in siblings %}<a href="/ihale/{{ s.id }}/">{{ s.id }}</a>{{ ", " if not loop.last }}{% endfor %}.{% endif %}</p>
+{% endif %}
+
+<section aria-labelledby="h-alan">
+  <h2 id="h-alan">Bilgiler</h2>
+  <dl class="detail">
+  {% for r in rows %}
+    <dt>{{ r.label }}</dt>
+    <dd>
+    {% if r.unreadable %}<span class="unread">okunamadı</span>
+    {% elif r.value is none %}—
+    {% elif r.key in money_fields %}{{ r.value | tr_money }}
+    {% elif r.key in date_fields %}{{ r.value | tr_date_short }}
+    {% else %}{{ r.value }}{% endif %}
+    {% if r.note %}<span class="reason">({{ r.note }}; bu alan işaret hesabında kullanılmadı)</span>{% endif %}
+    </dd>
+  {% endfor %}
+    <dt>Bülten bölümü</dt>
+    <dd>{{ t.section }}{% if section_label %} – {{ section_label }}{% endif %}</dd>
+  </dl>
+</section>
+
+<section class="source" aria-labelledby="h-kaynak">
+  <h2 id="h-kaynak">Kaynak</h2>
+  {% if src_text %}<p><strong>Kaynak: {{ src_text }}</strong></p>{% endif %}
+  <p><a href="{{ ekap_url }}">EKAP Bülten İndirme sayfası</a></p>
+  <p class="muted">Bu sayfada ilgili günün tarihini{% if src_date_short %} ({{ src_date_short }}){% endif %} ve ihale türünü{% if type_label %} ({{ type_label }}){% endif %} seçip bülten dosyasını indirin; ilanı{% if src.page %} {{ src.page }}. sayfada{% endif %} bulabilirsiniz{% if src.file %} (dosya: {{ src.file }}){% endif %}.</p>
+</section>
+{% endblock %}

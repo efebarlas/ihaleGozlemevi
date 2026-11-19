@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ day.date | tr_date_long }}</h1>
+<p class="summary">{{ day.records | tr_int }} sonuç ilanı · {{ day.flagged_n | tr_int }} tanesinde en az bir işaret</p>
+<p class="muted">İşaretli kayıtlar önce gelir (işaret sayısına, sonra sözleşme bedeline göre). <a href="/">Bugün sayfası</a> · <a href="/arsiv/">Arşiv</a></p>
+<ul class="rows">
+{% for t in day.tenders %}
+  <li class="row">
+    <a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
+    <span class="rm">{{ t.idare.name if t.idare else 'okunamadı' }} · {{ t.yuklenici.name if t.yuklenici else 'okunamadı' }}</span>
+    <span class="rb">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
+    {% if t.flags %}
+    <ul class="flags small">
+    {% for f in t.flags %}<li class="flag flag-{{ f.code }}">{{ f.text }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </li>
+{% endfor %}
+</ul>
+{% endblock %}

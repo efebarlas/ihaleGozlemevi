@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Yöntem</h1>
+<p>İhale Gözlemevi, kamu alımlarına ilişkin resmî ilanları her gün okunabilir bir listeye çevirir. Bu sayfa verinin nereden geldiğini, işaretlerin tam olarak nasıl hesaplandığını ve sınırlarını anlatır.</p>
+
+<h2>Veri kaynağı</h2>
+<p>Tüm bilgiler, Kamu İhale Kurumu'nun EKAP üzerinden yayımladığı <strong>Kamu İhale Bülteni</strong>'ndeki sonuç ilanlarından alınır. Bültenin PDF dosyası otomatik okunur; her sonuç ilanı bir kayıt olur. Her kaydın sayfasında bülten tarihi, türü ve sayfa numarası ile <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> bağlantısı bulunur; böylece her rakamı kaynağında kontrol edebilirsiniz.</p>
+<p>Okuma ve işaret hesabı için açık kaynaklı <a href="https://github.com/gulmezeren2-byte/ihalent">ihalent</a> kütüphanesinden (MIT lisansı) yararlanılır.</p>
+
+<h2>Kapsam</h2>
+<p>Şu anda yalnızca <strong>{{ type_text }}</strong> sonuç ilanları var.
+{% if earliest %}Veri {{ earliest | tr_date_long }} tarihli bültenle başlar{% if latest %}; en son yüklenen bülten {{ latest | tr_date_long }} tarihlidir{% endif %}.{% endif %}
+Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
+
+<h2>İşaretler ve kuralları</h2>
+<p>İşaret, bir kaydın belirli bir rakamsal koşulu sağladığını söyler. Hiçbir işaret bir değerlendirme değildir; birçok olağan ihalede de görülür.</p>
+<dl class="method">
+  <dt>Tek geçerli teklif</dt>
+  <dd>Kural: geçerli teklif sayısı tam olarak 1. Toplam teklif sayısı 1'den büyükse metne eklenir (örn. «2 teklif, 1 geçerli»).</dd>
+  <dt>Bedel / yaklaşık maliyet</dt>
+  <dd>Kural: sözleşme bedeli ÷ yaklaşık maliyet ≥ 0,95. Yaklaşık maliyet olarak, okunabiliyorsa «esas kısım yaklaşık maliyeti», yoksa «yaklaşık maliyet» kullanılır. Oran 1'i aşıyorsa «yaklaşık maliyetin üzerinde» yazılır. Gösterilen yüzde aşağı yuvarlanır: 0,999 oranı %99 olarak görünür, %100 olarak değil.</dd>
+  <dt>Tekrarlayan yüklenici</dt>
+  <dd>Kural: aynı idare ile aynı yüklenici çifti için, bu kaydın bülten tarihine kadar olan son 365 günde (bu gün dahil) en az 3 farklı ihale kayıt numarası (İKN) var.</dd>
+</dl>
+
+<h2>Sınırlar</h2>
+<ul>
+  <li><strong>Kısmi (kısımlı) ihaleler.</strong> Bir İKN için birden çok kayıt olabilir. Bedel oranı bu durumda aynı İKN'nin tüm kayıtlarının toplam bedeli üzerinden hesaplanır (aynı İKN, yüklenici ve bedele sahip tekrarlar bir kez sayılır); metin «Bu ihalenin N kısmının toplam bedeli…» biçimindedir. Kayıt sayfası, aynı İKN'nin o gün kaç kaydı olduğunu belirtir.</li>
+  <li><strong>Para birimleri.</strong> Hiçbir zaman çevrilmez. Sözleşme bedelinin para birimi yaklaşık maliyetinkinden farklıysa oran hesaplanmaz ve alan işaret hesabında kullanılmaz.</li>
+  <li><strong>Okunamayan alanlar.</strong> Bir işaret yalnızca gerekli tüm alanlar güvenle okunabildiğinde hesaplanır. Aksi hâlde alan «okunamadı» olarak gösterilir ve o işaret hesaplanmaz; işaretin görünmemesi, koşulun sağlanmadığı anlamına gelmez.</li>
+  <li><strong>Tekrarlayan yüklenici geçmişi.</strong> Bu işaret yalnızca şimdiye kadar yüklenmiş bültenlere bakar; daha eski sözleşmeleri görmez. Sitedeki geçmiş genişledikçe sonuçları değişebilir.</li>
+  <li><strong>Eşleştirme.</strong> İdare ve yüklenici adları, yazım farkları (büyük/küçük harf, noktalama, yaygın şirket eki kısaltmaları) giderilerek eşleştirilir. Benzer ama farklı yazılmış adlar birleştirilmez; bu yüzden bazı tekrarlar görünmeyebilir.</li>
+  <li><strong>Farklı usuller.</strong> 4734 sayılı Kanun'un 3. maddesinin (g) bendi (4734/3-g) ve diğer istisna usulleri farklı kurallara tabidir; pazarlık usulleri de açık ihaleden farklı işler. İşaretler usule göre ayrılmaz, kayıtta usul olduğu gibi gösterilir.</li>
+  <li><strong>Okuma hataları.</strong> PDF'ten otomatik okuma hatalı olabilir. Önemli bir rakamı kullanmadan önce kaynak bültenle karşılaştırın.</li>
+</ul>
+
+<h2>İlkeler</h2>
+<ul>
+  <li>Bu site olguları gösterir; yargı bildirmez, kimseyi suçlamaz. İşaret, bir kaydın daha yakından bakmaya değip değmediğini belirlemek için bir başlangıç noktasıdır.</li>
+  <li>Kişi adları yalnızca resmî bültende yayımlandığı şekliyle yer alır. Başka kaynaklardan bilgi eklenmez.</li>
+  <li>Bu site arama motorlarına kapalıdır.</li>
+</ul>
+{% endblock %}

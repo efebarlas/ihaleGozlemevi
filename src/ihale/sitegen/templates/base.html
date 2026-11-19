@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>{{ title }} · İhale Gözlemevi</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/">İhale Gözlemevi</a>
+    <nav aria-label="Ana menü">
+      <a href="/"{% if page == 'bugun' %} aria-current="page"{% endif %}>Bugün</a>
+      <a href="/arsiv/"{% if page == 'arsiv' %} aria-current="page"{% endif %}>Arşiv</a>
+      <a href="/yontem/"{% if page == 'yontem' %} aria-current="page"{% endif %}>Yöntem</a>
+    </nav>
+  </div>
+</header>
+<main id="icerik" class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">
+  <div class="wrap">
+    <p>Bu site, resmî Kamu İhale Bülteni'nde yayımlanan bilgileri düzenler; herhangi bir değerlendirme veya suçlama içermez.</p>
+    <p><a href="{{ repo_url }}">Kaynak kod (GitHub)</a> · <a href="/yontem/">Yöntem ve sınırlar</a></p>
+  </div>
+</footer>
+</body>
+</html>

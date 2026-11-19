@@ -1,0 +1,27 @@
+{
+ "schema": 1,
+ "generated_at": "2026-11-18T21:30:00+03:00",
+ "latest_date": "2026-11-18",
+ "dates": [
+  "2026-11-18",
+  "2026-11-17"
+ ],
+ "counts": {
+  "2026-11-18": {
+   "records": 6,
+   "flagged": 5,
+   "tek_gecerli_teklif": 2,
+   "bedel_orani": 4,
+   "tekrarlayan_yuklenici": 1,
+   "unreadable": 1
+  },
+  "2026-11-17": {
+   "records": 2,
+   "flagged": 1,
+   "tek_gecerli_teklif": 0,
+   "bedel_orani": 0,
+   "tekrarlayan_yuklenici": 1,
+   "unreadable": 0
+  }
+ }
+}

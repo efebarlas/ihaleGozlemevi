@@ -1,0 +1,321 @@
+{
+ "schema": 1,
+ "date": "2026-11-18",
+ "types": [
+  "mal"
+ ],
+ "tenders": [
+  {
+   "id": "2026-11-18-mal-A-1",
+   "ikn": "2026/9000001",
+   "title": "100 ADET ÖRNEK MASA ALIMI",
+   "konu": "100 Adet Örnek Masa Alımı",
+   "type": "mal",
+   "section": "A",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 2894258.5,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 2767200.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 1,
+   "gecerli_teklif": 1,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "tek_gecerli_teklif",
+     "value": 1,
+     "text": "Tek geçerli teklif"
+    },
+    {
+     "code": "bedel_orani",
+     "value": 0.956,
+     "text": "Sözleşme bedeli yaklaşık maliyetin %95'i"
+    },
+    {
+     "code": "tekrarlayan_yuklenici",
+     "value": 3,
+     "text": "Bu yüklenici son 12 ayda bu idareden 3 sözleşme aldı (bu dahil)"
+    }
+   ]
+  },
+  {
+   "id": "2026-11-18-mal-A-2",
+   "ikn": "2026/9000002",
+   "title": "ÖRNEK LABORATUVAR CİHAZI ALIMI",
+   "konu": "Örnek Laboratuvar Cihazı Alımı",
+   "type": "mal",
+   "section": "A",
+   "usul": "Pazarlık (MD 21 B)",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK ÜNİVERSİTESİ REKTÖRLÜĞÜ",
+    "key": "örnek üniversitesi rektörlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 100000.0,
+    "currency": "EUR"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 104000.0,
+    "currency": "EUR",
+    "alt": {
+     "amount": 4200000.0,
+     "currency": "TRY"
+    }
+   },
+   "toplam_teklif": 2,
+   "gecerli_teklif": 2,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "bedel_orani",
+     "value": 1.04,
+     "text": "Sözleşme bedeli yaklaşık maliyetin üzerinde (%104)"
+    }
+   ]
+  },
+  {
+   "id": "2026-11-18-mal-A-3",
+   "ikn": "2026/9000003",
+   "title": "ÖRNEK KIRTASİYE MALZEMESİ ALIMI (KISIM 1)",
+   "konu": "Örnek Kırtasiye Malzemesi Alımı",
+   "type": "mal",
+   "section": "A",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 900000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": {
+    "amount": 500000.0,
+    "currency": "TRY"
+   },
+   "sozlesme_bedeli": {
+    "amount": 480000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 2,
+   "gecerli_teklif": 2,
+   "kisim": {
+    "records_in_ikn": 2
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "bedel_orani",
+     "value": 0.97,
+     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
+    }
+   ]
+  },
+  {
+   "id": "2026-11-18-mal-A-4",
+   "ikn": "2026/9000003",
+   "title": "ÖRNEK KIRTASİYE MALZEMESİ ALIMI (KISIM 2)",
+   "konu": "Örnek Kırtasiye Malzemesi Alımı",
+   "type": "mal",
+   "section": "A",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Kırtasiye Anonim Şirketi",
+    "key": "örnek kırtasiye as"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 900000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": {
+    "amount": 400000.0,
+    "currency": "TRY"
+   },
+   "sozlesme_bedeli": {
+    "amount": 388000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 2,
+   "gecerli_teklif": 2,
+   "kisim": {
+    "records_in_ikn": 2
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "bedel_orani",
+     "value": 0.97,
+     "text": "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
+    }
+   ]
+  },
+  {
+   "id": "2026-11-18-mal-B-1",
+   "ikn": "2026/9000004",
+   "title": "ÖRNEK GIDA MALZEMESİ ALIMI",
+   "konu": "Örnek Gıda Malzemesi Alımı",
+   "type": "mal",
+   "section": "B",
+   "usul": "4734 / 3-g",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK DEVLET HASTANESİ BAŞHEKİMLİĞİ",
+    "key": "örnek devlet hastanesi başhekimliği"
+   },
+   "yuklenici": {
+    "name": "Ayşe ÖRNEK",
+    "key": "ayşe örnek"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 250000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 240000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 3,
+   "gecerli_teklif": 1,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [],
+   "flags": [
+    {
+     "code": "tek_gecerli_teklif",
+     "value": 1,
+     "text": "3 teklif, 1 geçerli"
+    }
+   ]
+  },
+  {
+   "id": "2026-11-18-mal-B-2",
+   "ikn": "2026/9000005",
+   "title": "ÖRNEK AKARYAKIT ALIMI",
+   "konu": "Örnek Akaryakıt Alımı",
+   "type": "mal",
+   "section": "B",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Örnek Yapı Limited Şirketi",
+    "key": "örnek yapı ltd"
+   },
+   "ihale_tarihi": null,
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": null,
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 75000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 2,
+   "gecerli_teklif": 2,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-18",
+    "type": "mal",
+    "file": "BULTEN_18112026_MAL_SONUC.pdf",
+    "page": 18
+   },
+   "unreadable": [
+    "yaklasik_maliyet",
+    "ihale_tarihi",
+    {
+     "field": "sozlesme_bedeli",
+     "reason": "para birimi farklı"
+    }
+   ],
+   "flags": []
+  }
+ ]
+}

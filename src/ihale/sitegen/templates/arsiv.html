@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Arşiv</h1>
+<p class="muted">Yüklenmiş bülten günleri, yeniden eskiye.</p>
+{% if rows %}
+<ul class="archive">
+{% for r in rows %}
+  <li><a href="/gun/{{ r.date }}/">{{ r.date | tr_date_long }}</a>
+  <span class="muted">{{ r.records | tr_int }} ilan · {{ r.flagged_n | tr_int }} işaretli</span></li>
+{% endfor %}
+</ul>
+{% else %}
+<p>Henüz yüklenmiş bülten yok.</p>
+{% endif %}
+{% endblock %}
