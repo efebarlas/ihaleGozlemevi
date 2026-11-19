@@ -15,6 +15,8 @@ from pathlib import Path
 
 from markupsafe import Markup
 
+from ihale.indicators import usul_label
+
 from .brands import is_series_brand_purchase
 from .persons import PERSON_LABEL, is_natural_person
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -38,7 +40,9 @@ FLAG_TITLES = {
     "bedel_orani": "Yaklaşık maliyete yakın",
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
     "idare_orani": "İdarede tek teklif oranı yüksek",
+    "tekrarlayan_eslesik": "Tekrarlayan yüklenici (başka bir işaretle birlikte)",
 }
+RATE_CODES = ["tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik", "idare_orani"]
 DEFAULT_CUTOFF = 3.0     # Bugün cut-off when meta.json has no bugun_cutoff (contract §4.1)
 INNOCENT = {  # one neutral "also common when…" line per flag type (detail pages and Yöntem)
     "tek_teklif": "Tek teklif, pazarın dar olduğu veya ürünün tek üreticisi bulunduğu alımlarda olağandır.",
@@ -184,6 +188,11 @@ def bedel_peer_line(t: dict) -> str | None:
 
 
 def _usul_group_label(g: str) -> str:
+    """part_rates group key: '<type>/<usul>' (current) or a bare usul code (older exports)."""
+    if g.split("/", 1)[0] in TYPE_LABELS and "/" in g:
+        typ, u = g.split("/", 1)
+        what = "Tüm usuller" if u == "hepsi" else (usul_label(u) or u)
+        return f"{TYPE_LABELS.get(typ, typ)} · {what}"
     return "Tüm usuller" if g == "hepsi" else _usul_turu_label(g)
 
 
@@ -232,7 +241,7 @@ def part_lines(t: dict) -> list[str]:
     for pt in _parts(t):
         if pt.get("points") is None:
             continue
-        s = f"{FLAG_TITLES.get(pt['code'], pt['code'])}: {tr_score(pt['points'])} puan"
+        s = f"{FLAG_TITLES.get(pt['code'], 'Diğer işaret')}: {tr_score(pt['points'])} puan"
         if pt.get("p") is not None:
             where = "tüm kayıtlarda" if pt.get("p_group") in (None, "hepsi") else "bu usulde"
             s += f" ({where} görülme oranı {tr_pct(pt['p'])})"
@@ -488,17 +497,6 @@ def build(export_dir: Path, out_dir: Path) -> None:
                            records=c.get("records", len(tenders)),
                            flagged_n=c.get("flagged", sum(1 for t in tenders if t["flags"])))
 
-    # Bugün
-    d = day_ctx.get(latest)
-    chips = []
-    if d:
-        for code in FLAG_ORDER:
-            n = sum(1 for t in d["flagged"] if code in t["_codes"])
-            if n:
-                chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
-    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips,
-          items=fold_cards(d["flagged"]) if d else [])
-
     # archive
     write("arsiv/index.html", "arsiv.html", page="arsiv", title="Arşiv", rows=[day_ctx[ds] for ds in dates])
 
@@ -574,16 +572,30 @@ def build(export_dir: Path, out_dir: Path) -> None:
                 write(f"ihale/{t['id']}/index.html", "tender.html", page="ihale", title=t["_name"], t=t,
                       date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
 
+    # Bugün
+    d = day_ctx.get(latest)
+    chips = []
+    if d:
+        for code in FLAG_ORDER:
+            n = sum(1 for t in d["flagged"] if code in t["_codes"])
+            if n:
+                chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
+    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips,
+          items=fold_cards(d["flagged"]) if d else [])
+
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
           earliest=min(dates) if dates else None, latest=latest,
-          cutoff=tr_score(cutoff), rate_codes=FLAG_ORDER,
+          cutoff=tr_score(cutoff), rate_codes=RATE_CODES,
           part_rates=[(_usul_group_label(g), r) for g, r in sorted((meta.get("part_rates") or {}).items(),
-                                                              key=lambda kv: (kv[0] == "hepsi", kv[0]))],
+                                                              key=lambda kv: (kv[0].split("/")[0] if kv[0].split("/")[0] in TYPE_LABELS else "", kv[0].endswith("hepsi"), kv[0]))],
           rules=[dict(r, effects_tr=[EFFECT_LABELS.get(e, e) for e in (r.get("effects") or [])])
                  for r in meta.get("structural_rules") or []])
     write("404.html", "404.html", page="404", title="Sayfa bulunamadı")
 
     shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")
+    (out_dir / "tokens").mkdir(exist_ok=True)
+    for tok in sorted((PKG_DIR / "static" / "tokens").glob("*.css")):
+        shutil.copyfile(tok, out_dir / "tokens" / tok.name)
     (out_dir / "robots.txt").write_text("User-agent: *\nDisallow: /\n", encoding="utf-8", newline="\n")
     (out_dir / "_headers").write_text("/*\n  X-Robots-Tag: noindex, nofollow\n", encoding="utf-8", newline="\n")
 

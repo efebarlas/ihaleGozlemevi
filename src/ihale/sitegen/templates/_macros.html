@@ -11,6 +11,10 @@
 {% endif %}
 {% endmacro %}
 
+{% macro srcline(t) %}
+{% set c = t._c %}{% if c and c.src_text %}<p class="srcline"><span class="lbl">Kaynak</span>{{ c.src_text }} · <a href="{{ ekap_url }}">EKAP Bülten İndirme</a></p>{% endif %}
+{% endmacro %}
+
 {% macro peer(t) %}
 {% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}{% if t._bedel_peer %}<p class="peer">{{ t._bedel_peer }}</p>{% endif %}
 {% endmacro %}

@@ -65,6 +65,19 @@
    "bedel_orani": 0.4,
    "tekrarlayan_yuklenici": 0.5,
    "bedel_median_try": 3000000
+  },
+  "mal/istisna_3g_dmo": {
+   "tek_teklif": 0.13,
+   "bedel_orani": 0.0034,
+   "tekrarlayan_eslesik": 0.2,
+   "bedel_median_try": 108330.0,
+   "n": 8308
+  },
+  "mal/hepsi": {
+   "tek_teklif": 0.3,
+   "bedel_orani": 0.25,
+   "tekrarlayan_eslesik": 0.35,
+   "n": 13000
   }
  }
 }

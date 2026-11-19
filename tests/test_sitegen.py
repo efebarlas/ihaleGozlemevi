@@ -89,7 +89,8 @@ def test_no_third_party_or_tracking(dist):
     assert not (dist / "sitemap.xml").exists()
     for p in _html(dist):
         t = p.read_text(encoding="utf-8")
-        assert "og:" not in t and "<script" not in t
+        assert 'property="og:' not in t and "<script src" not in t and "<script async" not in t
+        assert t.count("<script") <= 1                       # only the tiny inline view switch
         for url in re.findall(r'(?:href|src)="(https?://[^"]+)"', t):
             assert url.startswith(("https://ekap.kik.gov.tr/", "https://github.com/")), (p, url)
 
@@ -437,7 +438,7 @@ def test_score_formatting_and_cutoff(dist, tmp_path):
 def test_part_breakdown_only_on_detail(dist):
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
     assert "Tek teklif: 2,1 puan (bu usulde görülme oranı %12)" in d
-    assert "Tekrarlayan yüklenici: 1,1 puan (bu usulde görülme oranı %33)" in d
+    assert "Tekrarlayan yüklenici (başka bir işaretle birlikte): 1,1 puan (bu usulde görülme oranı %33)" in d
     assert "görülme oranı" not in _read(dist, "index.html").split("</header>")[1].split("<h2")[0]
     assert "görülme oranı" not in _day_block(dist, "2026-11-18", "2026-11-18-mal-B-2")
 
@@ -541,6 +542,7 @@ def test_cluster_card_on_bugun(tmp_path):
     for rid in ("A-3", "B-3", "B-4"):                      # every member linked from inside the cluster card
         assert f'href="/ihale/2026-11-18-mal-{rid}/"' in h
     assert "En yüksek puan: 3,5" in h
+    assert h.count('class="srcline"') == 6                       # A-1, three cluster items, B-1, A-2
     # a cluster is one unit: no separate cards for its members, and the idare-level fold is gone
     assert "kayıt daha" not in h
     cards = re.findall(r'<li class="card (?:cluster )?[^"]*">\s*<h2>(?:<a href="/ihale/([^/]+)/|(\d+) DHM)', h)
@@ -614,3 +616,51 @@ def test_day_pages_paginated_small_and_anchors_resolve(tmp_path):
 def test_all_pages_of_sample_build_under_150kb(dist):
     for p in dist.rglob("*.html"):
         assert p.stat().st_size <= 150_000, p
+
+
+def _visible_text(html: str) -> str:
+    import re as _re
+    html = _re.sub(r"<(script|style).*?</>", " ", html, flags=_re.S)
+    return _re.sub(r"<[^>]+>", " ", html)
+
+
+def test_no_raw_snake_case_codes_in_visible_text(dist):
+    for p in dist.rglob("*.html"):
+        m = re.search(r"[a-zçğıöşü]+(?:_[a-z0-9çğıöşü]+)+", _visible_text(p.read_text(encoding="utf-8")))
+        assert not m, (p, m and m.group(0))
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "Tekrarlayan yüklenici (başka bir işaretle birlikte): 1,1 puan" in d
+
+
+def test_every_score_part_code_has_a_title():
+    for code in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik", "idare_orani"):
+        assert code in sitegen.FLAG_TITLES
+
+
+def test_srcline_everywhere(dist):
+    line = "Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18"
+    for rel in ("index.html", "ihale/2026-11-18-mal-A-1/index.html"):
+        t = _read(dist, rel)
+        assert '<p class="srcline">' in t and line in t, rel
+    t = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert t.index('class="srcline"') < t.index("İhale detayı")               # directly under the title
+    h = _read(dist, "index.html")
+    assert h.count('class="srcline"') == 4                                  # one per card
+    day = _day_text(dist, "2026-11-18")
+    assert day.count('class="row"') == day.count('class="srcline"') == 8        # every row has a source line
+
+
+def test_direction_assets_and_hidden_switch(dist):
+    for n in ("defter", "gazete", "evrak"):
+        css = dist / "tokens" / f"{n}.css"
+        assert css.is_file() and css.stat().st_size < 8000
+    h = _read(dist, "index.html")
+    assert 'data-direction="defter"' in h and 'href="/tokens/defter.css"' in h
+    assert "yon" in h and "tema" in h and "localStorage" in h and "try{" in h      # switch script, guarded
+    y = _read(dist, "yontem/index.html")
+    assert 'class="sw"' in y and 'class="sw"' not in h                           # the only visible switch is on Yöntem
+
+
+def test_part_rates_group_keys_with_type_prefix(dist):
+    y = _read(dist, "yontem/index.html")
+    assert "<td>Mal · 4734/3-g (DMO)</td>" in y and "<td>Mal · Tüm usuller</td>" in y

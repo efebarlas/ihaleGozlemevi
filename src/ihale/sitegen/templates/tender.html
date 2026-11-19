@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% from "_record.html" import body with context %}
+{% from "_macros.html" import srcline with context %}
 {% block content %}
 <p class="crumbs"><a href="/">Bugün</a> › <a href="/gun/{{ t._c.src.date or t.id[:10] }}/">{{ (t._c.src.date or t.id[:10]) | tr_date_long }}</a></p>
 <h1>{{ t._name }}</h1>
+{{ srcline(t) }}
 <p class="muted">İhale detayı · {{ t.id }}</p>
 {{ body(t) }}
 {% endblock %}

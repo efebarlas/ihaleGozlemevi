@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import flags_list, facts, peer with context %}
+{% from "_macros.html" import flags_list, facts, peer, srcline with context %}
 {% block content %}
 {% if not day %}
 <h1>Bugün</h1>
@@ -31,7 +31,8 @@
       {{ flags_list(t) }}
       {{ peer(t) }}
       <p class="muted">Puan: {{ t.score | tr_score }}</p>
-      <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı ve kaynak →</a></p>
+      {{ srcline(t) }}
+      <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı →</a></p>
     </li>
   {% elif it.cluster %}
     <li class="card cluster {% for c in it.codes %}c-{{ c }} {% endfor %}">
@@ -40,7 +41,7 @@
       {% if it.all_codes %}<p class="muted">Hepsinde: {% for c in it.all_codes %}{{ flag_titles.get(c, c) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
       <ul class="clist">
       {% for t in it.cluster %}
-        <li><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}{% for f in t.flags %} · {{ f.text }}{% endfor %} · Puan: {{ t.score | tr_score }}</li>
+        <li><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}{% for f in t.flags %} · {{ f.text }}{% endfor %} · Puan: {{ t.score | tr_score }}{{ srcline(t) }}</li>
       {% endfor %}
       </ul>
       <p class="muted">En yüksek puan: {{ it.score | tr_score }}</p>

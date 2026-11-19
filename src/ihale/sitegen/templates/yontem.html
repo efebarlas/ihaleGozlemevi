@@ -10,7 +10,7 @@
 <h2>Kapsam</h2>
 <p>Şu anda yalnızca <strong>{{ type_text }}</strong> sonuç ilanları var.
 {% if earliest %}Veri {{ earliest | tr_date_long }} tarihli bültenle başlar{% if latest %}; en son yüklenen bülten {{ latest | tr_date_long }} tarihlidir{% endif %}.{% endif %}
-Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
+ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 
 <h2>İşaretler ve kuralları</h2>
 <p>İşaret, bir kaydın belirli bir rakamsal koşulu sağladığını söyler. Hiçbir işaret bir değerlendirme değildir; birçok olağan ihalede de görülür.</p>
@@ -112,4 +112,5 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
   <li>Oranlar ve puanlar yalnızca idareler için hesaplanır; yükleniciler puanlanmaz veya sıralanmaz.</li>
   <li>Bu site arama motorlarına kapalıdır.</li>
 </ul>
+<p class="muted"><a class="sw" href="?yon=gazete" aria-label="Görünümü değiştir">·</a></p>
 {% endblock %}

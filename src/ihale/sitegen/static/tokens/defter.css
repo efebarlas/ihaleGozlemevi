@@ -1,0 +1,79 @@
+/* Direction B: "Defter" (the data desk ledger)
+   Idea: readers check figures. The page is a ledger: cool paper, one neutral ink, hairline
+   grid, labels in letter-spaced capitals, money set heavy and in tabular figures so columns
+   of lira scan down the screen. There is deliberately no hue: links are graphite with a
+   thick underline, so nothing can be read as a party colour or a verdict.
+   Flags are lettered notes to the entry ("a) ... b) ..."), like footnotes to a table.
+   Scope: set <html data-direction="defter">. Theme: data-theme="light|dark" or system.
+   Fonts: system sans (system-ui / Segoe UI / Roboto), tabular figures. */
+
+:root[data-direction="defter"]{
+  color-scheme: light;
+  --c-bg:#f4f5f6; --c-surface:#ffffff; --c-surface-2:#e9ebed;
+  --c-fg:#14171a; --c-muted:#4e565e; --c-line:#d0d4d8; --c-line-strong:#14171a;
+  --c-link:#14171a; --c-link-visited:#4e565e; --c-focus:#14171a;
+  --c-accent:#14171a; --c-on-accent:#ffffff;
+  --c-flag-fg:#1f2428; --c-flag-bg:transparent; --c-flag-mark:#14171a; --c-flag-label:#4e565e;
+  --c-src-fg:#14171a; --c-src-label:#4e565e; --c-src-bg:#e9ebed; --c-src-line:#14171a;
+  --c-chip-bg:#ffffff; --c-chip-fg:#14171a; --c-chip-on-bg:#14171a; --c-chip-on-fg:#ffffff;
+  --c-note-bg:#e9ebed;
+
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-display:var(--font-body);
+  --font-label:var(--font-body);
+  --fs-xs:.75rem; --fs-sm:.875rem; --fs-base:1rem; --fs-md:1.0625rem; --fs-lg:1.25rem; --fs-h1:1.6rem;
+  --lh-body:1.45; --lh-tight:1.2;
+  --h-weight:700; --money-weight:800; --money-fs:1.125rem;
+  --label-transform:uppercase; --label-ls:.06em; --label-fs:.6875rem; --label-style:normal;
+  --num-variant:lining-nums tabular-nums;
+
+  --sp-1:.2rem; --sp-2:.4rem; --sp-3:.65rem; --sp-4:.9rem; --sp-5:1.4rem; --sp-6:2rem; --sp-7:2.8rem;
+  --gutter:1rem; --measure:46rem; --touch:2.75rem;
+
+  --mast-dir:row; --mast-align:center; --mast-pad:.35rem 0;
+  --mast-rule:2px solid var(--c-line-strong);
+  --brand-fs:1.05rem; --brand-ls:.04em; --brand-transform:uppercase; --brand-weight:800;
+  --nav-justify:flex-end; --nav-current-decor:underline 3px; --nav-current-weight:800;
+
+  --card-bg:var(--c-surface); --card-border:1px solid var(--c-line); --card-border-top:3px solid var(--c-line-strong);
+  --card-radius:0; --card-pad:var(--sp-3) var(--sp-3) var(--sp-3); --card-gap:var(--sp-3); --card-shadow:none;
+  --card-marker:none; --card-title-fs:1.0625rem;
+  --facts-cols:6rem 1fr;
+  --detail-cols:7.4rem 1fr; --detail-dt-style:normal; --detail-dd-mt:var(--sp-3);
+
+  --flag-fs:var(--fs-sm); --flag-style:normal; --flag-radius:0;
+  --flag-bl:0; --flag-bt:0; --flag-bb:1px dotted var(--c-line-strong);
+  --flag-pad:.15rem 0 .3rem 1.45rem; --flag-gap:.2rem; --flag-indent:1.45rem;
+  --flag-marker:counter(fl, lower-alpha) ")"; --flag-marker-pos:absolute; --flag-marker-display:block;
+  --flag-marker-font:var(--font-body);
+  --flag-title-display:inline; --flag-why-style:normal;
+
+  --src-border:1px solid var(--c-src-line); --src-bw:1px; --src-pad:var(--sp-2) var(--sp-3);
+  --src-fs:var(--fs-sm); --src-label-transform:uppercase; --src-label-weight:800; --src-label-style:normal;
+  --src-radius:0; --src-link-weight:700;
+  --link-ul-thickness:2px; --link-ul-offset:.22em;
+  --chip-radius:0; --chip-fs:var(--fs-sm); --chip-border:1px solid var(--c-line-strong);
+  --btn-radius:0;
+}
+@media (prefers-color-scheme:dark){
+  :root[data-direction="defter"]:not([data-theme="light"]){
+    color-scheme: dark;
+    --c-bg:#0f1113; --c-surface:#171a1d; --c-surface-2:#22262a;
+    --c-fg:#e8eaec; --c-muted:#a0a8b0; --c-line:#2c3238; --c-line-strong:#9aa3ab;
+    --c-link:#f1f3f4; --c-link-visited:#a0a8b0; --c-focus:#f1f3f4;
+    --c-accent:#e8eaec; --c-on-accent:#0f1113;
+    --c-flag-fg:#d3d8dc; --c-flag-mark:#9aa3ab; --c-flag-label:#a0a8b0;
+    --c-src-fg:#e8eaec; --c-src-label:#a0a8b0; --c-src-bg:#22262a; --c-src-line:#9aa3ab;
+    --c-chip-bg:#171a1d; --c-chip-fg:#e8eaec; --c-chip-on-bg:#e8eaec; --c-chip-on-fg:#0f1113; --c-note-bg:#22262a;
+  }
+}
+:root[data-direction="defter"][data-theme="dark"]{
+  color-scheme: dark;
+  --c-bg:#0f1113; --c-surface:#171a1d; --c-surface-2:#22262a;
+  --c-fg:#e8eaec; --c-muted:#a0a8b0; --c-line:#2c3238; --c-line-strong:#9aa3ab;
+  --c-link:#f1f3f4; --c-link-visited:#a0a8b0; --c-focus:#f1f3f4;
+  --c-accent:#e8eaec; --c-on-accent:#0f1113;
+  --c-flag-fg:#d3d8dc; --c-flag-mark:#9aa3ab; --c-flag-label:#a0a8b0;
+  --c-src-fg:#e8eaec; --c-src-label:#a0a8b0; --c-src-bg:#22262a; --c-src-line:#9aa3ab;
+  --c-chip-bg:#171a1d; --c-chip-fg:#e8eaec; --c-chip-on-bg:#e8eaec; --c-chip-on-fg:#0f1113; --c-note-bg:#22262a;
+}

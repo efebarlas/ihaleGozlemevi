@@ -1,0 +1,79 @@
+/* Direction C: "Evrak" (the case file / typed form)
+   Idea: a tender record is a piece of official paper that journalists and auditors pull
+   into a dosya. Each entry is a sheet laid on a greige desk; labels are typewriter-style
+   monospace capitals as on a form; flags are typed "NOT" slips attached to the sheet with a
+   dashed edge; the source is a ruled stamp box ("KAYNAK") in stamp-ink blue-black, set at
+   the foot of every sheet and repeated under the title on the detail page.
+   Scope: set <html data-direction="evrak">. Theme: data-theme="light|dark" or system.
+   Fonts: system sans for text, system monospace for labels. */
+
+:root[data-direction="evrak"]{
+  color-scheme: light;
+  --c-bg:#e8e4da; --c-surface:#f8f6f0; --c-surface-2:#ddd8ca;
+  --c-fg:#1b1b1d; --c-muted:#56534b; --c-line:#bcb5a3; --c-line-strong:#243558;
+  --c-link:#1f3358; --c-link-visited:#4c4a52; --c-focus:#1f3358;
+  --c-accent:#243558; --c-on-accent:#f8f6f0;
+  --c-flag-fg:#26231d; --c-flag-bg:#e6e1d2; --c-flag-mark:#243558; --c-flag-label:#56534b;
+  --c-src-fg:#1b1b1d; --c-src-label:#243558; --c-src-bg:transparent; --c-src-line:#243558;
+  --c-chip-bg:#f8f6f0; --c-chip-fg:#1b1b1d; --c-chip-on-bg:#243558; --c-chip-on-fg:#f8f6f0;
+  --c-note-bg:#ddd8ca;
+
+  --font-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-display:var(--font-body);
+  --font-label:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --fs-xs:.75rem; --fs-sm:.875rem; --fs-base:1rem; --fs-md:1.0625rem; --fs-lg:1.3rem; --fs-h1:1.65rem;
+  --lh-body:1.5; --lh-tight:1.22;
+  --h-weight:700; --money-weight:600; --money-fs:1rem;
+  --label-transform:uppercase; --label-ls:.04em; --label-fs:.71875rem; --label-style:normal;
+  --num-variant:lining-nums tabular-nums;
+
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-5:1.5rem; --sp-6:2.25rem; --sp-7:3.25rem;
+  --gutter:.9rem; --measure:46rem; --touch:2.75rem;
+
+  --mast-dir:row; --mast-align:center; --mast-pad:.3rem 0;
+  --mast-rule:1px solid var(--c-line);
+  --brand-fs:1rem; --brand-ls:.08em; --brand-transform:uppercase; --brand-weight:700;
+  --nav-justify:flex-end; --nav-current-decor:underline 2px; --nav-current-weight:700;
+
+  --card-bg:var(--c-surface); --card-border:1px solid var(--c-line); --card-border-top:4px solid var(--c-line-strong);
+  --card-radius:0; --card-pad:var(--sp-3) var(--sp-4) var(--sp-4); --card-gap:var(--sp-4); --card-shadow:none;
+  --card-marker:"No " counter(card); --card-title-fs:1.0625rem;
+  --facts-cols:6.2rem 1fr;
+  --detail-cols:7.4rem 1fr; --detail-dt-style:normal; --detail-dd-mt:var(--sp-3);
+
+  --flag-fs:var(--fs-sm); --flag-style:normal; --flag-radius:0;
+  --flag-bl:2px dashed var(--c-flag-mark); --flag-bt:0; --flag-bb:0;
+  --flag-pad:.35rem .6rem .4rem .7rem; --flag-gap:.4rem; --flag-indent:0;
+  --flag-marker:"NOT"; --flag-marker-pos:static; --flag-marker-display:block;
+  --flag-marker-font:var(--font-label);
+  --flag-title-display:inline; --flag-why-style:normal;
+
+  --src-border:1.5px solid var(--c-src-line); --src-bw:1.5px; --src-pad:var(--sp-2) var(--sp-3);
+  --src-fs:var(--fs-sm); --src-label-transform:uppercase; --src-label-weight:700; --src-label-style:normal;
+  --src-radius:0; --src-link-weight:700;
+  --link-ul-thickness:1px; --link-ul-offset:.2em;
+  --chip-radius:0; --chip-fs:var(--fs-sm); --chip-border:1px solid var(--c-line-strong);
+  --btn-radius:0;
+}
+@media (prefers-color-scheme:dark){
+  :root[data-direction="evrak"]:not([data-theme="light"]){
+    color-scheme: dark;
+    --c-bg:#141518; --c-surface:#1d1f23; --c-surface-2:#2a2c32;
+    --c-fg:#e7e3d9; --c-muted:#aaa699; --c-line:#383a41; --c-line-strong:#8ea3cb;
+    --c-link:#a9bde3; --c-link-visited:#b0adb8; --c-focus:#a9bde3;
+    --c-accent:#8ea3cb; --c-on-accent:#101114;
+    --c-flag-fg:#ddd9cc; --c-flag-bg:#2a2c33; --c-flag-mark:#8ea3cb; --c-flag-label:#aaa699;
+    --c-src-fg:#e7e3d9; --c-src-label:#a9bde3; --c-src-line:#8ea3cb;
+    --c-chip-bg:#1d1f23; --c-chip-fg:#e7e3d9; --c-chip-on-bg:#8ea3cb; --c-chip-on-fg:#101114; --c-note-bg:#2a2c32;
+  }
+}
+:root[data-direction="evrak"][data-theme="dark"]{
+  color-scheme: dark;
+  --c-bg:#141518; --c-surface:#1d1f23; --c-surface-2:#2a2c32;
+  --c-fg:#e7e3d9; --c-muted:#aaa699; --c-line:#383a41; --c-line-strong:#8ea3cb;
+  --c-link:#a9bde3; --c-link-visited:#b0adb8; --c-focus:#a9bde3;
+  --c-accent:#8ea3cb; --c-on-accent:#101114;
+  --c-flag-fg:#ddd9cc; --c-flag-bg:#2a2c33; --c-flag-mark:#8ea3cb; --c-flag-label:#aaa699;
+  --c-src-fg:#e7e3d9; --c-src-label:#a9bde3; --c-src-line:#8ea3cb;
+  --c-chip-bg:#1d1f23; --c-chip-fg:#e7e3d9; --c-chip-on-bg:#8ea3cb; --c-chip-on-fg:#101114; --c-note-bg:#2a2c32;
+}
