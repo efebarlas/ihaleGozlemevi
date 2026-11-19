@@ -17,8 +17,8 @@
     {
       "binding": "PAGES",
       "database_name": "ihale-pages",
-      // PLACEHOLDER: `wrangler d1 create ihale-pages` prints the real id; deploy() refuses until it is replaced.
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      // Created 2026-11-19 with --location eeur (free tier).
+      "database_id": "01cda293-2db0-4cd3-a037-f9aaecaccadd"
     }
   ]
 }
