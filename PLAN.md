@@ -18,7 +18,10 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-19: M4 hizmet/yapım parsing verified (80970e3): ≥96.9% on every core field over 32 hizmet + 27 yapım hand labels (100% after one label correction); ToC complete for both. 30-day hizmet/yapım backfill running. Dosyalar data export landed (1507573). Unguided design: direction proposed and applied to a non-deployed preview; audit running.
 
-## Milestones
+- 2026-11-19: live site updated (clean build of 0720aa5): mal + hizmet + yapım (18,966 records, 21 days), İdare (2,940) and Yüklenici (5,232, companies only) pages, paginated day pages, parent-body clusters, source line on every card. 13,772 files, 154 MB.
+- **File-count risk:** about 300 new files a day (detail pages plus new idare/firm pages) means the 19,000-file guard is hit in about 2 weeks, and the M5 backfill is impossible as static files. Planned fix (M4 infra): pre-rendered HTML for detail/idare/yüklenici pages stored in a free-tier D1 database and served by the Worker; only the core pages stay as static assets.
+- Base-rate reconciliation (M4): single valid bid per tender, 21 days: açık 20.1%, pazarlık 43.3%, 4734 istisna 40.0%; açık+pazarlık 26.5% (mal 28.7%, hizmet 36.6%, yapım 12.4%). İhaleGlobal reports ~43%. Its figure is closest to our pazarlık or istisna rates. Explain in Yöntem once its definition is known.
+
 | | Milestone | State |
 |---|---|---|
 | M0 | Fresh base | done (c46d8ce, 95cfd4b; verified: 35 offline tests pass, 18.11.2026 mal/hizmet/yapım bulletins downloaded) |
