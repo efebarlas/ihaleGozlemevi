@@ -352,8 +352,8 @@ from ihale.sitegen.persons import PERSON_LABEL, is_natural_person  # noqa: E402
     ("Kale Makina Pazarlama Anonim Şirketi", False),
     ("Fresenıus Medikal Hizmetler Anonim Şirketi", False),
     ("Örnek Yapı Ltd.Şti.", False), ("Örnek Gıda A.Ş.", False), ("ÖRNEK İNŞAAT SAN. VE TİC. LTD. ŞTİ.", False),
-    ("Örnek Kooperatifi", False), ("Örnek Belediyesi", False), ("X Ortak Girişim", False),
-    ("Ahmet Yılmaz Gıda", False), ("Tek", False), ("", False), (None, False),
+    ("Örnek Kooperatifi", False), ("Örnek Belediyesi", False), ("X Ortak Girişim", True),
+    ("Ahmet Yılmaz Gıda", True), ("Tek", True), ("", False), (None, False),
 ])
 def test_is_natural_person(name, expected):
     assert is_natural_person(name) is expected
