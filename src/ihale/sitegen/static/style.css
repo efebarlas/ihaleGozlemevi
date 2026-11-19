@@ -61,3 +61,4 @@ details[open]>summary::before{content:"▾"}
 .fold{background:transparent;border-style:dashed}.fold summary{cursor:pointer;font-weight:600}
 .why{display:block;color:var(--muted);font-size:.85rem;margin-top:.15rem}
 .rules{width:100%;border-collapse:collapse;font-size:.9rem}.rules th,.rules td{border:1px solid var(--line);padding:.35rem .5rem;text-align:left;vertical-align:top}.tw{overflow-x:auto}
+.parts{margin:.2rem 0 0;padding-left:1.1rem;color:var(--muted);font-size:.9rem}

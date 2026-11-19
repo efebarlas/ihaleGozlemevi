@@ -4,7 +4,7 @@
 {% block content %}
 <h1>{{ day.date | tr_date_long }}</h1>
 <p class="summary">{{ day.records | tr_int }} sonuç ilanı · {{ day.flagged_n | tr_int }} tanesinde en az bir işaret</p>
-<p class="muted">Kayıtlar puana, sonra TRY sözleşme bedeline göre sıralıdır. Ayrıntı sayfası yalnızca puanı 1 veya üzeri olan kayıtlar için vardır; diğerlerinin bilgileri satıra tıklayınca açılır. İlan bülteninin nasıl indirileceği her kaydın kaynak satırındaki <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> sayfasında açıklanır: günün tarihini ve ihale türünü seçip dosyayı indirin. <a href="/">Bugün sayfası</a> · <a href="/arsiv/">Arşiv</a></p>
+<p class="muted">Kayıtlar puana, sonra TRY sözleşme bedeline göre sıralıdır. Ayrıntı sayfası yalnızca puanı sıfırdan büyük olan kayıtlar için vardır; diğerlerinin bilgileri satıra tıklayınca açılır. İlan bülteninin nasıl indirileceği her kaydın kaynak satırındaki <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> sayfasında açıklanır: günün tarihini ve ihale türünü seçip dosyayı indirin. <a href="/">Bugün sayfası</a> · <a href="/arsiv/">Arşiv</a></p>
 <ul class="rows">
 {% for t in day.tenders %}
   {% if t._page %}

@@ -7,7 +7,7 @@
 {% else %}
 <h1>{{ day.date | tr_date_long }}</h1>
 <p class="summary">{{ day.records | tr_int }} sonuç ilanı okundu · {{ day.flagged | length }} tanesi gösteriliyor</p>
-<p class="muted">Gösterilenler, işaretlerin birleşiminden oluşan puanı 2 veya daha yüksek olan kayıtlardır; tek başına işaret çok sayıda olağan ihalede de görülür. İşaretler hüküm değil, bültendeki rakamlardan hesaplanan olgulardır. <a href="/yontem/">Nasıl hesaplanıyor?</a></p>
+<p class="muted">Gösterilenler, işaretlerin birleşiminden oluşan puanı yüksek olan kayıtlardır; tek başına işaret çok sayıda olağan ihalede de görülür. İşaretler hüküm değil, bültendeki rakamlardan hesaplanan olgulardır. <a href="/yontem/">Nasıl hesaplanıyor?</a></p>
 
 {% if day.flagged %}
 <div class="filter">
@@ -30,17 +30,17 @@
       {{ facts(t) }}
       {{ flags_list(t) }}
       {{ peer(t) }}
-      <p class="muted">Puan: {{ t.score }}</p>
+      <p class="muted">Puan: {{ t.score | tr_score }}</p>
       <p class="more"><a href="/ihale/{{ t.id }}/">Ayrıntı ve kaynak →</a></p>
     </li>
   {% else %}
     <li class="card fold {% for c in it.codes %}c-{{ c }} {% endfor %}">
       <details>
-        <summary>Bu idareden bugün {{ it.fold | length }} kayıt daha (puan ≥ 2)</summary>
+        <summary>Bu idareden bugün {{ it.fold | length }} kayıt daha</summary>
         <p class="muted">{{ it.idare }}</p>
         <ul>
         {% for t in it.fold %}
-          <li><a href="/ihale/{{ t.id }}/">{{ t._name }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %} · Puan: {{ t.score }}{% for f in t.flags %} · {{ f.text }}{% endfor %}</li>
+          <li><a href="/ihale/{{ t.id }}/">{{ t._name }}</a> · {% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %} · Puan: {{ t.score | tr_score }}{% for f in t.flags %} · {{ f.text }}{% endfor %}</li>
         {% endfor %}
         </ul>
       </details>
@@ -50,7 +50,7 @@
   </ol>
 </div>
 {% else %}
-<p>Bu gün puanı 2 veya üzeri olan kayıt yok.</p>
+<p>Bu gün öne çıkan kayıt yok.</p>
 {% endif %}
 <p class="daylink"><a class="btn" href="/gun/{{ day.date }}/">Günün tüm {{ day.records | tr_int }} ilanını göster</a>
 <a href="/arsiv/">Önceki günler</a></p>

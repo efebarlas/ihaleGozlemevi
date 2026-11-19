@@ -15,7 +15,8 @@
   {% if t.structural %}<p class="note">{{ t.structural.text }} Bu nedenle tek teklif işaretleri gösterilir, ancak puana puan eklemez.</p>{% endif %}
   {% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
   {% if t._bedel_peer %}<p class="peer">{{ t._bedel_peer }}</p>{% endif %}
-  <p class="muted">Puan: {{ t.score }}{% if not compact %} (<a href="/yontem/#puan">nasıl hesaplanıyor?</a>){% endif %}</p>
+  <p class="muted">Puan: {{ t.score | tr_score }}{% if not compact %} (<a href="/yontem/#puan">nasıl hesaplanıyor?</a>){% endif %}</p>
+  {% if not compact and t._parts %}<ul class="parts">{% for pt in t._parts %}<li>{{ pt }}</li>{% endfor %}</ul>{% endif %}
 </section>
 {% else %}
 <p>Bu kayıtta hesaplanan bir işaret yok.</p>

@@ -36,7 +36,7 @@ FLAG_TITLES = {
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
     "idare_orani": "İdarede tek teklif oranı yüksek",
 }
-MIN_SHOWN_SCORE = 2      # Bugün shows records with score >= this (contract §4.1)
+DEFAULT_CUTOFF = 3.0     # Bugün cut-off when meta.json has no bugun_cutoff (contract §4.1)
 INNOCENT = {  # one neutral "also common when…" line per flag type (detail pages and Yöntem)
     "tek_teklif": "Tek teklif, pazarın dar olduğu veya ürünün tek üreticisi bulunduğu alımlarda olağandır.",
     "diger_teklifler_elendi": "Teklifler belge eksikliği gibi biçimsel nedenlerle de elenebilir.",
@@ -49,7 +49,7 @@ EFFECT_LABELS = {
     "own_peer_group": "İdare yalnızca kendi geçmişiyle karşılaştırılır",
 }
 MAX_CARDS_PER_IDARE = 2  # Bugün: more from the same idare are folded into one line
-MIN_DETAIL_SCORE = 1     # detail pages only for score >= this (keeps the file count bounded)
+# detail pages only for records with score > 0 (keeps the file count bounded)
 MAX_FILES = 19000        # Cloudflare free Workers static assets: 20,000 files per deploy
 MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
 IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun payının belirgin biçimde üzerinde"
@@ -125,11 +125,11 @@ def _bedel_sort_value(t: dict) -> float:
 
 def _sort_key(t: dict):
     # highest score first, then TRY bedel (other currencies last), then id for a stable order
-    return (-int(t.get("score", 0)), -_bedel_sort_value(t), t["id"])
+    return (-float(t.get("score", 0)), -_bedel_sort_value(t), t["id"])
 
 
 def _flag_codes(t: dict) -> list[str]:
-    codes = {f["code"] for f in t["flags"]} | set(t.get("score_parts", []))
+    codes = {f["code"] for f in t["flags"]} | {pt["code"] for pt in _parts(t)}
     return [c for c in FLAG_ORDER if c in codes] + sorted(codes - set(FLAG_ORDER))
 
 
@@ -177,6 +177,10 @@ def bedel_peer_line(t: dict) -> str | None:
             f"benzer idarelerde ortanca {_pct(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})")
 
 
+def _usul_group_label(g: str) -> str:
+    return "Tüm usuller" if g == "hepsi" else _usul_turu_label(g)
+
+
 def indicators(t: dict) -> list[tuple[str, str]]:
     """(label, text) pairs for the neutral 'Göstergeler' block; null indicators are skipped."""
     ind = t.get("indicators") or {}
@@ -200,6 +204,33 @@ def indicators(t: dict) -> list[tuple[str, str]]:
         s = f"{_pct(ind['yuklenici_payi'])} (idarenin son 365 gündeki TRY sözleşme bedelleri toplamı içinde"
         s += f", n={ind['yuklenici_payi_n']})" if ind.get("yuklenici_payi_n") else ")"
         out.append(("Yüklenicinin payı", s))
+    return out
+
+
+def _parts(t: dict) -> list[dict]:
+    """score_parts as dicts (accepts the old list-of-strings shape too)."""
+    return [pt if isinstance(pt, dict) else {"code": pt} for pt in t.get("score_parts") or []]
+
+
+def tr_score(x) -> str:
+    return f"{float(x):.1f}".replace(".", ",")
+
+
+def tr_pct(p) -> str:
+    v = float(p) * 100
+    return "%" + (f"{v:.0f}" if v >= 10 else f"{v:.1f}".replace(".", ","))
+
+
+def part_lines(t: dict) -> list[str]:
+    out = []
+    for pt in _parts(t):
+        if pt.get("points") is None:
+            continue
+        s = f"{FLAG_TITLES.get(pt['code'], pt['code'])}: {tr_score(pt['points'])} puan"
+        if pt.get("p") is not None:
+            where = "tüm kayıtlarda" if pt.get("p_group") in (None, "hepsi") else "bu usulde"
+            s += f" ({where} görülme oranı {tr_pct(pt['p'])})"
+        out.append(s)
     return out
 
 
@@ -285,7 +316,7 @@ def _env() -> Environment:
                       autoescape=select_autoescape(["html", "xml"]),
                       trim_blocks=True, lstrip_blocks=True)
     env.filters.update(tr_date_long=tr_date_long, tr_date_short=tr_date_short,
-                       tr_money=tr_money, tr_int=tr_int)
+                       tr_money=tr_money, tr_int=tr_int, tr_score=tr_score, tr_pct=tr_pct)
     return env
 
 
@@ -304,6 +335,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     _wipe(out_dir)
     env = _env()
 
+    cutoff = float(meta.get("bugun_cutoff", DEFAULT_CUTOFF))
     dates = sorted(days, reverse=True)
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
@@ -328,8 +360,9 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_bedel_peer"] = bedel_peer_line(t)
         t["_peer"] = peer_line(t)
         t["_ind"] = indicators(t)
-        t["_idare_orani"] = "idare_orani" in t.get("score_parts", [])
-        t["score"] = int(t.get("score", 0))
+        t["_idare_orani"] = any(pt["code"] == "idare_orani" for pt in _parts(t))
+        t["score"] = float(t.get("score", 0))
+        t["_parts"] = part_lines(t)
         return t
 
     day_ctx = {}
@@ -338,7 +371,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
         for t in tenders:
             _safe(t["id"])
         c = (meta.get("counts") or {}).get(ds, {})
-        shown = [t for t in tenders if t["score"] >= MIN_SHOWN_SCORE]
+        shown = [t for t in tenders if t["score"] >= cutoff]
         day_ctx[ds] = dict(date=ds, tenders=tenders, flagged=shown,
                            records=c.get("records", len(tenders)),
                            flagged_n=c.get("flagged", sum(1 for t in tenders if t["flags"])))
@@ -361,7 +394,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     for ds in dates:
         by_ikn: dict[str, list[dict]] = {}
         for t in day_ctx[ds]["tenders"]:
-            t["_page"] = t["score"] >= MIN_DETAIL_SCORE
+            t["_page"] = t["score"] > 0
             t["_href"] = f"/ihale/{t['id']}/" if t["_page"] else f"/gun/{ds}/#{t['id']}"
             by_ikn.setdefault(t.get("ikn") or "", []).append(t)
         for t in day_ctx[ds]["tenders"]:
@@ -397,6 +430,9 @@ def build(export_dir: Path, out_dir: Path) -> None:
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
           earliest=min(dates) if dates else None, latest=latest,
+          cutoff=tr_score(cutoff), rate_codes=FLAG_ORDER,
+          part_rates=[(_usul_group_label(g), r) for g, r in sorted((meta.get("part_rates") or {}).items(),
+                                                              key=lambda kv: (kv[0] == "hepsi", kv[0]))],
           rules=[dict(r, effects_tr=[EFFECT_LABELS.get(e, e) for e in (r.get("effects") or [])])
                  for r in meta.get("structural_rules") or []])
     write("404.html", "404.html", page="404", title="Sayfa bulunamadı")

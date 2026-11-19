@@ -241,13 +241,13 @@ def test_peer_line_hidden_when_sample_small(dist):
 def test_score_parts_and_idare_orani_shown(dist):
     h = _read(dist, "index.html")
     assert sitegen.IDARE_ORANI_TEXT in h
-    assert "Puan: 4" in h and "Puan: 2" in h and "Puan: 1" not in h and "Puan: 0" not in h
+    assert "Puan: 4,8" in h and "Puan: 3,5" in h and "Puan: 1,2" not in h and "Puan: 0,0" not in h
     assert "Bu yüklenici son 12 ayda" in h
 
 
 def test_yontem_score_and_peer(dist):
     y = _read(dist, "yontem/index.html")
-    for needle in ['id="puan"', "+2 Tekrarlayan yüklenici", "+2 Diğer teklifler elendi", "R018", "R035", "R038", "GTI", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
+    for needle in ['id="puan"', "R018", "R035", "R038", "GTI", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
                    "github.com/gulmezeren2-byte/ihalent", "yarısında"]:
         assert needle in y, needle
 
@@ -312,7 +312,7 @@ def test_fold_at_most_two_cards_per_idare(dist):
     # 3 records of ÖRNEK İL MÜDÜRLÜĞÜ at score >= 2 (A-1, A-3, B-3, B-4 -> two cards + 2 folded)
     cards = re.findall(r'<li class="card [^"]*">\s*<h2><a href="/ihale/([^/]+)/', h)
     assert cards == ["2026-11-18-mal-A-1", "2026-11-18-mal-A-3", "2026-11-18-mal-B-1", "2026-11-18-mal-A-2"]
-    assert "Bu idareden bugün 2 kayıt daha (puan ≥ 2)" in h
+    assert "Bu idareden bugün 2 kayıt daha" in h
     i = h.index("kayıt daha")
     for hidden in ("B-3", "B-4"):                       # folded, linked, never dropped
         assert f'href="/ihale/2026-11-18-mal-{hidden}/"' in h[i:]
@@ -407,3 +407,50 @@ def test_yontem_general_limits_no_evasion_list(dist):
         low = _lower_tr(p.read_text(encoding="utf-8"))
         for w in ("göstermelik", "ihaleyi bölme", "ihale bölme"):
             assert w not in low, (p, w)
+
+
+def test_score_formatting_and_cutoff(dist, tmp_path):
+    assert sitegen.tr_score(4.8) == "4,8" and sitegen.tr_score(3) == "3,0"
+    assert sitegen.tr_pct(0.12) == "%12" and sitegen.tr_pct(0.045) == "%4,5"
+    h = _read(dist, "index.html")
+    assert "Puan: 4,8" in h and "B-4" in h   # B-4 sits exactly on the 3.0 cut-off (folded under its idare)
+    assert "2026-11-18-mal-A-4" not in h                              # 1.2 < cut-off
+    # raise the cut-off: fewer cards, same pages
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    m = json.loads((exp / "meta.json").read_text(encoding="utf-8"))
+    m["bugun_cutoff"] = 4.0
+    (exp / "meta.json").write_text(json.dumps(m, ensure_ascii=False), encoding="utf-8")
+    sitegen.build(exp, tmp_path / "o")
+    h2 = (tmp_path / "o" / "index.html").read_text(encoding="utf-8")
+    assert "1 tanesi gösteriliyor" in h2 and "2026-11-18-mal-A-3" not in h2
+    assert (tmp_path / "o" / "ihale/2026-11-18-mal-A-3/index.html").is_file()   # page still exists (score > 0)
+    assert "4,0 veya daha yüksek" in (tmp_path / "o" / "yontem/index.html").read_text(encoding="utf-8")
+
+
+def test_part_breakdown_only_on_detail(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "Tek teklif: 2,1 puan (bu usulde görülme oranı %12)" in d
+    assert "Tekrarlayan yüklenici: 1,1 puan (bu usulde görülme oranı %33)" in d
+    assert "görülme oranı" not in _read(dist, "index.html").split("</header>")[1].split("<h2")[0]
+    assert "görülme oranı" not in _day_block(dist, "2026-11-18", "2026-11-18-mal-B-2")
+
+
+def test_yontem_rarity_and_part_rates_table(dist):
+    y = _read(dist, "yontem/index.html")
+    for needle in ["ln(1 / p)", "Nadirlik ağırlığı", "3,0 veya daha yüksek", "İşaretlerin usule göre görülme oranları",
+                   "Tüm usuller", "İstisna (4734 / 3-g)", "%61", "Açık ihale usulü"]:
+        assert needle in y, needle
+
+
+def test_old_integer_shape_still_builds(tmp_path):
+    exp = tmp_path / "exp"
+    shutil.copytree(SAMPLE, exp)
+    for f in (exp / "days").glob("*.json"):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        for t in d["tenders"]:
+            t["score_parts"] = [pt["code"] for pt in t["score_parts"]]
+            t["score"] = int(t["score"])
+        f.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    sitegen.build(exp, tmp_path / "o")
+    assert (tmp_path / "o" / "index.html").is_file()

@@ -26,16 +26,23 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 </dl>
 
 <h2 id="puan">Puan ve Bugün sayfasındaki sıralama</h2>
-<p>Bu işaretler tek başlarına çok sayıda olağan ihalede görülür; ölçümlere göre tüm ihalelerin yaklaşık yarısında en az bir işaret vardır. Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; aşağıdaki parçaların toplamı olan bir <strong>puan</strong> hesaplar ve puanı 2 veya daha yüksek kayıtları, puana ve ardından TRY sözleşme bedeline göre sıralı gösterir. Tüm kayıtlar «günün tümü» sayfasında yer alır.</p>
+<p>İşaretler tek başlarına çok sayıda olağan ihalede görülür; ölçümlere göre tüm ihalelerin yaklaşık yarısında en az bir işaret vardır. Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; her işareti <strong>ne kadar nadir olduğuna göre</strong> ağırlıklandırarak bir <strong>puan</strong> hesaplar.</p>
+<p><strong>Nadirlik ağırlığı.</strong> Bir işaretin puanı, ln(1 / p) kuralıyla hesaplanır; burada p, o işaretin aynı ihale usulündeki kayıtlarda görülme oranıdır. Çok sık görülen bir işaret az, nadir görülen bir işaret çok puan getirir. Örneğin bir usulde tek teklif kayıtların %60'ında görülüyorsa bu işaret yaklaşık 0,5 puan, %10'unda görülüyorsa yaklaşık 2,3 puan sayılır. Kaydın puanı, işaretlerinin puanlarının toplamıdır; kayıt sayfasında dökümü görülür. Puan tek ondalıkla, virgülle gösterilir (örn. 4,8).</p>
+<p>Tekrarlayan yüklenici işareti, aynı kayıtta başka bir işaret de varsa puan ekler; tek başına görülmesi puan eklemez ama işaret yine gösterilir. İdarede tek teklif oranı yüksek işareti, idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının belirgin biçimde üzerindeyse puan ekler.</p>
+<p>Bugün sayfası, puanı {{ cutoff }} veya daha yüksek olan kayıtları puana, ardından TRY sözleşme bedeline göre sıralı gösterir. Bu kesim noktası geçicidir; yeterli gün yüklendikçe ölçülen oranlara göre gözden geçirilecektir. Puanı sıfırdan büyük her kaydın kendi sayfası vardır; tüm kayıtlar «günün tümü» sayfasında yer alır.</p>
 <p><strong>Çeşitlilik kuralı:</strong> Bugün sayfasında aynı idareden en fazla 2 kart gösterilir (o idarenin en yüksek puanlı 2 kaydı). Aynı idarenin diğer kayıtları hiçbir zaman silinmez; ikinci kartın altında «Bu idareden bugün N kayıt daha» satırında, açılır listede bağlantılarıyla durur. Süzme düğmelerinin sayıları tüm kayıtları sayar.</p>
-<ul>
-  <li><strong>+1 Tek teklif.</strong></li>
-  <li><strong>+2 Diğer teklifler elendi</strong> (başka teklifler de verilmiş ve elenmiş olduğundan tek teklifin üstünde ağırlık alır).</li>
-  <li><strong>+1 Bedel / yaklaşık maliyet</strong> işareti.</li>
-  <li><strong>+2 Tekrarlayan yüklenici</strong>, yalnızca aynı kayıtta yukarıdaki iki işaretten en az biri de varsa. Tek başına tekrar 0 puandır ama işaret yine gösterilir.</li>
-  <li><strong>+1 İdarede tek teklif oranı yüksek:</strong> idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının en az 2 katıysa.</li>
-</ul>
-<p>Eşikler geçicidir; yeterli gün yüklendikçe ölçülen oranlara göre gözden geçirilecektir.</p>
+{% if part_rates %}
+<h3 id="oranlar">İşaretlerin usule göre görülme oranları</h3>
+<p>Aşağıdaki tablo, her işaretin yüklenmiş kayıtlarda usul başına görülme oranını (p) gösterir; puanlar bu oranlardan türetilir. «Tüm usuller», usulü için yeterli kayıt bulunmadığında kullanılan genel orandır.</p>
+<div class="tw"><table class="rules">
+  <thead><tr><th>Usul</th>{% for code in rate_codes %}<th>{{ flag_titles[code] }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for g, rates in part_rates %}
+    <tr><td>{{ g }}</td>{% for code in rate_codes %}<td>{% if rates.get(code) is not none %}{{ rates[code] | tr_pct }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
 
 <h2>Karşılaştırma grubu</h2>
 <p>Karşılaştırma <strong>aynı usul içinde</strong> yapılır: örneğin bir idarenin 4734/3-g alımlarındaki tek geçerli teklif payı, diğer idarelerin yine 4734/3-g alımlarındaki payıyla yan yana konur; böylece farklı kuralları olan usuller birbirine karıştırılmaz. Satırda usul adı ve her iki tarafın kayıt sayısı (n) yazılır.</p>
