@@ -81,10 +81,11 @@ def test_ratio_below_threshold_no_flag():
     assert "bedel_orani" not in codes(bedel(bedel=94.99, maliyet=100.0, gecerli=2))
 
 
-def test_ratio_exactly_095_flags():
-    f = bedel(bedel=95.0, maliyet=100.0).flags[0]
-    assert f["code"] == "bedel_orani" and f["value"] == pytest.approx(0.95)
-    assert f["text"] == "Sözleşme bedeli yaklaşık maliyetin %95'i"
+def test_ratio_exactly_097_flags_and_096_does_not():
+    assert "bedel_orani" not in codes(bedel(bedel=96.99, maliyet=100.0))
+    f = bedel(bedel=97.0, maliyet=100.0).flags[0]
+    assert f["code"] == "bedel_orani" and f["value"] == pytest.approx(0.97)
+    assert f["text"] == "Sözleşme bedeli yaklaşık maliyetin %97'si"
 
 
 def test_ratio_exactly_one():
@@ -100,18 +101,18 @@ def test_ratio_above_one():
 def test_display_floors_not_rounds():
     f = bedel(bedel=99.9, maliyet=100.0).flags[0]
     assert f["text"].endswith("%99'u") and f["value"] == pytest.approx(0.999)
-    assert bedel(bedel=96.99, maliyet=100.0).flags[0]["text"].endswith("%96'sı")
+    assert bedel(bedel=97.99, maliyet=100.0).flags[0]["text"].endswith("%97'si")
 
 
 def test_threshold_is_exact_in_kurus():
     # 95 / 100 style ratios with awkward magnitudes must not be lost to float error
     r = rec(1)
-    r.sozlesme_bedeli = Money(95_000_000, "TRY")
+    r.sozlesme_bedeli = Money(97_000_000, "TRY")
     r.yaklasik_maliyet = Money(100_000_001, "TRY")   # 0.94999999…: below the threshold
     (a,) = run(r)
     assert "bedel_orani" not in codes(a)
-    r.sozlesme_bedeli = Money(9_500_000_095, "TRY")
-    r.yaklasik_maliyet = Money(10_000_000_100, "TRY")  # exactly 0.95
+    r.sozlesme_bedeli = Money(9_700_000_097, "TRY")
+    r.yaklasik_maliyet = Money(10_000_000_100, "TRY")  # exactly 0.97
     (a,) = run(r)
     assert "bedel_orani" in codes(a)
 
@@ -157,10 +158,10 @@ def test_dual_estimate_uses_primary_currency_only():
 
 
 def test_kismi_sum_over_ikn_records():
-    lots = [rec(i, ikn="2026/9", bedel=32.0, maliyet=100.0, yuklenici=f"Firma {i}") for i in (1, 2, 3)]
+    lots = [rec(i, ikn="2026/9", bedel=33.0, maliyet=100.0, yuklenici=f"Firma {i}") for i in (1, 2, 3)]
     for a in run(*lots):
         assert a.flags[0]["code"] == "bedel_orani"
-        assert a.flags[0]["text"] == "Bu ihalenin 3 kısmının toplam bedeli yaklaşık maliyetin %96'sı"
+        assert a.flags[0]["text"] == "Bu ihalenin 3 kısmının toplam bedeli yaklaşık maliyetin %99'u"
         assert a.kisim_n == 3
 
 
@@ -172,10 +173,10 @@ def test_kismi_below_threshold_no_flag():
 def test_kismi_dedupe_same_ikn_yuklenici_bedel():
     lots = [rec(1, ikn="2026/9", bedel=50.0, maliyet=100.0, yuklenici="A Ltd. Şti."),
             rec(2, ikn="2026/9", bedel=50.0, maliyet=100.0, yuklenici="A Limited Şirketi"),  # same award twice
-            rec(3, ikn="2026/9", bedel=45.0, maliyet=100.0, yuklenici="B Ltd. Şti.")]
+            rec(3, ikn="2026/9", bedel=47.0, maliyet=100.0, yuklenici="B Ltd. Şti.")]
     res = run(*lots)
     assert res[0].kisim_n == 2
-    assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %95'i"
+    assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
 
 
 def test_kismi_over_estimate_text():

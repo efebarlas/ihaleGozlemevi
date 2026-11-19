@@ -4,14 +4,14 @@ from __future__ import annotations
 import json
 import sqlite3
 from contextlib import closing, contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
 from . import config
 from .model import Money, Record
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 MONEY_FIELDS = ("yaklasik_maliyet", "esas_kisim_yaklasik_maliyet", "sozlesme_bedeli")
 DATE_FIELDS = ("ihale_tarihi", "sozlesme_tarihi")
@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS records (
     sozlesme_suresi TEXT, yuklenici TEXT, yuklenici_uyrugu TEXT, yuklenici_adresi TEXT,
     confidence TEXT NOT NULL DEFAULT '{}',
     warnings TEXT NOT NULL DEFAULT '[]',
+    raw_fields TEXT NOT NULL DEFAULT '[]',
     flags TEXT, unreadable TEXT, kisim_n INTEGER,
+    score INTEGER, score_parts TEXT, idare_stats TEXT,
     UNIQUE (bulletin_date, bulletin_type, section, seq)
 );
 CREATE INDEX IF NOT EXISTS records_ikn ON records (ikn);
@@ -65,6 +67,9 @@ class StoredRecord:
     flags: list[dict] | None = None
     unreadable: list | None = None
     kisim_n: int | None = None
+    score: int | None = None
+    score_parts: list | None = None
+    idare_stats: dict | None = None
 
 
 def _money_cols(name: str, m: Money | None) -> dict:
@@ -98,6 +103,7 @@ def record_to_row(r: Record) -> dict:
         "page_start": r.page_start, "page_end": r.page_end,
         "confidence": json.dumps(r.confidence, ensure_ascii=False, sort_keys=True),
         "warnings": json.dumps(r.warnings, ensure_ascii=False),
+        "raw_fields": json.dumps(r.raw_fields, ensure_ascii=False),
     }
     for f in TEXT_FIELDS + INT_FIELDS:
         row[f] = getattr(r, f)
@@ -119,7 +125,8 @@ def row_to_record(row: sqlite3.Row) -> Record:
         bulletin_date=date.fromisoformat(row["bulletin_date"]), bulletin_type=row["bulletin_type"],
         source_file=row["source_file"], section=row["section"], seq=row["seq"],
         page_start=row["page_start"], page_end=row["page_end"],
-        confidence=json.loads(row["confidence"]), warnings=json.loads(row["warnings"]), **kw)
+        confidence=json.loads(row["confidence"]), warnings=json.loads(row["warnings"]),
+        raw_fields=[tuple(t) for t in json.loads(row["raw_fields"])], **kw)
 
 
 class Store:
@@ -142,6 +149,13 @@ class Store:
             row = c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
             if row is None:
                 c.execute("INSERT INTO meta VALUES ('schema_version', ?)", (str(SCHEMA_VERSION),))
+            elif int(row["value"]) == 1:   # v1 → v2: raw_fields, score columns
+                for ddl in ("ALTER TABLE records ADD COLUMN raw_fields TEXT NOT NULL DEFAULT '[]'",
+                            "ALTER TABLE records ADD COLUMN score INTEGER",
+                            "ALTER TABLE records ADD COLUMN score_parts TEXT",
+                            "ALTER TABLE records ADD COLUMN idare_stats TEXT"):
+                    c.execute(ddl)
+                c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
             elif int(row["value"]) != SCHEMA_VERSION:
                 raise RuntimeError(f"database schema {row['value']} != supported {SCHEMA_VERSION}; migrate or rebuild")
 
@@ -177,13 +191,14 @@ class Store:
                        stored, sum(len(r.warnings) for r in records), parse_accuracy))
         return stored
 
-    def set_flags(self, results: dict[int, tuple[list[dict], list, int]]) -> None:
-        """results: record id → (flags, unreadable, kisim_n)."""
+    def set_flags(self, results: dict[int, dict]) -> None:
+        """results: record id → {flags, unreadable, kisim_n, score, score_parts, idare_stats}."""
+        dump = lambda v: json.dumps(v, ensure_ascii=False)  # noqa: E731
         with self._conn() as c:
             c.executemany(
-                "UPDATE records SET flags=?, unreadable=?, kisim_n=? WHERE id=?",
-                [(json.dumps(f, ensure_ascii=False), json.dumps(u, ensure_ascii=False), n, i)
-                 for i, (f, u, n) in results.items()])
+                "UPDATE records SET flags=?, unreadable=?, kisim_n=?, score=?, score_parts=?, idare_stats=? WHERE id=?",
+                [(dump(r["flags"]), dump(r["unreadable"]), r["kisim_n"], r["score"], dump(r["score_parts"]),
+                  dump(r["idare_stats"]), i) for i, r in results.items()])
 
     # ------------------------------------------------------------ read
     def all_records(self) -> list[StoredRecord]:
@@ -195,7 +210,9 @@ class Store:
                 id=row["id"], record=row_to_record(row),
                 flags=json.loads(row["flags"]) if row["flags"] is not None else None,
                 unreadable=json.loads(row["unreadable"]) if row["unreadable"] is not None else None,
-                kisim_n=row["kisim_n"]))
+                kisim_n=row["kisim_n"], score=row["score"],
+                score_parts=json.loads(row["score_parts"]) if row["score_parts"] is not None else None,
+                idare_stats=json.loads(row["idare_stats"]) if row["idare_stats"] is not None else None))
         return out
 
     def dates(self) -> list[date]:

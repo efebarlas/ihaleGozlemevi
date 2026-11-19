@@ -26,12 +26,15 @@ CONTRACT_DAY = json.loads("""
    "ihale_tarihi": "2026-10-21", "sozlesme_tarihi": "2026-11-16", "sozlesme_suresi": "16.11.2026 - 31.12.2026",
    "yaklasik_maliyet": {"amount": 2894258.50, "currency": "TRY"},
    "esas_kisim_yaklasik_maliyet": null,
-   "sozlesme_bedeli": {"amount": 2767200.00, "currency": "TRY"},
+   "sozlesme_bedeli": {"amount": 2825000.00, "currency": "TRY"},
    "toplam_teklif": 2, "gecerli_teklif": 2,
    "kisim": {"records_in_ikn": 1},
    "source": {"date": "2026-11-18", "type": "mal", "file": "BULTEN_18112026_MAL_SONUC.pdf", "page": 18},
    "unreadable": [],
-   "flags": [{"code": "bedel_orani", "value": 0.956, "text": "Sözleşme bedeli yaklaşık maliyetin %95'i"}]}
+   "flags": [{"code": "bedel_orani", "value": 0.976, "text": "Sözleşme bedeli yaklaşık maliyetin %97'si"}],
+   "score": 1, "score_parts": ["bedel_orani"],
+   "idare_stats": {"records": 12, "tek_gecerli_teklif": 0.80, "window_days": 30, "idare_turu": "sağlık", "il": "Antalya",
+                   "peer": {"label": "Antalya'daki sağlık idareleri (mal)", "records": 140, "tek_gecerli_teklif": 0.43}}}
  ]}
 """)
 
@@ -49,7 +52,8 @@ def load_all(day=date(2026, 11, 18)):
     store = Store()
     stored = store.all_records()
     res = compute_flags(stored)
-    store.set_flags({i: (r.flags, r.unreadable, r.kisim_n) for i, r in res.items()})
+    store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
+                         "score_parts": r.score_parts, "idare_stats": r.idare_stats} for i, r in res.items()})
     return store
 
 
@@ -60,7 +64,7 @@ def exported(out):
 
 def test_export_matches_contract_shape():
     r = rec(3, ikn="2026/1766844", idare="ANTALYA İL SAĞLIK", yuklenici="Emir Limited Şirketi",
-            bedel=2767200.0, maliyet=2894258.5, toplam=2, gecerli=2)
+            bedel=2825000.0, maliyet=2894258.5, toplam=2, gecerli=2)
     r.title, r.konu = "17 KALEM TEMİZLİK MALZEMESİ ALIMI", "17 Kalem Temizlik Malzemesi Alımı"
     Store().replace_day(date(2026, 11, 18), "mal", [r])
     store = load_all()
@@ -69,7 +73,11 @@ def test_export_matches_contract_shape():
     assert out == config.data_dir() / "export"
     d = day("2026-11-18")
     # shape: every key of the contract example, nothing else (flags/unreadable lists compared by element shape)
+    # idare_stats: a lone record has no peer group, so compare that block's keys separately
+    stats, c_stats = d["tenders"][0].pop("idare_stats"), CONTRACT_DAY["tenders"][0].pop("idare_stats")
     assert shape(d) == shape(CONTRACT_DAY)
+    assert set(stats) == set(c_stats) and stats["peer"] is None and stats["records"] == 1
+    assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
     assert shape(meta)["counts"]["2026-11-18"].keys() == shape(CONTRACT_META)["counts"]["2026-11-18"].keys()
     assert set(meta) == set(CONTRACT_META)
     t = d["tenders"][0]

@@ -56,6 +56,8 @@ def tender_json(s: StoredRecord) -> dict:
         "source": {"date": day, "type": r.bulletin_type, "file": r.source_file, "page": r.page_start},
         "unreadable": s.unreadable or [],
         "flags": s.flags or [],
+        "score": s.score or 0, "score_parts": s.score_parts or [],
+        "idare_stats": s.idare_stats,
     }
 
 

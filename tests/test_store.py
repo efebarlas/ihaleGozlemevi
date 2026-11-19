@@ -82,9 +82,11 @@ def test_set_flags_persist():
     s = Store()
     s.replace_day(D, "mal", [rec(1)])
     sid = s.all_records()[0].id
-    s.set_flags({sid: ([{"code": "x", "value": 1, "text": "Şş"}], ["ikn"], 3)})
+    s.set_flags({sid: {"flags": [{"code": "x", "value": 1, "text": "Şş"}], "unreadable": ["ikn"], "kisim_n": 3,
+                       "score": 2, "score_parts": ["a"], "idare_stats": {"records": 7}}})
     got = s.all_records()[0]
     assert got.flags == [{"code": "x", "value": 1, "text": "Şş"}] and got.unreadable == ["ikn"] and got.kisim_n == 3
+    assert (got.score, got.score_parts, got.idare_stats) == (2, ["a"], {"records": 7})
 
 
 def test_reopen_keeps_data():

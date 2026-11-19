@@ -9,14 +9,19 @@ import bisect
 from dataclasses import dataclass, field, fields
 from datetime import date, timedelta
 
+from . import peers
 from .keys import normalize_key
 from .model import CONFIDENT, Money, Record
 from .store import StoredRecord
 
 CURRENCY_MISMATCH = "para birimi farklı"
-RATIO_THRESHOLD_PCT = 95          # ratio >= 0.95
+RATIO_THRESHOLD_PCT = 97          # ratio >= 0.97 (ihalent's low_discount: kırım < 3%)
 REPEAT_MIN_IKNS = 3
 REPEAT_WINDOW_DAYS = 365          # bulletin dates in [d - 365 days, d]
+IDARE_WINDOW_DAYS = 30            # idare/peer stats: tenders dated in (d - 30 days, d]
+IDARE_MIN_N = 5                   # an idare-level rate needs >= 5 awards (tenders) in the window
+PEER_MIN_N = 20                   # a peer group needs >= 20 awards, excluding the idare itself
+IDARE_RATIO = 2                   # idare_orani: idare share >= 2x peer share
 
 _MODEL_ORDER = [f.name for f in fields(Record)]
 
@@ -75,6 +80,9 @@ class FlagResult:
     flags: list[dict] = field(default_factory=list)
     unreadable: list = field(default_factory=list)   # field names and {"field", "reason"} objects
     kisim_n: int = 1
+    score: int = 0
+    score_parts: list = field(default_factory=list)
+    idare_stats: dict | None = None
 
 
 def _estimate(r: Record) -> tuple[str, Money] | None:
@@ -102,6 +110,95 @@ def _low_confidence_fields(r: Record) -> set[str]:
     return out
 
 
+@dataclass
+class _Tender:
+    date: date
+    idare_key: str
+    turu: str
+    il: str | None
+    sector: str
+    tek: bool | None
+
+
+def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
+    """Awards (distinct ikn; a record without a confident ikn is its own award) per sector, sorted by date.
+
+    Only awards with a confident idare and a confident gecerli_teklif enter the rates. Kısmi lots of one ikn
+    are one award, so a 109-lot tender does not outvote everything else.
+    """
+    by_id: dict = {}
+    for s in stored:
+        r = s.record
+        if not r.confident("idare"):
+            continue
+        ik = normalize_key(r.idare)
+        if not ik:
+            continue
+        tid = (r.bulletin_type, r.ikn) if r.confident("ikn") else ("rec", s.id)
+        tek = (r.gecerli_teklif == 1) if r.confident("gecerli_teklif") else None
+        t = by_id.get(tid)
+        if t is None:
+            by_id[tid] = _Tender(r.bulletin_date, ik, peers.idare_turu(r.idare), peers.il_of(r.idare),
+                                 r.bulletin_type, tek)
+        else:
+            t.date = min(t.date, r.bulletin_date)
+            if t.tek is None:
+                t.tek = tek
+    out: dict[str, list[_Tender]] = {}
+    for t in by_id.values():
+        if t.tek is not None:
+            out.setdefault(t.sector, []).append(t)
+    for v in out.values():
+        v.sort(key=lambda t: t.date)
+    return out
+
+
+class _Window:
+    """Counts [awards, tek awards] in one (sector, date) window."""
+
+    def __init__(self, tenders: list[_Tender], d: date):
+        dates = [t.date for t in tenders]
+        lo = bisect.bisect_right(dates, d - timedelta(days=IDARE_WINDOW_DAYS))
+        hi = bisect.bisect_right(dates, d)
+        self.idare: dict[str, list[int]] = {}
+        self.turu_il: dict[tuple, list[int]] = {}
+        self.turu: dict[str, list[int]] = {}
+        self.all = [0, 0]
+        for t in tenders[lo:hi]:
+            tek = 1 if t.tek else 0
+            for acc in (self.idare.setdefault(t.idare_key, [0, 0]), self.all,
+                        self.turu.setdefault(t.turu, [0, 0]),
+                        self.turu_il.setdefault((t.turu, t.il), [0, 0])):
+                acc[0] += 1
+                acc[1] += tek
+
+
+def idare_stats(win: _Window, idare_name: str, sector: str) -> tuple[dict, bool]:
+    """(stats dict for export, idare_orani fires)."""
+    ik = normalize_key(idare_name)
+    turu, il = peers.idare_turu(idare_name), peers.il_of(idare_name)
+    own_n, own_tek = win.idare.get(ik, [0, 0])
+    stats = {"records": own_n, "tek_gecerli_teklif": None, "window_days": IDARE_WINDOW_DAYS,
+             "idare_turu": turu, "il": il, "peer": None}
+    if own_n >= IDARE_MIN_N:
+        stats["tek_gecerli_teklif"] = round(own_tek / own_n, 4)
+    candidates = []
+    if il:
+        candidates.append(("turu_il", win.turu_il.get((turu, il), [0, 0])))
+    candidates.append(("turu", win.turu.get(turu, [0, 0])))
+    candidates.append(("sector", win.all))
+    peer_n = peer_tek = 0
+    for scope, (n, tek) in candidates:
+        if n - own_n >= PEER_MIN_N:
+            peer_n, peer_tek = n - own_n, tek - own_tek
+            stats["peer"] = {"label": peers.peer_label(scope, turu, il, sector), "records": peer_n,
+                             "tek_gecerli_teklif": round(peer_tek / peer_n, 4)}
+            break
+    fires = (own_n >= IDARE_MIN_N and stats["peer"] is not None and own_tek > 0
+             and own_tek * peer_n >= IDARE_RATIO * peer_tek * own_n)
+    return stats, fires
+
+
 def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
     """Flags for every stored record (id → result). Pure: no DB access."""
     # ikn groups (kısmi): deduped by (ikn, yüklenici key, bedel)
@@ -120,6 +217,9 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                 hist.setdefault((ik, yk), []).append((r.bulletin_date, r.ikn))
     for v in hist.values():
         v.sort()
+
+    tenders = _tenders(stored)
+    windows: dict[tuple, _Window] = {}
 
     results: dict[int, FlagResult] = {}
     for s in stored:
@@ -192,5 +292,22 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                         "text": f"Bu yüklenici son 12 ayda bu idareden {n} sözleşme aldı (bu dahil)"})
 
         res.unreadable = [f for f in _MODEL_ORDER if f in unread] + reasons
+
+        # --- idare_orani + score (§4.1)
+        idare_fires = False
+        if r.confident("idare") and normalize_key(r.idare):
+            wkey = (r.bulletin_type, r.bulletin_date)
+            if wkey not in windows:
+                windows[wkey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date)
+            res.idare_stats, idare_fires = idare_stats(windows[wkey], r.idare, r.bulletin_type)
+        have = {f["code"] for f in res.flags}
+        parts = [c for c in ("tek_gecerli_teklif", "bedel_orani") if c in have]
+        if "tekrarlayan_yuklenici" in have and parts:
+            parts.append("tekrarlayan_yuklenici")
+        if idare_fires:
+            parts.append("idare_orani")
+        weights = {"tek_gecerli_teklif": 1, "bedel_orani": 1, "tekrarlayan_yuklenici": 2, "idare_orani": 1}
+        res.score_parts = parts
+        res.score = sum(weights[p] for p in parts)
         results[s.id] = res
     return results
