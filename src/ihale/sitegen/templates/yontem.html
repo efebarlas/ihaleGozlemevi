@@ -62,8 +62,30 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
   <dd>Bu yüklenicinin, aynı idarenin son 365 gündeki TRY sözleşme bedelleri toplamı içindeki payı; yalnızca idarenin en az 5 kaydı varsa, n ile birlikte. Kaynak: GTI «kazanan payı».</dd>
 </dl>
 
+<h2 id="olagan">Her işaretin olağan açıklaması</h2>
+<p>Her işaret, masum açıklamaları da olan bir olgudur. Kayıt sayfalarında işaretin altında şu notlar yer alır:</p>
+<ul>
+{% for code, title in flag_titles.items() %}
+  <li><strong>{{ title }}:</strong> {{ innocent[code] }}</li>
+{% endfor %}
+</ul>
+
+{% if rules %}
+<h2 id="yapisal">Yapısal tek teklif durumları</h2>
+<p>Bazı tek teklif örüntülerinin bilinen yapısal bir nedeni vardır. Bu durumlar aşağıdaki tabloda açıkça listelenir; gizli istisna yoktur. Tabloya yalnızca belirtilmiş bir gerekçeyle giriş eklenir. İşaretler yine gösterilir, ancak etkisi sütununda yazanlar uygulanır.</p>
+<div class="tw"><table class="rules">
+  <thead><tr><th>Kapsam</th><th>Etki</th><th>Gerekçe</th><th>Eklenme tarihi</th></tr></thead>
+  <tbody>
+  {% for r in rules %}
+    <tr><td>{{ r.match_tr }}</td><td>{{ r.effects_tr | join("; ") }}</td><td>{{ r.reason_tr }}</td><td>{{ r.added | tr_date_long if r.added else "" }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endif %}
+
 <h2>Sınırlar</h2>
 <ul>
+  <li><strong>Bültenlerin göremediği.</strong> Bültenler, teklif verenlerin birbirinden bağımsız olup olmadığını ya da EKAP dışında yapılan alımları göstermez; bu göstergeler kesin sonuç değil, bakılacak yer önerisidir.</li>
   <li><strong>Kısmi (kısımlı) ihaleler.</strong> Bir İKN için birden çok kayıt olabilir. Bedel oranı bu durumda aynı İKN'nin tüm kayıtlarının toplam bedeli üzerinden hesaplanır (aynı İKN, yüklenici ve bedele sahip tekrarlar bir kez sayılır); metin «Bu ihalenin N kısmının toplam bedeli…» biçimindedir. Kayıt sayfası, aynı İKN'nin o gün kaç kaydı olduğunu belirtir.</li>
   <li><strong>Para birimleri.</strong> Hiçbir zaman çevrilmez. Sözleşme bedelinin para birimi yaklaşık maliyetinkinden farklıysa oran hesaplanmaz ve alan işaret hesabında kullanılmaz.</li>
   <li><strong>Okunamayan alanlar.</strong> Bir işaret yalnızca gerekli tüm alanlar güvenle okunabildiğinde hesaplanır. Aksi hâlde alan «okunamadı» olarak gösterilir ve o işaret hesaplanmaz; işaretin görünmemesi, koşulun sağlanmadığı anlamına gelmez.</li>
@@ -76,7 +98,8 @@ Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 <h2>İlkeler</h2>
 <ul>
   <li>Bu site olguları gösterir; yargı bildirmez, kimseyi suçlamaz. İşaret, bir kaydın daha yakından bakmaya değip değmediğini belirlemek için bir başlangıç noktasıdır.</li>
-  <li>Kişi adları yalnızca resmî bültende yayımlandığı şekliyle yer alır. Başka kaynaklardan bilgi eklenmez.</li>
+  <li>Kişi adları yalnızca resmî bültende yayımlandığı şekliyle yer alır. Başka kaynaklardan bilgi eklenmez. Gerçek kişi olduğu anlaşılan (şirket biçimi taşımayan) yüklenicilerin adı yalnızca o kaydın kendi sayfasında görünür; diğer sayfalarda «Gerçek kişi yüklenici» yazar. Belirsiz durumlarda ad, bültende yazıldığı gibi gösterilir.</li>
+  <li>Oranlar ve puanlar yalnızca idareler için hesaplanır; yükleniciler puanlanmaz veya sıralanmaz.</li>
   <li>Bu site arama motorlarına kapalıdır.</li>
 </ul>
 {% endblock %}

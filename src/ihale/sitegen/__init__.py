@@ -13,6 +13,7 @@ import subprocess
 from datetime import date
 from pathlib import Path
 
+from .persons import PERSON_LABEL, is_natural_person
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 PKG_DIR = Path(__file__).resolve().parent
@@ -31,16 +32,27 @@ FLAG_ORDER = ["tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlaya
 FLAG_TITLES = {
     "tek_teklif": "Tek teklif",
     "diger_teklifler_elendi": "Diğer teklifler elendi",
-    "bedel_orani": "Bedel ≥ %97 yaklaşık maliyet",
+    "bedel_orani": "Yaklaşık maliyete yakın",
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
     "idare_orani": "İdarede tek teklif oranı yüksek",
 }
 MIN_SHOWN_SCORE = 2      # Bugün shows records with score >= this (contract §4.1)
+INNOCENT = {  # one neutral "also common when…" line per flag type (detail pages and Yöntem)
+    "tek_teklif": "Tek teklif, pazarın dar olduğu veya ürünün tek üreticisi bulunduğu alımlarda olağandır.",
+    "diger_teklifler_elendi": "Teklifler belge eksikliği gibi biçimsel nedenlerle de elenebilir.",
+    "bedel_orani": "Yaklaşık maliyet güncel piyasa fiyatlarıyla hazırlanmışsa bedel ona yakın çıkabilir.",
+    "tekrarlayan_yuklenici": "Bölgedeki tek veya az sayıdaki tedarikçi aynı idareden sık sık iş alabilir.",
+    "idare_orani": "Merkezî alım kurumları (ör. DMO 4734/3-g) ve acil durum alımları (21/b) yapıları gereği tek teklifle sonuçlanabilir.",
+}
+EFFECT_LABELS = {
+    "no_single_bid_points": "Tek teklif işaretleri gösterilir ama puan eklemez",
+    "own_peer_group": "İdare yalnızca kendi geçmişiyle karşılaştırılır",
+}
 MAX_CARDS_PER_IDARE = 2  # Bugün: more from the same idare are folded into one line
 MIN_DETAIL_SCORE = 1     # detail pages only for score >= this (keeps the file count bounded)
 MAX_FILES = 19000        # Cloudflare free Workers static assets: 20,000 files per deploy
 MIN_IDARE_RECORDS = 5    # no idare-level rate is shown below this sample (contract §4.1)
-IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun 2 katı veya daha fazla"
+IDARE_ORANI_TEXT = "İdarenin tek geçerli teklif payı, karşılaştırma grubunun payının belirgin biçimde üzerinde"
 # (export key, Turkish label) in display order for the detail page
 FIELD_LABELS = [
     ("ikn", "İhale kayıt no (İKN)"),
@@ -142,10 +154,36 @@ def _usul_turu_label(code: str) -> str:
     return code
 
 
+def _pct1(x) -> str:
+    return f"%{float(x) * 100:.1f}".replace(".", ",")
+
+
+def bedel_line(t: dict) -> str | None:
+    """Actual bedel/yaklaşık maliyet ratio with its peer context (no cut-off is shown)."""
+    ind = t.get("indicators") or {}
+    if ind.get("bedel_orani") is None:
+        return None
+    out = f"{_pct1(ind['bedel_orani'])}"
+    if ind.get("bedel_orani_peer_median") is not None and ind.get("bedel_orani_peer_n"):
+        out += f" · benzer idarelerde ortanca {_pct(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})"
+    return out
+
+
+def bedel_peer_line(t: dict) -> str | None:
+    ind = t.get("indicators") or {}
+    if ind.get("bedel_orani_peer_median") is None or not ind.get("bedel_orani_peer_n"):
+        return None
+    return (f"Bedel / yaklaşık maliyet: bu kayıtta {_pct1(ind['bedel_orani'])} · "
+            f"benzer idarelerde ortanca {_pct(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})")
+
+
 def indicators(t: dict) -> list[tuple[str, str]]:
     """(label, text) pairs for the neutral 'Göstergeler' block; null indicators are skipped."""
     ind = t.get("indicators") or {}
     out: list[tuple[str, str]] = []
+    bl = bedel_line(t)
+    if bl:
+        out.append(("Bedel / yaklaşık maliyet", bl))
     if ind.get("elenen_orani") is not None:
         s = f"{_pct(ind['elenen_orani'])} (teklif verenlerin elenen payı)"
         if ind.get("elenen_orani_peer") is not None:
@@ -182,6 +220,8 @@ def peer_line(t: dict) -> str | None:
         label, pn = peer["label"], peer["records"]
         label = f"{label[:-1]}, n={pn})" if label.endswith(")") else f"{label} (n={pn})"
         out += f" · {label}: {_pct(peer['tek_gecerli_teklif'])}"
+    elif st.get("peer_note"):
+        out += f" · {st['peer_note']}"
     return out
 
 
@@ -268,7 +308,7 @@ def build(export_dir: Path, out_dir: Path) -> None:
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(innocent=INNOCENT, idare_orani_text=IDARE_ORANI_TEXT, repo_url=REPO_URL, ekap_url=EKAP_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
@@ -281,7 +321,11 @@ def build(export_dir: Path, out_dir: Path) -> None:
         t["_codes"] = _flag_codes(t)
         t["_name"] = t.get("konu") or t.get("title") or "(adsız ilan)"
         t["_idare"] = (t.get("idare") or {}).get("name") or "okunamadı"
-        t["_yuklenici"] = (t.get("yuklenici") or {}).get("name") or "okunamadı"
+        yname = (t.get("yuklenici") or {}).get("name")
+        t["_person"] = is_natural_person(yname)
+        # natural persons: the name appears only on the record's own detail page (SPEC §6.1)
+        t["_yuklenici"] = PERSON_LABEL if t["_person"] else (yname or "okunamadı")
+        t["_bedel_peer"] = bedel_peer_line(t)
         t["_peer"] = peer_line(t)
         t["_ind"] = indicators(t)
         t["_idare_orani"] = "idare_orani" in t.get("score_parts", [])
@@ -327,6 +371,8 @@ def build(export_dir: Path, out_dir: Path) -> None:
                 v = _field_value(t, key)
                 reason = unread.get(key)
                 missing = v is None and key not in OPTIONAL_FIELDS
+                if key == "yuklenici" and t["_person"] and not t["_page"]:
+                    v = PERSON_LABEL
                 rows.append(dict(key=key, label=label, value=v, note=reason or "",
                                  unreadable=missing or (key in unread and reason == "")))
             src = t.get("source") or {}
@@ -350,7 +396,9 @@ def build(export_dir: Path, out_dir: Path) -> None:
                       date_fields=DATE_FIELDS, money_fields=MONEY_FIELDS)
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
-          earliest=min(dates) if dates else None, latest=latest)
+          earliest=min(dates) if dates else None, latest=latest,
+          rules=[dict(r, effects_tr=[EFFECT_LABELS.get(e, e) for e in (r.get("effects") or [])])
+                 for r in meta.get("structural_rules") or []])
     write("404.html", "404.html", page="404", title="Sayfa bulunamadı")
 
     shutil.copyfile(PKG_DIR / "static" / "style.css", out_dir / "style.css")

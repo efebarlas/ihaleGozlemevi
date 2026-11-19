@@ -60,7 +60,8 @@
      "records": 140,
      "tek_gecerli_teklif": 0.43
     }
-   }
+   },
+   "structural": null
   },
   {
    "id": "2026-11-17-mal-A-2",
@@ -123,7 +124,66 @@
      "records": 140,
      "tek_gecerli_teklif": 0.43
     }
-   }
+   },
+   "structural": null
+  },
+  {
+   "id": "2026-11-17-mal-A-3",
+   "ikn": "2026/9000020",
+   "title": "ÖRNEK ÇAY ALIMI",
+   "konu": "Örnek Çay Alımı",
+   "type": "mal",
+   "section": "A",
+   "usul": "Açık",
+   "tur": "Mal alımı",
+   "idare": {
+    "name": "ÖRNEK İL MÜDÜRLÜĞÜ",
+    "key": "örnek il müdürlüğü"
+   },
+   "yuklenici": {
+    "name": "Mehmet Örnekoğlu",
+    "key": "mehmet örnekoğlu"
+   },
+   "ihale_tarihi": "2026-10-21",
+   "sozlesme_tarihi": "2026-11-10",
+   "sozlesme_suresi": "10.11.2026 - 31.12.2026",
+   "yaklasik_maliyet": {
+    "amount": 60000.0,
+    "currency": "TRY"
+   },
+   "esas_kisim_yaklasik_maliyet": null,
+   "sozlesme_bedeli": {
+    "amount": 42000.0,
+    "currency": "TRY"
+   },
+   "toplam_teklif": 2,
+   "gecerli_teklif": 2,
+   "kisim": {
+    "records_in_ikn": 1
+   },
+   "source": {
+    "date": "2026-11-17",
+    "type": "mal",
+    "file": "BULTEN_17112026_MAL_SONUC.pdf",
+    "page": 9
+   },
+   "unreadable": [],
+   "flags": [],
+   "score": 0,
+   "score_parts": [],
+   "idare_stats": {
+    "records": 6,
+    "tek_gecerli_teklif": 0.17,
+    "window_days": 30,
+    "idare_turu": "sağlık",
+    "il": "Örnek İl",
+    "peer": {
+     "label": "Örnek ilindeki sağlık idareleri (mal)",
+     "records": 140,
+     "tek_gecerli_teklif": 0.43
+    }
+   },
+   "structural": null
   }
  ]
 }

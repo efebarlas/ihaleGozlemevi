@@ -59,3 +59,5 @@ details[open]>summary::before{content:"▾"}
 .row:target{background:var(--card)}
 @media (min-width:40rem){details>summary{grid-template-columns:1fr auto}details>summary .rm{grid-column:1/-1}}
 .fold{background:transparent;border-style:dashed}.fold summary{cursor:pointer;font-weight:600}
+.why{display:block;color:var(--muted);font-size:.85rem;margin-top:.15rem}
+.rules{width:100%;border-collapse:collapse;font-size:.9rem}.rules th,.rules td{border:1px solid var(--line);padding:.35rem .5rem;text-align:left;vertical-align:top}.tw{overflow-x:auto}

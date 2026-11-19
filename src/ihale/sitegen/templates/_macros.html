@@ -12,7 +12,7 @@
 {% endmacro %}
 
 {% macro peer(t) %}
-{% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}
+{% if t._peer %}<p class="peer">{{ t._peer }}</p>{% endif %}{% if t._bedel_peer %}<p class="peer">{{ t._bedel_peer }}</p>{% endif %}
 {% endmacro %}
 
 {% macro facts(t) %}

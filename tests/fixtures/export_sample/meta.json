@@ -17,12 +17,24 @@
    "diger_teklifler_elendi": 1
   },
   "2026-11-17": {
-   "records": 2,
+   "records": 3,
    "flagged": 1,
    "tek_gecerli_teklif": 0,
    "bedel_orani": 0,
    "tekrarlayan_yuklenici": 1,
    "unreadable": 0
   }
- }
+ },
+ "structural_rules": [
+  {
+   "id": "ornek-merkezi",
+   "match_tr": "İdare adı «ÖRNEK MERKEZİ ALIM» ile başlar; usul: 4734/3-g",
+   "effects": [
+    "no_single_bid_points",
+    "own_peer_group"
+   ],
+   "reason_tr": "Örnek merkezî alım kurumu; seri alımlarında tek teklif yapısı gereğidir.",
+   "added": "2026-11-19"
+  }
+ ]
 }

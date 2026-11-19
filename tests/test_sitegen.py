@@ -127,7 +127,7 @@ def test_money_and_date_formatting(dist):
 def test_detail_flags_source_and_labels(dist):
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
     assert "Tek teklif verildi" in d
-    assert "Sözleşme bedeli yaklaşık maliyetin %97&#39;si" in d
+    assert "Sözleşme bedeli yaklaşık maliyetin %98,6&#39;sı" in d
     assert "Kaynak: Kamu İhale Bülteni, 18.11.2026, Mal – Sonuç İlanları, s. 18" in d
     assert 'href="https://ekap.kik.gov.tr/EKAP/Ilan/BultenIndirme.aspx"' in d
     assert "Geçerli teklif sayısı" in d and "Sözleşme bedeli" in d
@@ -334,3 +334,76 @@ def test_yontem_new_rules(dist):
     y = _read(dist, "yontem/index.html")
     for needle in ["406.700,00 TRY üzerinde (%100,9)", "aynı usul içinde", "en fazla 2 kart"]:
         assert needle in y, needle
+
+
+from ihale.sitegen.persons import PERSON_LABEL, is_natural_person  # noqa: E402
+
+
+@pytest.mark.parametrize("name,expected", [
+    ("Mustafa Öz", True), ("Yurdakul Bostancı", True), ("AYŞE ÖRNEK", True), ("Aşkın Demir", True),
+    ("Emir Sosyal Hizmetler Limited Şirketi", False),
+    ("Kale Makina Pazarlama Anonim Şirketi", False),
+    ("Fresenıus Medikal Hizmetler Anonim Şirketi", False),
+    ("Örnek Yapı Ltd.Şti.", False), ("Örnek Gıda A.Ş.", False), ("ÖRNEK İNŞAAT SAN. VE TİC. LTD. ŞTİ.", False),
+    ("Örnek Kooperatifi", False), ("Örnek Belediyesi", False), ("X Ortak Girişim", False),
+    ("Ahmet Yılmaz Gıda", False), ("Tek", False), ("", False), (None, False),
+])
+def test_is_natural_person(name, expected):
+    assert is_natural_person(name) is expected
+
+
+def test_person_names_only_on_own_detail_page(dist):
+    names = {"Ayşe ÖRNEK": "ihale/2026-11-18-mal-B-1/index.html", "Mehmet Örnekoğlu": None}
+    for p in dist.rglob("*"):
+        if not p.is_file():
+            continue
+        text = p.read_text(encoding="utf-8")
+        for n, only in names.items():
+            if n in text:
+                assert only and p == dist / only, (n, p)
+    assert "Ayşe ÖRNEK" in _read(dist, "ihale/2026-11-18-mal-B-1/index.html")
+    assert PERSON_LABEL in _read(dist, "index.html")                       # Bugün card
+    assert PERSON_LABEL in _read(dist, "gun/2026-11-17/index.html")        # expandable block, no page
+    assert PERSON_LABEL in _read(dist, "gun/2026-11-18/index.html")
+
+
+def test_no_threshold_labels_outside_yontem(dist):
+    for p in dist.rglob("*.html"):
+        if p.parent.name == "yontem":
+            continue
+        t = p.read_text(encoding="utf-8")
+        assert "≥ %" not in t and "%97" not in t, p
+    assert "Yaklaşık maliyete yakın (" in _read(dist, "index.html")
+
+
+def test_bedel_ratio_with_peer_context(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert "%98,6 · benzer idarelerde ortanca %87 (n=140)" in d
+    assert "Bedel / yaklaşık maliyet: bu kayıtta %98,6 · benzer idarelerde ortanca %87 (n=140)" in _read(dist, "index.html")
+
+
+def test_innocent_lines(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
+    assert sitegen.INNOCENT["tek_teklif"] in d and sitegen.INNOCENT["bedel_orani"] in d
+    assert sitegen.INNOCENT["tekrarlayan_yuklenici"] in d
+    y = _read(dist, "yontem/index.html")
+    for v in sitegen.INNOCENT.values():
+        assert v in y
+
+
+def test_structural_note_peer_note_and_table(dist):
+    d = _read(dist, "ihale/2026-11-18-mal-A-4/index.html")
+    assert "seri alımlarında tek teklif yapısı gereğidir" in d and "puana puan eklemez" in d
+    assert "Kendi geçmişiyle karşılaştırılır" in d
+    y = _read(dist, "yontem/index.html")
+    assert "Yapısal tek teklif durumları" in y and "Gerekçe" in y and "Eklenme tarihi" in y
+    assert "19 Kasım 2026" in y and "yalnızca belirtilmiş bir gerekçeyle" in y
+
+
+def test_yontem_general_limits_no_evasion_list(dist):
+    y = _read(dist, "yontem/index.html")
+    assert "teklif verenlerin birbirinden bağımsız olup olmadığını" in y
+    for p in dist.rglob("*.html"):
+        low = _lower_tr(p.read_text(encoding="utf-8"))
+        for w in ("göstermelik", "ihaleyi bölme", "ihale bölme"):
+            assert w not in low, (p, w)
