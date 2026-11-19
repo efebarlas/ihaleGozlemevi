@@ -44,6 +44,16 @@ A public-interest **watchdog over Turkish public procurement**. Every day it rea
   3. Backfill to 2010 at a polite rate.
 - **Runs on Efe's PC**, once a day via Windows Task Scheduler, in the evening after bulletins are out. Stale data while his PC is off is acceptable.
 
+### 4.1 Build on ihalent (Efe, 2026-11-19)
+- **Use ihalent for the parsing and flags.** [ihalent](https://github.com/gulmezeren2-byte/ihalent) is an open-source library under the MIT license. It already fetches and parses result bulletins and computes the single-bid, near-estimate and HHI concentration flags.
+  - Use it as a pinned dependency. Fork or wrap it only where it falls short.
+  - Its required dependencies are permissive too: rich, typer and pdfplumber are MIT.
+- **License gate.** Efe's condition is that we build on very permissive code only. Every dependency must be MIT, BSD, Apache-2.0, ISC or similar. Anything copyleft (GPL, AGPL, LGPL, MPL) is a hard stop: report it, don't add it.
+- **Credit it.** Keep ihalent's MIT copyright notice in the repo. Name ihalent on the site's Yöntem page.
+- **Our own value is what ihalent doesn't do:** a daily, phone-first feed of individual flagged tenders, each with neutral wording and a source link. Also the repeat-winner-per-idare view, if ihalent lacks it.
+- **Keep our M0 downloader only if it beats ihalent's `fetch-bulletin`.** The EKAP politeness rules in §6 apply either way.
+- **No upstream contact without Efe's OK.** Opening issues or pull requests on ihalent is outward-facing.
+
 ## 5. Quality bar
 - Parser tests run offline against small fixture PDFs in `tests/fixtures/`. No test may hit EKAP.
 - Measure field accuracy against a hand-labeled sample. Target ≥95% on the core fields: ikn, idare adı, yüklenici, sözleşme bedeli, yaklaşık maliyet, geçerli teklif sayısı.
@@ -70,6 +80,8 @@ A public-interest **watchdog over Turkish public procurement**. Every day it rea
 - Money: a paid plan, a payment method, a new account.
 - EKAP blocking, CAPTCHA or login.
 - Irreversible git operations on `main` (force-push, history rewrite).
+- Any dependency that isn't permissively licensed (see §4.1).
+- Contacting outside projects or people, including issues or PRs on ihalent.
 
 ## 8. Operating model
 This works like clearpile:
@@ -88,8 +100,14 @@ Efe opens the live site on his phone. The spec owner gives him a 3-line note: wh
   - Remove the dead parts: the committed `chromedriver.exe` and the Heroku files.
   - Download today's bulletins again.
   - Get offline fixture tests passing.
-- **M1 Parse:** turn *mal* result bulletins into records with confidence, scoring ≥95% on the labeled sample.
-- **M2 Store and flag:** SQLite, the three v1 flags, and a JSON export.
+- **M1 Adopt ihalent:**
+  - Pin it, and run it on our fixtures and on today's *mal* result bulletin.
+  - Measure its core-field accuracy against a hand-labeled sample. The target is ≥95%.
+  - Where it falls short, fix it in a thin wrapper or a fork.
+- **M2 Store and flag:**
+  - Load ihalent's awards into SQLite.
+  - Use its single-bid and near-estimate flags, and add repeat-winner-per-idare if it lacks one.
+  - Export JSON for the site.
 - **M3 Site v1 (unlisted):**
   - Deploy Bugün, İhale detayı and Yöntem on Cloudflare.
   - Run the pipeline daily on Efe's PC.
