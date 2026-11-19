@@ -72,6 +72,12 @@ Flags alone fire on roughly half of all tenders, and their base rates differ a l
 
 **Score.** The sum of points, a float. Export `score` rounded to 2 decimals and `score_parts` as `[{"code", "points", "p", "p_group"}]`, where `p_group` is the usul_turu used, or `"hepsi"` for the fallback.
 
+**Groups.** The usul group is the record's `usul_turu`, with one split: 3-g records whose idare starts with `DEVLET MALZEME OFİSİ` form `istisna_3g_dmo` (label `4734/3-g (DMO)`). All other 3-g records stay in `istisna_3g` (label `4734/3-g (diğer idareler)`). DMO is 8,308 of 8,964 3-g records. This grouping is used for p, the bedel medians and the per-procedure peer chain.
+
+**p** = records in the group where the part's condition holds (counted regardless of structural exclusions) / records in the group where the part is computable.
+
+**Materiality.** `score = score_raw × value_weight`, where `value_weight = clamp(1 + 0.5 · log10(bedel_TRY / group median bedel_TRY), 0.5, 1.5)`. A non-TRY or missing bedel gets weight 1. Export `score_raw`, `value_weight` and `score`. Group medians go in `meta.part_rates[group].bedel_median_try`.
+
 **Bugün** shows records with `score ≥ 3.0` (≈ ln 20: at least as rare as a 1-in-20 event), sorted by score, then TRY bedel, with at most 2 cards per idare. The cut-off is provisional. `scripts/base_rates.py` prints each part's p per usul_turu (also shown in Yöntem) and the share of records over the cut-off per usul_turu. The goal is that no single procedure crowds Bugün just by being that procedure.
 
 **Peer comparison.** Every record carries `idare_stats` so the site can show the figure next to its peers, e.g. `Bu idare: 12 ihalenin %80'i tek geçerli teklif · Antalya'daki sağlık idareleri (mal, n=140): %43`.
