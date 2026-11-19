@@ -223,3 +223,80 @@ def test_export_is_byte_stable_across_runs():
     first = snapshot(export((D, "mal", recs)))
     second = snapshot(export((D, "mal", recs)))
     assert first == second and len(first) == 7
+
+
+# ---------------------------------------------------------------- usul_pay (procedure shares beside peers)
+def idare_json(out, name=IDARE):
+    return next(load(p) for p in idare_files(out) if load(p)["name"] == name)
+
+
+def peers_mix(n, usul="Açık", bedel=100.0, start=1000, type_="mal"):
+    return [mk(start + i, idare=f"MUĞLA İL SAĞLIK MÜDÜRLÜĞÜ {i}", yuklenici=f"P{i} Ltd. Şti.", usul=usul, bedel=bedel,
+               type_=type_) for i in range(n)]
+
+
+def test_usul_pay_shares_by_award_count_and_try():
+    own = [mk(1, usul="Açık", bedel=100.0), mk(2, usul="Açık", bedel=100.0), mk(3, usul="Pazarlık (MD 21 B)", bedel=600.0),
+           mk(4, usul="Pazarlık (MD 21 F)", bedel=100.0), mk(5, usul="4734 / 3-g", bedel=50.0),
+           mk(6, usul="4734 / 3-e", bedel=50.0)]
+    out = export((D, "mal", own))
+    pay = idare_json(out)["usul_pay"]["mal"]
+    assert pay["n"] == 6 and pay["try_total"] == 1000.0
+    sh = pay["shares"]
+    assert sh["acik"] == {"awards": 2, "awards_share": 0.3333, "try": 200.0, "try_share": 0.2}
+    assert sh["pazarlik_21b"]["awards"] == 1 and sh["pazarlik_21b"]["try_share"] == 0.6
+    assert sh["pazarlik_diger"]["awards"] == 1 and sh["istisna"]["awards"] == 2 and sh["istisna"]["try"] == 100.0
+    assert sh["diger"]["awards"] == 0 and pay["peer"] is None                       # no peers at all
+    assert [c["code"] for c in idare_json(out)["usul_pay_categories"]] == ["acik", "pazarlik_21b", "pazarlik_diger",
+                                                                         "istisna", "diger"]
+
+
+def test_usul_pay_peer_group_needs_20_awards_and_excludes_the_idare():
+    own = [mk(i, usul="Pazarlık (MD 21 B)") for i in range(5)]
+    out = export((D, "mal", own + peers_mix(19)))
+    assert idare_json(out)["usul_pay"]["mal"]["peer"] is None                      # 19 < 20
+    peers20 = peers_mix(15) + peers_mix(5, usul="Pazarlık (MD 21 B)", start=2000)
+    out = export((D, "mal", own + peers20))
+    peer = idare_json(out)["usul_pay"]["mal"]["peer"]
+    assert peer["n"] == 20 and peer["label"] == "Türkiye'deki sağlık idareleri (mal)"
+    assert peer["shares"]["acik"]["awards_share"] == 0.75 and peer["shares"]["pazarlik_21b"]["awards"] == 5
+    assert peer["shares"]["pazarlik_21b"]["try_share"] == 0.25 and peer["try_total"] == 2000.0
+
+
+def test_usul_pay_peer_chain_and_label():
+    own = [mk(i, usul="Açık") for i in range(3)]
+    local = [mk(500 + i, idare=f"ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ ŞUBE {i}", yuklenici=f"L{i} Ltd. Şti.") for i in range(8)]
+    national = peers_mix(14)
+    out = export((D, "mal", own + local + national))
+    peer = idare_json(out)["usul_pay"]["mal"]["peer"]
+    assert peer["n"] == 22 and peer["label"] == "Türkiye'deki sağlık idareleri (mal)"        # il group had only 8
+    out = export((D, "mal", own + local + peers_mix(14) + [mk(900 + i, idare=f"ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ B{i}",
+                                                           yuklenici=f"M{i} Ltd. Şti.") for i in range(20)]))
+    assert idare_json(out)["usul_pay"]["mal"]["peer"]["label"] == "Antalya'daki sağlık idareleri (mal)"
+
+
+def test_usul_pay_is_per_bulletin_type():
+    mal = [mk(1, usul="Açık"), mk(2, usul="Pazarlık (MD 21 B)")]
+    hizmet = [mk(3, type_="hizmet", usul="Açık")]
+    out = export((D, "mal", mal + peers_mix(25)), (D, "hizmet", hizmet + peers_mix(25, type_="hizmet", start=3000,
+                                                                                 usul="4734 / 3-g")))
+    pay = idare_json(out)["usul_pay"]
+    assert set(pay) == {"mal", "hizmet"}
+    assert pay["mal"]["n"] == 2 and pay["hizmet"]["n"] == 1
+    assert pay["hizmet"]["peer"]["shares"]["istisna"]["awards"] == 25 and pay["hizmet"]["peer"]["label"].endswith("(hizmet)")
+    assert pay["mal"]["peer"]["shares"]["acik"]["awards"] == 25
+
+
+def test_usul_pay_counts_a_kismi_tender_once_and_sums_its_try():
+    lots = [mk(i, usul="Açık", yuklenici=f"F{i} Ltd. Şti.", bedel=10.0 * i) for i in (1, 2, 3)]
+    for r in lots:
+        r.ikn = "2026/7777"
+    out = export((D, "mal", lots))
+    pay = idare_json(out)["usul_pay"]["mal"]
+    assert pay["n"] == 1 and pay["shares"]["acik"]["try"] == 60.0
+
+
+def test_usul_pay_is_facts_only():
+    out = export((D, "mal", [mk(1)] + peers_mix(25)))
+    blob = json.dumps(idare_json(out)["usul_pay"], ensure_ascii=False)
+    assert "score" not in blob and "flag" not in blob and "rank" not in blob

@@ -101,6 +101,103 @@ def _sort_recs(recs):
                                        s.record.seq))
 
 
+USUL_PAY_CATEGORIES = [
+    {"code": "acik", "label": "Açık"},
+    {"code": "pazarlik_21b", "label": "Pazarlık 21/b"},
+    {"code": "pazarlik_diger", "label": "Pazarlık (diğer)"},
+    {"code": "istisna", "label": "İstisna"},
+    {"code": "diger", "label": "Diğer"},
+]
+PEER_MIN_AWARDS = 20
+
+
+def pay_category(usul_code: str | None) -> str:
+    """açık / pazarlık (21/b separate) / istisna (all 3/x together) / other, for the usul share view."""
+    c = procedure_category(usul_code)
+    return "istisna" if c.startswith("istisna") else "pazarlik_diger" if c == "pazarlik_diger" else c
+
+
+def _tender_rows(stored: list[StoredRecord], idare_name: dict[str, str]) -> list[dict]:
+    """One row per award (tender) of an idare with a confident name: type, idare key, category and TRY value."""
+    rows: dict = {}
+    seen: set = set()
+    for s in stored:
+        r = s.record
+        ik = normalize_key(r.idare) if r.confident("idare") else None
+        if not ik:
+            continue
+        tid = _tid(s)
+        row = rows.get(tid)
+        if row is None:
+            code = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+            row = rows[tid] = {"type": r.bulletin_type, "ik": ik, "cat": pay_category(code), "try": 0.0}
+        k = (tid, flags._dedupe_key(s)) if r.confident("ikn") else (tid, s.id)
+        if k not in seen:
+            seen.add(k)
+            row["try"] += _try_amount(s)
+    return list(rows.values())
+
+
+class _Mix:
+    """awards and TRY per category."""
+
+    def __init__(self):
+        self.awards: dict[str, int] = defaultdict(int)
+        self.try_: dict[str, float] = defaultdict(float)
+
+    def add(self, cat: str, tr: float, sign: int = 1):
+        self.awards[cat] += sign
+        self.try_[cat] += sign * tr
+
+    def minus(self, other: "_Mix") -> "_Mix":
+        m = _Mix()
+        for c in set(self.awards) | set(other.awards):
+            m.awards[c] = self.awards[c] - other.awards[c]
+            m.try_[c] = self.try_[c] - other.try_[c]
+        return m
+
+    def n(self) -> int:
+        return sum(self.awards.values())
+
+    def shares(self) -> dict:
+        n, tot = self.n(), sum(self.try_.values())
+        return {c["code"]: {"awards": self.awards[c["code"]],
+                            "awards_share": round(self.awards[c["code"]] / n, 4) if n else None,
+                            "try": round(self.try_[c["code"]], 2),
+                            "try_share": round(self.try_[c["code"]] / tot, 4) if tot > 0 else None}
+                for c in USUL_PAY_CATEGORIES}
+
+
+def _usul_pay(rows: list[dict], idare_name: dict[str, str]) -> dict[str, dict]:
+    """ik → {type: {"n", "try_total", "shares", "peer": {...} | None}}, over all loaded history (facts only)."""
+    own: dict[tuple, _Mix] = defaultdict(_Mix)          # (type, ik)
+    groups: dict[tuple, _Mix] = defaultdict(_Mix)       # (type, scope...) over all idares
+    for row in rows:
+        name = idare_name[row["ik"]]
+        turu, il = peers.idare_turu(name), peers.il_of(name)
+        own[(row["type"], row["ik"])].add(row["cat"], row["try"])
+        for scope in (("all",), ("turu", turu), ("turu_il", turu, il) if il else None):
+            if scope:
+                groups[(row["type"],) + scope].add(row["cat"], row["try"])
+    out: dict[str, dict] = defaultdict(dict)
+    for (typ, ik), mix in own.items():
+        name = idare_name[ik]
+        turu, il = peers.idare_turu(name), peers.il_of(name)
+        peer = None
+        scopes = ([("turu_il", turu, il)] if il else []) + [("turu", turu), ("all",)]
+        for sc in scopes:
+            rest = groups[(typ,) + sc].minus(mix)
+            if rest.n() >= PEER_MIN_AWARDS:
+                scope = sc[0]
+                label = peers.peer_label(scope if scope != "all" else "sector", turu, il, typ)
+                peer = {"label": label, "n": rest.n(), "try_total": round(sum(rest.try_.values()), 2),
+                        "shares": rest.shares()}
+                break
+        out[ik][typ] = {"n": mix.n(), "try_total": round(sum(mix.try_.values()), 2), "shares": mix.shares(),
+                        "peer": peer}
+    return out
+
+
 def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None) -> tuple[list[dict], list[dict]]:
     """Write idare/ and yuklenici/ files under `out`; return (idare_index, yuklenici_index) for meta.json."""
     slug_map = slug_map or SlugMap()
@@ -140,6 +237,7 @@ def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None
             if t.usul and t.tek is not None:
                 groups_of[t.idare_key].add((typ, t.usul))
     windows: dict[tuple, flags._Window] = {}
+    usul_pay = _usul_pay(_tender_rows(stored, idare_name), idare_name)
 
     def window(typ, usul):
         if (typ, usul) not in windows:
@@ -227,7 +325,9 @@ def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None
             "schema": SCHEMA, "slug": slug, "name": name, "key": ik,
             "idare_turu": peers.idare_turu(name), "il": peers.il_of(name),
             "totals": totals, "procedure_categories": PROCEDURE_CATEGORIES, "procedure_mix": procedure_mix,
-            "tek_gecerli_by_group": shares, "timeline": timeline,
+            "tek_gecerli_by_group": shares,
+            "usul_pay_categories": USUL_PAY_CATEGORIES, "usul_pay": usul_pay.get(ik, {}),
+            "timeline": timeline,
             "top_yuklenici_by_count": top_count, "top_yuklenici_by_try": top_try,
             "natural_person_awards": len(person_awards)})
         written["idare"].add(slug)
