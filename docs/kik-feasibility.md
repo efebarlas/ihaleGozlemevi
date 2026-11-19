@@ -43,3 +43,40 @@ Request 6 was a deliberate single unsigned probe of a *public* v2 endpoint to le
    I recommend (c) now, (b) if Efe wants it.
 2. **Yasaklılar from the Resmî Gazete (M5-sized, only if wanted):** a nightly job that fetches `YYYYMMDD.htm` of the ilan section (1 request) plus the category page(s) (1–2), keeps only titles that mention "yasak", and downloads those PDFs (a handful per week). That is about 3 requests/day plus about 3 PDFs/week, all to `resmigazete.gov.tr`, at the same 10 s spacing and with the same UA. Backfill is one day per request pair. Store the notice text as is and show on a yüklenici page only an exact normalized-name match with the notice date and a link, worded neutrally ("... tarihli Resmî Gazete'de ... süreyle ihale yasağı ilanı"), never as a flag on Bugün without a human-checked sample first.
 3. If the spec owner wants the Gazette path, the first step is a 1–2 request verification of one day that has a yasaklama notice (find via search, then fetch the category page) to learn the title wording and the PDF text layout, then fixtures and a parser.
+
+## Addendum 2026-11-19: Resmî Gazete format and terms check (2 more live requests, 11 in total)
+
+Decision from the spec owner: board decisions are link-out only; for debarment, check format and terms against `resmigazete.gov.tr` only, at most 2 requests. Nothing was built.
+
+| # | request | result |
+|---|---|---|
+| 10 | GET `www.resmigazete.gov.tr/ilanlar/eskiilanlar/2025/03/20250329-4-9.pdf` (one notice bundle, picked from search results) | 200, 3.5 MB, 12 pages |
+| 11 | GET `www.resmigazete.gov.tr/` (home page, for the footer terms) | 200, 199 KB |
+
+The earlier request 9 already showed the category map of a day's ilan index (`YYYYMMDD.htm`): `-2` = YARGI İLANLARI, `-3` = ARTIRMA, EKSİLTME VE İHALE İLANLARI, **`-4` = ÇEŞİTLİ İLANLAR**, `-5` = Merkez Bankası kurları.
+
+### (a) Category and title wording
+- Yasaklama notices are in **Çeşitli İlanlar** (`YYYYMMDD-4-<n>.pdf`). One PDF is a *bundle* of the day's category-4 notices of one issuing body (here 12 pages: 11 single-notice pages and 1 text page), each ending with an ilan number such as `3615/1/1-1`.
+- Header lines: `<Bakanlık/Kurum> ... Genel Müdürlüğünden:` then **`İHALELERE KATILMAKTAN YASAKLAMA KARARI`**.
+- Related notices: `İHALELERE KATILMAKTAN YASAKLAMA KARARINA AİT DÜZELTME İLANI` (e.g. a wrong partner name) and `İHALELERE KATILMAKTAN YASAKLAMA KARARININ KALDIRILMASINA İLİŞKİN DÜZELTME İLANI` (cancelled after a court ruling under 2577 s. İYUK md. 28). Cancellations and corrections are published separately, so any list of "currently banned" firms would need to apply them. A 2023 search hit also shows a ban published by mistake and then declared İPTAL.
+
+### (b) What a notice prints (a fixed form, items 1–7)
+1. İhale Kayıt Numarası (IKN); often "Alınmamıştır (2886 DİK)" for old-law tenders.
+2. Yasaklama kararı veren Bakanlık/Kurum.
+3. İhaleyi yapan idare: adı, adresi, il/ilçe, posta kodu, tel, e-posta.
+4. **Yasaklanan gerçek veya tüzel kişi:** Adı/Unvanı, Adresi (with `İlçe/İL` last), T.C. Kimlik No (natural persons), **Vergi Kimlik/Mükellefiyet No** (legal entities), Kayıtlı olduğu Ticaret/Esnaf Odası, Ticaret/Esnaf Sicil No.
+5. Ortak ve/veya ortakların (the same sub-fields, i.e. the owners, who are often natural persons with T.C. numbers).
+6. Yasaklama süresi (Ay/Yıl) and 7. dayanağı ve kapsamı (checkboxes: 4734 KİK / 4735 KİSK / 2886 DİK / other; scope: tüm ihaleler / bakanlık ihaleleri / kurum ihaleleri).
+Dates: the Gazette issue date (the ban takes effect on publication) and a decision date/number in the correction texts. The sample bundle consisted of natural persons (individual traders) except two legal entities, so I did not save it (no person data is committed; there is no `tests/fixtures/rg/`).
+
+**The decisive finding: apart from correction/cancellation pages, the notices are scanned images.** Each form page holds one embedded image and only a 147-character text layer (header + ilan number). The party names, addresses, T.C./vergi numbers exist only as pixels, with variable scan quality (one legal-entity form was faint and partly garbled even to the eye). Any use needs OCR.
+
+### (c) Terms
+- `robots.txt`: no disallow (request 7).
+- The home page footer says `2026 Tüm Hakları Saklıdır. Gizlilik, Kullanım ve Telif Hakları bildiriminde belirtilen kurallar çerçevesinde hizmet sunulmaktadır.` The notice it refers to is **not linked** in the page HTML and I did not find it within the request budget. So: no explicit automated-access prohibition found, no explicit permission found, content marked all-rights-reserved. **Unresolved**; Efe (or whoever has a browser) should read that notice before M5 builds anything.
+
+### Verdict on a second identifier
+- Legal entities: the form *can* carry a reliable second identifier (VKN, Ticaret Sicil No, city in the address), but only as OCR output from scans of uneven quality.
+- Our side: the sonuç bulletins carry **no VKN or sicil number**. The only comparable field is the address ending in `İlçe/İl`, which ihalent drops (`Record.yuklenici_adresi` is always None in the adapter; the earlier native parser did read it).
+- So the only possible rule is exact normalized name + agreeing city, with both sides depending on extra work (address kept in the parser; OCR of the notice) and the city being a weak identifier (same name, same city is rare but not impossible; branches and relocations).
+- **Verdict: no reliable second identifier today. Keep debarment parked.** It becomes viable only if all of these hold: the terms notice allows the use; an OCR step (e.g. Tesseract, Apache-2.0) is validated by hand on a sample of legal-entity notices; and the adapter keeps the contractor address/city. Natural persons are never matched (all individual-trader notices in the sample would be skipped anyway).
