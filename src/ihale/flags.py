@@ -12,6 +12,7 @@ from datetime import date, timedelta
 import logging
 
 from . import indicators as ind
+from . import structural
 from . import peers
 from .keys import normalize_key
 from .model import CONFIDENT, Money, Record
@@ -110,6 +111,7 @@ class FlagResult:
     score_parts: list = field(default_factory=list)
     idare_stats: dict | None = None
     indicators: dict | None = None
+    structural: dict | None = None     # {"id", "text"} of the matching structural rule (§4.1.1)
 
 
 def _estimate(r: Record) -> tuple[str, Money] | None:
@@ -410,12 +412,21 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                 windows[wkey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date)
             elen_peer = _elenen_peer(windows[wkey], r.idare)
             usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+            rule = structural.match(r.idare, usul)
+            if rule:
+                res.structural = {"id": rule.id, "text": rule.reason_tr}
             if usul:     # idare comparison runs within the record's procedure (usul_turu)
                 ukey = (r.bulletin_type, r.bulletin_date, usul)
                 if ukey not in windows:
                     windows[ukey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date, usul)
                 res.idare_stats, idare_fires = idare_stats(windows[ukey], r.idare, r.bulletin_type, usul)
+                if rule and structural.OWN_PEER_GROUP in rule.effects:
+                    res.idare_stats["peer"] = None
+                    res.idare_stats["peer_note"] = structural.PEER_NOTE
+                    idare_fires = False
         have = {f["code"] for f in res.flags}
+        if res.structural and structural.NO_SINGLE_BID_POINTS in rule.effects:
+            have -= {"tek_teklif", "diger_teklifler_elendi"}      # still shown as flags, but no points
         parts = [c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have]
         if "tekrarlayan_yuklenici" in have and parts:
             parts.append("tekrarlayan_yuklenici")

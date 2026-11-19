@@ -84,11 +84,11 @@ def test_set_flags_persist():
     sid = s.all_records()[0].id
     s.set_flags({sid: {"flags": [{"code": "x", "value": 1, "text": "Şş"}], "unreadable": ["ikn"], "kisim_n": 3,
                        "score": 2, "score_parts": ["a"], "idare_stats": {"records": 7},
-                       "indicators": {"usul_turu": "acik"}}})
+                       "indicators": {"usul_turu": "acik"}, "structural": {"id": "x", "text": "t"}}})
     got = s.all_records()[0]
     assert got.flags == [{"code": "x", "value": 1, "text": "Şş"}] and got.unreadable == ["ikn"] and got.kisim_n == 3
     assert (got.score, got.score_parts, got.idare_stats) == (2, ["a"], {"records": 7})
-    assert got.indicators == {"usul_turu": "acik"}
+    assert got.indicators == {"usul_turu": "acik"} and got.structural == {"id": "x", "text": "t"}
 
 
 def test_reopen_keeps_data():

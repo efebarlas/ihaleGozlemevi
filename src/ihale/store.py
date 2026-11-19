@@ -11,7 +11,7 @@ from pathlib import Path
 from . import config
 from .model import Money, Record
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 MONEY_FIELDS = ("yaklasik_maliyet", "esas_kisim_yaklasik_maliyet", "sozlesme_bedeli")
 DATE_FIELDS = ("ihale_tarihi", "sozlesme_tarihi")
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS records (
     warnings TEXT NOT NULL DEFAULT '[]',
     raw_fields TEXT NOT NULL DEFAULT '[]',
     flags TEXT, unreadable TEXT, kisim_n INTEGER,
-    score INTEGER, score_parts TEXT, idare_stats TEXT, indicators TEXT,
+    score INTEGER, score_parts TEXT, idare_stats TEXT, indicators TEXT, structural TEXT,
     UNIQUE (bulletin_date, bulletin_type, section, seq)
 );
 CREATE INDEX IF NOT EXISTS records_ikn ON records (ikn);
@@ -71,6 +71,7 @@ class StoredRecord:
     score_parts: list | None = None
     idare_stats: dict | None = None
     indicators: dict | None = None
+    structural: dict | None = None
 
 
 def _money_cols(name: str, m: Money | None) -> dict:
@@ -153,7 +154,8 @@ class Store:
             elif int(row["value"]) < SCHEMA_VERSION:   # v1/v2 → v3: add whichever columns are missing
                 have = {r["name"] for r in c.execute("PRAGMA table_info(records)")}
                 for col, decl in (("raw_fields", "TEXT NOT NULL DEFAULT '[]'"), ("score", "INTEGER"),
-                                  ("score_parts", "TEXT"), ("idare_stats", "TEXT"), ("indicators", "TEXT")):
+                                  ("score_parts", "TEXT"), ("idare_stats", "TEXT"), ("indicators", "TEXT"),
+                                  ("structural", "TEXT")):
                     if col not in have:
                         c.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
                 c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))
@@ -197,9 +199,9 @@ class Store:
         dump = lambda v: json.dumps(v, ensure_ascii=False)  # noqa: E731
         with self._conn() as c:
             c.executemany(
-                "UPDATE records SET flags=?, unreadable=?, kisim_n=?, score=?, score_parts=?, idare_stats=?, indicators=? WHERE id=?",
+                "UPDATE records SET flags=?, unreadable=?, kisim_n=?, score=?, score_parts=?, idare_stats=?, indicators=?, structural=? WHERE id=?",
                 [(dump(r["flags"]), dump(r["unreadable"]), r["kisim_n"], r["score"], dump(r["score_parts"]),
-                  dump(r["idare_stats"]), dump(r["indicators"]), i) for i, r in results.items()])
+                  dump(r["idare_stats"]), dump(r["indicators"]), dump(r["structural"]), i) for i, r in results.items()])
 
     # ------------------------------------------------------------ read
     def all_records(self) -> list[StoredRecord]:
@@ -214,7 +216,8 @@ class Store:
                 kisim_n=row["kisim_n"], score=row["score"],
                 score_parts=json.loads(row["score_parts"]) if row["score_parts"] is not None else None,
                 idare_stats=json.loads(row["idare_stats"]) if row["idare_stats"] is not None else None,
-                indicators=json.loads(row["indicators"]) if row["indicators"] is not None else None))
+                indicators=json.loads(row["indicators"]) if row["indicators"] is not None else None,
+                structural=json.loads(row["structural"]) if row["structural"] is not None else None))
         return out
 
     def dates(self) -> list[date]:

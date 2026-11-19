@@ -6,7 +6,7 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import config
+from . import config, structural
 from .keys import normalize_key
 from .model import Money
 from .store import Store, StoredRecord
@@ -59,6 +59,7 @@ def tender_json(s: StoredRecord) -> dict:
         "flags": s.flags or [],
         "score": s.score or 0, "score_parts": s.score_parts or [],
         "indicators": s.indicators,
+        "structural": s.structural,
         "idare_stats": s.idare_stats,
     }
 
@@ -103,5 +104,6 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
     dates = sorted(by_day, reverse=True)
     _write_json(out / "meta.json", {
         "schema": SCHEMA, "generated_at": (now or istanbul_now()).isoformat(timespec="seconds"),
-        "latest_date": dates[0] if dates else None, "dates": dates, "counts": counts})
+        "latest_date": dates[0] if dates else None, "dates": dates, "counts": counts,
+        "structural_rules": structural.rules_meta()})
     return out

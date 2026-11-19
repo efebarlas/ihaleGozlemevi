@@ -56,7 +56,7 @@ def load_all(day=date(2026, 11, 18)):
     res = compute_flags(stored)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
                          "score_parts": r.score_parts, "idare_stats": r.idare_stats,
-                         "indicators": r.indicators} for i, r in res.items()})
+                         "indicators": r.indicators, "structural": r.structural} for i, r in res.items()})
     return store
 
 
@@ -78,6 +78,7 @@ def test_export_matches_contract_shape():
     # shape: every key of the contract example, nothing else (flags/unreadable lists compared by element shape)
     # idare_stats: a lone record has no peer group, so compare that block's keys separately
     stats, c_stats = d["tenders"][0].pop("idare_stats"), CONTRACT_DAY["tenders"][0].pop("idare_stats")
+    assert d["tenders"][0].pop("structural") is None            # §4.1.1: null unless a rule matches
     indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)
     assert set(indic) == set(c_indic) | {"elenen_orani_peer_n"}     # the one key added for display of n
@@ -88,7 +89,7 @@ def test_export_matches_contract_shape():
     assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
     got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
-    assert set(meta) == set(CONTRACT_META)
+    assert set(meta) == set(CONTRACT_META) | {"structural_rules"}
     t = d["tenders"][0]
     expected = CONTRACT_DAY["tenders"][0]
     expected["flags"][0]["value"] = t["flags"][0]["value"]

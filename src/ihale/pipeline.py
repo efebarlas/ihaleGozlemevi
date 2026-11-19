@@ -129,7 +129,8 @@ def flag_all(store: Store | None = None) -> dict[str, int]:
     stored = store.all_records()
     results = compute_flags(stored)
     store.set_flags({i: {"flags": r.flags, "unreadable": r.unreadable, "kisim_n": r.kisim_n, "score": r.score,
-                         "score_parts": r.score_parts, "idare_stats": r.idare_stats, "indicators": r.indicators} for i, r in results.items()})
+                         "score_parts": r.score_parts, "idare_stats": r.idare_stats, "indicators": r.indicators,
+                         "structural": r.structural} for i, r in results.items()})
     counts: dict[str, int] = {}
     for r in results.values():
         for f in r.flags:
