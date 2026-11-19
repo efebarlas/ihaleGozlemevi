@@ -6,7 +6,7 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from . import config, structural
+from . import config, dosyalar, structural
 from .flags import BUGUN_CUTOFF
 from .keys import normalize_key
 from .model import Money
@@ -80,7 +80,8 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
     store = store or Store()
     out = Path(out) if out else export_dir()
     by_day: dict[str, list[StoredRecord]] = {}
-    for s in store.all_records():   # ordered by date, type, section, seq
+    all_records = store.all_records()
+    for s in all_records:   # ordered by date, type, section, seq
         by_day.setdefault(s.record.bulletin_date.isoformat(), []).append(s)
 
     counts = {}
@@ -104,10 +105,12 @@ def export_all(store: Store | None = None, out: Path | None = None, now: datetim
             if p.stem not in by_day:
                 p.unlink()
 
+    idare_index, yuklenici_index = dosyalar.build(all_records, out)
     dates = sorted(by_day, reverse=True)
     _write_json(out / "meta.json", {
         "schema": SCHEMA, "generated_at": (now or istanbul_now()).isoformat(timespec="seconds"),
         "latest_date": dates[0] if dates else None, "dates": dates, "counts": counts,
         "structural_rules": structural.rules_meta(), "bugun_cutoff": BUGUN_CUTOFF,
-        "part_rates": store.get_meta("part_rates", {})})
+        "part_rates": store.get_meta("part_rates", {}),
+        "idare_index": idare_index, "yuklenici_index": yuklenici_index})
     return out

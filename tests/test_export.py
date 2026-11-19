@@ -101,7 +101,8 @@ def test_export_matches_contract_shape():
     assert set(c_stats["peer"]) == {"label", "records", "tek_gecerli_teklif"}
     got, want = set(meta["counts"]["2026-11-18"]), set(CONTRACT_META["counts"]["2026-11-18"])
     assert got == want | {"tek_teklif", "diger_teklifler_elendi"}   # the split flags add two counters
-    assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates"}
+    assert set(meta) == set(CONTRACT_META) | {"structural_rules", "bugun_cutoff", "part_rates",
+                                                        "idare_index", "yuklenici_index"}
     assert meta["bugun_cutoff"] == 3.0
     assert set(meta["part_rates"]["mal/hepsi"]) == {"tek_teklif", "diger_teklifler_elendi", "bedel_orani",
                                                 "tekrarlayan_eslesik", "idare_orani", "n", "n_computable", "bedel_median_try"}

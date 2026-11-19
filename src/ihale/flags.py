@@ -443,13 +443,18 @@ def _score_all(results: dict[int, FlagResult]) -> dict:
             for g in sorted(sizes)}
 
 
-def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult], dict]:
-    """(flags/score per record id, part_rates table for meta.json)."""
-    # ikn groups (kısmi): deduped by (ikn, yüklenici key, bedel)
+def kisim_groups(stored: list[StoredRecord]) -> dict[str, dict[tuple, StoredRecord]]:
+    """ikn → deduped records of that tender (kısmi lots), keyed by (ikn, yüklenici key, bedel)."""
     groups: dict[str, dict[tuple, StoredRecord]] = {}
     for s in stored:
         if s.record.confident("ikn"):
             groups.setdefault(s.record.ikn, {}).setdefault(_dedupe_key(s), s)
+    return groups
+
+
+def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult], dict]:
+    """(flags/score per record id, part_rates table for meta.json)."""
+    groups = kisim_groups(stored)
 
     # repeat-contractor history: (idare key, yüklenici key) → sorted [(date, ikn)]
     hist: dict[tuple[str, str], list[tuple[date, str]]] = {}
