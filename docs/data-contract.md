@@ -16,6 +16,11 @@ Owner: the orchestrator. Updated 2026-11-19 for SPEC §4.1 (build on ihalent) an
   - An empty value after the colon means the field is `None` with confidence 1.0 for "known empty". Downstream treats `None` as unusable either way.
 - The parser never raises on a bad record. It records `warnings` and lowers the confidence.
 
+## 1.1 İlan bulletins (kept for M6)
+Each day's zip also holds the *ilan* (tender notice) PDF, `BULTEN_<ddmmyyyy>_<TYPE>.pdf`. It prints `Niteliği, türü ve miktarı` (e.g. `2.500.000 Litre Motorin`), which M6 joins to sonuç records by ikn for unit prices.
+- Never delete the zips or the extracted ilan PDFs from the data dir. Backfill keeps them too.
+- Parsing ilan notices into raw fields keyed by ikn is M6 work: ihalent reads only `*_SONUC.pdf`.
+
 ## 2. Store (M2)
 - SQLite at `ihale.config.db_path()`. One table of records, holding every `Record` field plus the confidence as JSON. Money is stored as an integer kuruş amount and a currency.
 - Re-running the same bulletin is idempotent: the natural key is `(bulletin_date, bulletin_type, section, seq)`.
