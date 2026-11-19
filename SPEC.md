@@ -192,13 +192,13 @@ Efe gives at most **one verification a day**. It is the project's scarcest resou
   - skipping is fine, and three skips in a row lower the frequency;
   - prefer pairwise choices ("Which of A and B is more worth a reporter's time?") over ratings.
 - **Blinding:** when asking about newsworthiness, hide which party runs the idare.
-- **Log every answer.** The spec owner writes it to `oracle/log.jsonl` with the date, the question, the options shown, the answer and what it was meant to change. The answers are one rater's judgment, not ground truth.
+- **Log every answer.** The spec owner writes it to `oracle/log.jsonl` in the local data folder (outside the public repo and the site, because these are Efe's own judgments) with the date, the question, the options shown, the answer and what it was meant to change. The answers are one rater's judgment, not ground truth.
 - **Priority of questions:**
   1. Ranking calibration: pairwise tender choices that feed the M5 weights.
   2. Agent-vs-code disagreements that the hand-checked sample can't settle.
   3. Fairness of anything heading toward G-Public.
   4. Signal-discovery verdicts (M7).
-- **The pipeline supplies candidates.** Each daily run exports `oracle/candidates.json`: a few tender pairs where the current score is least certain. Every tender has its fields and source link.
+- **The pipeline supplies candidates.** Each daily run writes `oracle/candidates.json` to the local data folder: a few tender pairs where the current score is least certain. Every tender has its fields and source link.
 
 ## 10. Milestones
 - **M0 Fresh base:**
