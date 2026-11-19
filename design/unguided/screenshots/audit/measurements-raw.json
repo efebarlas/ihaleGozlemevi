@@ -1,0 +1,5098 @@
+{
+ "bugun-light": {
+  "docH": 15667,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Gösterilenler, işaretlerin bir",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.46,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(255,255,255)",
+    "sample": "İdare",
+    "need": 4.5,
+    "count": 96
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.46,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 26
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.46,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Puan: 12,7",
+    "need": 4.5,
+    "count": 29
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "a",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 15.66,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(255,255,255)",
+    "sample": "2 teklif verildi, yalnızca kaz",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 15.66,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 11
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 15.66,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 14
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 6
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "19 Kasım 2026",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p.summary",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "591 sonuç ilanı okundu · 52 ta",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "summary",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu idareden bugün 21 kayıt dah",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kuruma Ait 1 Adet 2026 Model M",
+    "need": 4.5,
+    "count": 22
+   },
+   {
+    "sel": "li",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "· 3.979.700,00 TRY · Puan: 5,9",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "label.chip",
+    "ratio": 17.99,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(20,23,26)",
+    "sample": "Tümü (52)",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "label.chip",
+    "ratio": 17.99,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Tek teklif (39)",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "a",
+    "ratio": 17.99,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "2 Kalem UPS Kuru Akü",
+    "need": 4.5,
+    "count": 24
+   },
+   {
+    "sel": "dd",
+    "ratio": 17.99,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "DEVLET MALZEME OFİSİ GENEL MÜD",
+    "need": 4.5,
+    "count": 72
+   },
+   {
+    "sel": "dd",
+    "ratio": 17.99,
+    "fs": 18,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "1.537.700,00 TRY",
+    "need": 4.5,
+    "count": 24
+   },
+   {
+    "sel": "a",
+    "ratio": 17.99,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "Ayrıntı →",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "h2",
+    "ratio": 17.99,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "3 DHMİ ihalesi",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li",
+    "ratio": 17.99,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(255,255,255)",
+    "sample": "· 43.732.700,00 TRY · 2 teklif",
+    "need": 4.5,
+    "count": 7
+   },
+   {
+    "sel": "a.btn",
+    "ratio": 17.99,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(20,23,26)",
+    "sample": "Günün tüm 591 ilanını göster",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Gösterilenler, işaretlerin bir",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "targetsTotal": 124,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 44,
+    "minH": 19,
+    "minW": 66,
+    "ex": "Nasıl hesaplanıyor?"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 40
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 915
+  },
+  "verdictHits": [
+   "sınır x1 ...",
+   "%97 x4 ... idarelerde ortanca %82 (n=158)  Puan: 6,8  KAYNAKKamu İhale Bülteni, 19.11.2026, Mal – So"
+  ],
+  "gercekKisi": 1,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [
+   "50%"
+  ],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [
+   "start 800",
+   "start 800",
+   "start 800"
+  ],
+  "srclineCount": 31,
+  "cardCount": 26,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026"
+ },
+ "bugun-dark": {
+  "docH": 15667,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.26,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(23,26,29)",
+    "sample": "İdare",
+    "need": 4.5,
+    "count": 96
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.26,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 26
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.26,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Puan: 12,7",
+    "need": 4.5,
+    "count": 29
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Gösterilenler, işaretlerin bir",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 12.17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(23,26,29)",
+    "sample": "2 teklif verildi, yalnızca kaz",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 12.17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 11
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 12.17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 14
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "a",
+    "ratio": 13.68,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(34,38,42)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "label.chip",
+    "ratio": 14.49,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Tek teklif (39)",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "a",
+    "ratio": 14.49,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "2 Kalem UPS Kuru Akü",
+    "need": 4.5,
+    "count": 24
+   },
+   {
+    "sel": "dd",
+    "ratio": 14.49,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "DEVLET MALZEME OFİSİ GENEL MÜD",
+    "need": 4.5,
+    "count": 72
+   },
+   {
+    "sel": "dd",
+    "ratio": 14.49,
+    "fs": 18,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "1.537.700,00 TRY",
+    "need": 4.5,
+    "count": 24
+   },
+   {
+    "sel": "h2",
+    "ratio": 14.49,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "3 DHMİ ihalesi",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li",
+    "ratio": 14.49,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(23,26,29)",
+    "sample": "· 43.732.700,00 TRY · 2 teklif",
+    "need": 4.5,
+    "count": 7
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "19 Kasım 2026",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p.summary",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "591 sonuç ilanı okundu · 52 ta",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "label.chip",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(15, 17, 19)",
+    "bg": "rgb(232,234,236)",
+    "sample": "Tümü (52)",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "summary",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu idareden bugün 21 kayıt dah",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "· 3.979.700,00 TRY · Puan: 5,9",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "a.btn",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(15, 17, 19)",
+    "bg": "rgb(232,234,236)",
+    "sample": "Günün tüm 591 ilanını göster",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.7,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Ayrıntı →",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Nasıl hesaplanıyor?",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kuruma Ait 1 Adet 2026 Model M",
+    "need": 4.5,
+    "count": 22
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 31
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.26,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(23,26,29)",
+    "sample": "İdare",
+    "need": 4.5,
+    "count": 96
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.26,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(23,26,29)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 26
+   }
+  ],
+  "targetsTotal": 124,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 44,
+    "minH": 19,
+    "minW": 66,
+    "ex": "Nasıl hesaplanıyor?"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 40
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 171,
+   "rgb(160, 168, 176)": 915
+  },
+  "verdictHits": [
+   "sınır x1 ...",
+   "%97 x4 ... idarelerde ortanca %82 (n=158)  Puan: 6,8  KAYNAKKamu İhale Bülteni, 19.11.2026, Mal – So"
+  ],
+  "gercekKisi": 1,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [
+   "50%"
+  ],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [
+   "start 800",
+   "start 800",
+   "start 800"
+  ],
+  "srclineCount": 31,
+  "cardCount": 26,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026"
+ },
+ "gun-ozet-light": {
+  "docH": 1702,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tüm kayıtlar aşağıdaki sayfala",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "50 kayıt · puan 12,7 – 3,0",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 8
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "19 Kasım 2026",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p.summary",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "591 sonuç ilanı · 459 tanesind",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Usule göre",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "td",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İstisna (4734 / 3-g)",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Sayfa 1",
+    "need": 4.5,
+    "count": 18
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tüm kayıtlar aşağıdaki sayfala",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "50 kayıt · puan 12,7 – 3,0",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "targetsTotal": 28,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 3,
+    "minH": 19,
+    "minW": 30,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 25
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 114
+  },
+  "verdictHits": [
+   "sınır x1 ...Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026"
+ },
+ "gun-ozet-dark": {
+  "docH": 1702,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tüm kayıtlar aşağıdaki sayfala",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "50 kayıt · puan 12,7 – 3,0",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "19 Kasım 2026",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p.summary",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "591 sonuç ilanı · 459 tanesind",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Usule göre",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "td",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İstisna (4734 / 3-g)",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Sayfa 1",
+    "need": 4.5,
+    "count": 18
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tüm kayıtlar aşağıdaki sayfala",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "50 kayıt · puan 12,7 – 3,0",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "targetsTotal": 28,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 3,
+    "minH": 19,
+    "minW": 30,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 25
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 2,
+   "rgb(160, 168, 176)": 114
+  },
+  "verdictHits": [
+   "sınır x1 ...Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026"
+ },
+ "gun-sayfa2-light": {
+  "docH": 15388,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "› Sayfa 2 / 18",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kayıtlar puana, sonra TRY sözl",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.rm",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "TOKAT İL MİLLİ EĞİTİM MÜDÜRLÜĞ",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 42
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İdarenin tek geçerli teklif pa",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 14
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu yüklenici son 12 ayda bu id",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "a",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 9
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "19 Kasım 2026 · sayfa 2",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "a.rt",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Atölye Makine ve Teçhizat Alım",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "span.rb",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "9.690.000,00 TRY",
+    "need": 4.5,
+    "count": 50
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "› Sayfa 2 / 18",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kayıtlar puana, sonra TRY sözl",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "targetsTotal": 111,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 50,
+    "minH": 19,
+    "minW": 137,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 61
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 529
+  },
+  "verdictHits": [
+   "uyarı x1 ...NİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ · İsabet Teknik İnşaat Mekanik Sanayi ve Ticaret Limited Şirke",
+   "sınır x2 ...Belediyemiz Sınırları İçinde Bulunan Yollarda Buzlanmayı Önlemek Amacıyla 600 Ton Dökme Ka",
+   "%97 x1 ... · EKAP Bülten İndirme  Ankaray İşletme Şube Müdürlüğü Klima Mal Alımı İşi ANKARA ELEKTRİK"
+  ],
+  "gercekKisi": 7,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [
+   "start 800",
+   "start 800",
+   "start 800"
+  ],
+  "srclineCount": 50,
+  "cardCount": 0,
+  "rowCount": 50,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026 · sayfa 2"
+ },
+ "gun-sayfa2-dark": {
+  "docH": 15388,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "› Sayfa 2 / 18",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kayıtlar puana, sonra TRY sözl",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.rm",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "TOKAT İL MİLLİ EĞİTİM MÜDÜRLÜĞ",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 42
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İdarenin tek geçerli teklif pa",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 14
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu yüklenici son 12 ayda bu id",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "a",
+    "ratio": 13.68,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(34,38,42)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 6
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "19 Kasım 2026 · sayfa 2",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "span.rb",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "9.690.000,00 TRY",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "19 Kasım 2026",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "a.rt",
+    "ratio": 17,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Atölye Makine ve Teçhizat Alım",
+    "need": 4.5,
+    "count": 50
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 50
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "› Sayfa 2 / 18",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kayıtlar puana, sonra TRY sözl",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "targetsTotal": 111,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 50,
+    "minH": 19,
+    "minW": 137,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 61
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 231,
+   "rgb(160, 168, 176)": 529
+  },
+  "verdictHits": [
+   "uyarı x1 ...NİM ŞİRKETİ GENEL MÜDÜRLÜĞÜ · İsabet Teknik İnşaat Mekanik Sanayi ve Ticaret Limited Şirke",
+   "sınır x2 ...Belediyemiz Sınırları İçinde Bulunan Yollarda Buzlanmayı Önlemek Amacıyla 600 Ton Dökme Ka",
+   "%97 x1 ... · EKAP Bülten İndirme  Ankaray İşletme Şube Müdürlüğü Klima Mal Alımı İşi ANKARA ELEKTRİK"
+  ],
+  "gercekKisi": 7,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [
+   "start 800",
+   "start 800",
+   "start 800"
+  ],
+  "srclineCount": 50,
+  "cardCount": 0,
+  "rowCount": 50,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "19 Kasım 2026 · sayfa 2"
+ },
+ "detay-isaretli-A160-light": {
+  "docH": 2126,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 6.83,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "(Diğer teklifler elendi)",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "span.why",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Teklifler belge eksikliği gibi",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Diğer teklifler elendi: 3,8 pu",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "dt",
+    "ratio": 6.83,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "2 teklif verildi, yalnızca kaz",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 9
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Yakacak Alımı",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "%101,7 · benzer idarelerde ort",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "strong",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 19",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 193
+  },
+  "verdictHits": [
+   "sınır x1 ... sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Yakacak Alımı"
+ },
+ "detay-isaretli-A160-dark": {
+  "docH": 2126,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 7.86,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "(Diğer teklifler elendi)",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "span.why",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Teklifler belge eksikliği gibi",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Diğer teklifler elendi: 3,8 pu",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.86,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "2 teklif verildi, yalnızca kaz",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Sözleşme bedeli yaklaşık maliy",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 13.68,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(34,38,42)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Yakacak Alımı",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "%101,7 · benzer idarelerde ort",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "strong",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 19",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 6
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 8,
+   "rgb(160, 168, 176)": 193
+  },
+  "verdictHits": [
+   "sınır x1 ... sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Yakacak Alımı"
+ },
+ "detay-isaretli-B7-light": {
+  "docH": 2681,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 6.83,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "(Tek teklif)",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "span.why",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif, pazarın dar olduğu",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu idarenin 4734/3-g (DMO) alı",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif: 2,0 puan (bu usuld",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dt",
+    "ratio": 6.83,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu yüklenici son 12 ayda bu id",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İdarenin tek geçerli teklif pa",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 9
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "20 Adet Beyaz Renkte Iveco Dai",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "%93,8 · benzer idarelerde orta",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "strong",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 19",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 213
+  },
+  "verdictHits": [
+   "sınır x1 ..."
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "20 Adet Beyaz Renkte Iveco Daily 35C21D 3,0 A8 3750WB Çift Kabin, Klimalı Şasi Üzerine Açık Sac Kasalı Tenteli Kamyonet"
+ },
+ "detay-isaretli-B7-dark": {
+  "docH": 2681,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 7.86,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "(Tek teklif)",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "span.why",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif, pazarın dar olduğu",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu idarenin 4734/3-g (DMO) alı",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif: 2,0 puan (bu usuld",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.86,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kamu İhale Bülteni, 19.11.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu yüklenici son 12 ayda bu id",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İdarenin tek geçerli teklif pa",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 13.68,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(34,38,42)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "20 Adet Beyaz Renkte Iveco Dai",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "%93,8 · benzer idarelerde orta",
+    "need": 4.5,
+    "count": 20
+   },
+   {
+    "sel": "strong",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 19",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 6
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-11-19-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 9,
+   "rgb(160, 168, 176)": 213
+  },
+  "verdictHits": [
+   "sınır x1 ..."
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "20 Adet Beyaz Renkte Iveco Daily 35C21D 3,0 A8 3750WB Çift Kabin, Klimalı Şasi Üzerine Açık Sac Kasalı Tenteli Kamyonet"
+ },
+ "detay-okunamadi-A108-light": {
+  "docH": 1924,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-10-21-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 6.83,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "(Tek teklif)",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.why",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif, pazarın dar olduğu",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif: 2,5 puan (bu usuld",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "dt",
+    "ratio": 6.83,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 19
+   },
+   {
+    "sel": "span.unread",
+    "ratio": 6.83,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "okunamadı",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 14.34,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(31, 36, 40)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kamu İhale Bülteni, 21.10.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 9
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "8 cm Kilit Taşı Alımı (Nakliye",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "%80,9 · benzer idarelerde orta",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "strong",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 21",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.24,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale detayı · 2026-10-21-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 178
+  },
+  "verdictHits": [
+   "sınır x1 ...lar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "8 cm Kilit Taşı Alımı (Nakliye Dahil)"
+ },
+ "detay-okunamadi-A108-dark": {
+  "docH": 1924,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-10-21-mal-",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "span.num",
+    "ratio": 7.86,
+    "fs": 12,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "(Tek teklif)",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.why",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif, pazarın dar olduğu",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.peer",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bedel / yaklaşık maliyet: bu k",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif: 2,5 puan (bu usuld",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "dt",
+    "ratio": 7.86,
+    "fs": 11,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bedel / yaklaşık maliyet",
+    "need": 4.5,
+    "count": 19
+   },
+   {
+    "sel": "span.unread",
+    "ratio": 7.86,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "okunamadı",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "p.srcline",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kamu İhale Bülteni, 21.10.2026",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "li.flag",
+    "ratio": 13.18,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(211, 216, 220)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif verildi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 13.68,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(34,38,42)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "8 cm Kilit Taşı Alımı (Nakliye",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "h2",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İşaretler",
+    "need": 4.5,
+    "count": 4
+   },
+   {
+    "sel": "dd",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "%80,9 · benzer idarelerde orta",
+    "need": 4.5,
+    "count": 18
+   },
+   {
+    "sel": "strong",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak: Kamu İhale Bülteni, 21",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 6
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "EKAP Bülten İndirme sayfası",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "span.lbl",
+    "ratio": 6.33,
+    "fs": 11,
+    "w": "800",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Kaynak",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.crumbs",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "›",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale detayı · 2026-10-21-mal-",
+    "need": 4.5,
+    "count": 5
+   }
+  ],
+  "targetsTotal": 13,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a": {
+    "n": 1,
+    "minH": 44,
+    "minW": 40,
+    "ex": "Bugün"
+   },
+   "a (inline)": {
+    "n": 4,
+    "minH": 19,
+    "minW": 116,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 9
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 7,
+   "rgb(160, 168, 176)": 178
+  },
+  "verdictHits": [
+   "sınır x1 ...lar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 1,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "8 cm Kilit Taşı Alımı (Nakliye Dahil)"
+ },
+ "arsiv-light": {
+  "docH": 1297,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Yüklenmiş bülten günleri, yeni",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "591 ilan · 459 işaretli",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Arşiv",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "19 Kasım 2026",
+    "need": 4.5,
+    "count": 21
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Yüklenmiş bülten günleri, yeni",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "591 ilan · 459 işaretli",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "targetsTotal": 28,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 28
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 129
+  },
+  "verdictHits": [
+   "sınır x1 ...z.  Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Arşiv"
+ },
+ "arsiv-dark": {
+  "docH": 1297,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Yüklenmiş bülten günleri, yeni",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "591 ilan · 459 işaretli",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Arşiv",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "19 Kasım 2026",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak kod (GitHub)",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Yüklenmiş bülten günleri, yeni",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "span.muted",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "591 ilan · 459 işaretli",
+    "need": 4.5,
+    "count": 21
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "targetsTotal": 28,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 28
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 2,
+   "rgb(160, 168, 176)": 129
+  },
+  "verdictHits": [
+   "sınır x1 ...z.  Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Arşiv"
+ },
+ "yontem-light": {
+  "docH": 9050,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922",
+   "TABLE.rules r=437",
+   "THEAD. r=437",
+   "TR. r=437",
+   "TH. r=437",
+   "TBODY. r=437",
+   "TR. r=437",
+   "TD. r=437",
+   "TR. r=437",
+   "TD. r=437"
+  ],
+  "contrast": [
+   {
+    "sel": "a.sw",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "·",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 10
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Yöntem",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi, kamu alımları",
+    "need": 4.5,
+    "count": 28
+   },
+   {
+    "sel": "h2",
+    "ratio": 16.48,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Veri kaynağı",
+    "need": 4.5,
+    "count": 10
+   },
+   {
+    "sel": "strong",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kamu İhale Bülteni",
+    "need": 4.5,
+    "count": 27
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "dt",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Tek teklif",
+    "need": 4.5,
+    "count": 8
+   },
+   {
+    "sel": "dd",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Kural: toplam teklif sayısı ta",
+    "need": 4.5,
+    "count": 8
+   },
+   {
+    "sel": "h3",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İşaretlerin usule göre görülme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "td",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Mal · Açık",
+    "need": 4.5,
+    "count": 94
+   },
+   {
+    "sel": "li",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": ", idare adındaki anahtar sözcü",
+    "need": 4.5,
+    "count": 22
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "a.sw",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "·",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 15.05,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(233,235,237)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 10
+   }
+  ],
+  "targetsTotal": 10,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 2,
+    "minH": 21,
+    "minW": 48,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 8
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 29
+  },
+  "verdictHits": [
+   "≥ x1 ...eşme bedeli ÷ yaklaşık maliyet ≥ 0,97 (yani indirim, kırım, %3'ten az). Yaklaşık maliyet o",
+   "eşik x1 ...gösterge hiç görünmez. Eşikler, yeterli gün yüklenince ölçülen dağılımlara göre belirlenec",
+   "sınır x4 ... tam olarak nasıl hesaplandığını ve sınırlarını anlatır.  Veri kaynağı  Tüm bilgiler, Kamu"
+  ],
+  "gercekKisi": 1,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Yöntem"
+ },
+ "yontem-dark": {
+  "docH": 9050,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922",
+   "TABLE.rules r=437",
+   "THEAD. r=437",
+   "TR. r=437",
+   "TH. r=437",
+   "TBODY. r=437",
+   "TR. r=437",
+   "TD. r=437",
+   "TR. r=437",
+   "TD. r=437"
+  ],
+  "contrast": [
+   {
+    "sel": "a.sw",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "·",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 10
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Yöntem",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi, kamu alımları",
+    "need": 4.5,
+    "count": 28
+   },
+   {
+    "sel": "h2",
+    "ratio": 15.69,
+    "fs": 17,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Veri kaynağı",
+    "need": 4.5,
+    "count": 10
+   },
+   {
+    "sel": "strong",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kamu İhale Bülteni",
+    "need": 4.5,
+    "count": 27
+   },
+   {
+    "sel": "dt",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Tek teklif",
+    "need": 4.5,
+    "count": 8
+   },
+   {
+    "sel": "dd",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kural: toplam teklif sayısı ta",
+    "need": 4.5,
+    "count": 8
+   },
+   {
+    "sel": "h3",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İşaretlerin usule göre görülme",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "td",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Mal · Açık",
+    "need": 4.5,
+    "count": 94
+   },
+   {
+    "sel": "li",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": ", idare adındaki anahtar sözcü",
+    "need": 4.5,
+    "count": 22
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "EKAP Bülten İndirme",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak kod (GitHub)",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "a.sw",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "·",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "th",
+    "ratio": 12.63,
+    "fs": 14,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(34,38,42)",
+    "sample": "Usul",
+    "need": 4.5,
+    "count": 10
+   }
+  ],
+  "targetsTotal": 10,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   },
+   "a (inline)": {
+    "n": 2,
+    "minH": 21,
+    "minW": 48,
+    "ex": "EKAP Bülten İndirme"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 8
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 2,
+   "rgb(160, 168, 176)": 29
+  },
+  "verdictHits": [
+   "≥ x1 ...eşme bedeli ÷ yaklaşık maliyet ≥ 0,97 (yani indirim, kırım, %3'ten az). Yaklaşık maliyet o",
+   "eşik x1 ...gösterge hiç görünmez. Eşikler, yeterli gün yüklenince ölçülen dağılımlara göre belirlenec",
+   "sınır x4 ... tam olarak nasıl hesaplandığını ve sınırlarını anlatır.  Veri kaynağı  Tüm bilgiler, Kamu"
+  ],
+  "gercekKisi": 1,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Yöntem"
+ },
+ "404-light": {
+  "docH": 812,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "light",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 16.48,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 5
+   },
+   {
+    "sel": "h1",
+    "ratio": 16.48,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Sayfa bulunamadı",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Aradığınız sayfa yok ya da taş",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.btn",
+    "ratio": 17.99,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(20,23,26)",
+    "sample": "Bugün sayfasına dön",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p",
+    "ratio": 6.83,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(78, 86, 94)",
+    "bg": "rgb(244,245,246)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 16.48,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 16.48,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(20, 23, 26)",
+    "bg": "rgb(244,245,246)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   }
+  ],
+  "targetsTotal": 8,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 8
+  },
+  "chromaColors": {
+   "rgb(78, 86, 94)": 19
+  },
+  "verdictHits": [
+   "sınır x1 ...z.  Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Sayfa bulunamadı"
+ },
+ "404-dark": {
+  "docH": 812,
+  "scrollW": 375,
+  "clientW": 375,
+  "colorScheme": "dark",
+  "overflowEls": [
+   "A.skip r=-922"
+  ],
+  "contrast": [
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   },
+   {
+    "sel": "h1",
+    "ratio": 15.69,
+    "fs": 25.6,
+    "w": "700",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Sayfa bulunamadı",
+    "need": 3,
+    "count": 1
+   },
+   {
+    "sel": "p",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Aradığınız sayfa yok ya da taş",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.btn",
+    "ratio": 15.69,
+    "fs": 16,
+    "w": "700",
+    "fg": "rgb(15, 17, 19)",
+    "bg": "rgb(232,234,236)",
+    "sample": "Bugün sayfasına dön",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a.skip",
+    "ratio": 17,
+    "fs": 16,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İçeriğe geç",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 17,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(241, 243, 244)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Kaynak kod (GitHub)",
+    "need": 4.5,
+    "count": 2
+   }
+  ],
+  "contrastFails": [],
+  "contrastMin": [
+   {
+    "sel": "p",
+    "ratio": 7.86,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(160, 168, 176)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bu site, resmî Kamu İhale Bült",
+    "need": 4.5,
+    "count": 2
+   },
+   {
+    "sel": "a.brand",
+    "ratio": 15.69,
+    "fs": 16.8,
+    "w": "800",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "İhale Gözlemevi",
+    "need": 4.5,
+    "count": 1
+   },
+   {
+    "sel": "a",
+    "ratio": 15.69,
+    "fs": 14,
+    "w": "400",
+    "fg": "rgb(232, 234, 236)",
+    "bg": "rgb(15,17,19)",
+    "sample": "Bugün",
+    "need": 4.5,
+    "count": 3
+   }
+  ],
+  "targetsTotal": 8,
+  "targetsSmallSummary": {
+   "a.skip": {
+    "n": 1,
+    "minH": 23,
+    "minW": 77,
+    "ex": "İçeriğe geç"
+   }
+  },
+  "targetsMinNonInline": {
+   "minH": 23,
+   "n": 8
+  },
+  "chromaColors": {
+   "rgb(154, 163, 171)": 2,
+   "rgb(160, 168, 176)": 19
+  },
+  "verdictHits": [
+   "sınır x1 ...z.  Kaynak kod (GitHub) · Yöntem ve sınırlar"
+  ],
+  "gercekKisi": 0,
+  "emoji": false,
+  "shadows": 0,
+  "gradients": 0,
+  "radii": [],
+  "fonts": [
+   "system-ui"
+  ],
+  "tabnum": "lining-nums tabular-nums",
+  "moneyAlign": [],
+  "srclineCount": 0,
+  "cardCount": 0,
+  "rowCount": 0,
+  "rowsWithoutSource": 0,
+  "cardsWithoutSource": 0,
+  "h1": "Sayfa bulunamadı"
+ }
+}
