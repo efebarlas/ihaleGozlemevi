@@ -3,7 +3,14 @@
 <h1>{{ heading }}</h1>
 <p class="muted">{{ total | tr_int }} kayıt, A'dan Z'ye. Bu sayfalar yalnızca bültende yayımlanan olguları listeler. <a href="{{ other[0] }}">{{ other[1] }}</a></p>
 {% if kind == "yuklenici" %}<p class="muted">Gerçek kişi yüklenicilerin sayfası yoktur.</p>{% endif %}
-<ul class="archive">
+{% if kind == "idare" %}
+<div class="finder" id="ad-box" hidden>
+  <label>İdare adı ara <input type="search" id="ad-q" placeholder="idare adı yazın" autocomplete="off"></label>
+  <p class="muted" id="ad-n" aria-live="polite"></p>
+  <ul class="archive" id="ad-res"></ul>
+</div>
+{% endif %}
+<ul class="archive" id="ad-list">
 {{ items_html }}
 </ul>
 {% if npages > 1 %}
@@ -12,3 +19,16 @@
 </nav>
 {% endif %}
 {% endblock %}
+{% block foot %}{% if kind == "idare" %}
+<script>
+(function(){var box=document.getElementById("ad-box");if(!box)return;box.hidden=false;
+var q=document.getElementById("ad-q"),res=document.getElementById("ad-res"),list=document.getElementById("ad-list"),n=document.getElementById("ad-n"),data=null,loading=false;
+function low(s){return(s||"").toLocaleLowerCase("tr")}
+function show(){var b=low(q.value.trim());if(!b){res.innerHTML="";list.hidden=false;n.textContent="";return}
+ if(!data){n.textContent="Yükleniyor…";return}
+ var out=[],i;for(i=0;i<data.length&&out.length<60;i++){if(low(data[i][0]).indexOf(b)>=0)out.push(data[i])}
+ list.hidden=true;res.innerHTML="";out.forEach(function(r){var li=document.createElement("li"),a=document.createElement("a");a.href="/idare/"+r[1]+"/";a.textContent=r[0];li.appendChild(a);res.appendChild(li)});
+ n.textContent=out.length?(out.length>=60?"İlk 60 eşleşme gösteriliyor":out.length+" eşleşme"):"Eşleşme yok"}
+q.addEventListener("input",function(){if(!data&&!loading){loading=true;fetch("/arama-idare.json").then(function(r){return r.json()}).then(function(d){data=d;show()}).catch(function(){n.textContent="Liste yüklenemedi; aşağıdaki sayfalardan arayabilirsiniz."})}show()})})();
+</script>
+{% endif %}{% endblock %}

@@ -242,7 +242,7 @@ def test_peer_comparison_line(dist):
     h = _read(dist, "index.html")
     assert ("Bu idarenin açık ihale alımları (n=12): %80 tek geçerli teklif · "
             "Örnek ilindeki sağlık idareleri (mal, açık ihale, n=140): %43") in h
-    assert "Bu idarenin pazarlık (md. 21/b) alımları (n=8): %75 tek geçerli teklif · Tüm üniversiteler (mal, n=60): %35" in h
+    assert "Bu idarenin pazarlık (md. 21/b) alımları (n=8)" not in h          # the flag already states these numbers: no duplicate peer line
     d = _read(dist, "ihale/2026-11-18-mal-A-1/index.html")
     assert "Bu idarenin açık ihale alımları (n=12): %80" in d and "Puan: 4" in d
 
@@ -265,7 +265,7 @@ def test_score_parts_and_idare_orani_shown(dist):
 def test_yontem_score_and_peer(dist):
     y = _read(dist, "yontem/index.html")
     for needle in ['id="puan"', "R018", "R035", "R038", "GTI", "en az 20 kaydı", "Bültende sektör veya il alanı yoktur",
-                   "github.com/gulmezeren2-byte/ihalent", "yarısında"]:
+                   "github.com/gulmezeren2-byte/ihalent", "kayıttan"]:
         assert needle in y, needle
 
 
@@ -327,7 +327,7 @@ def test_no_raw_python_values_and_null_names(tmp_path):
 def test_fold_at_most_two_cards_per_idare(dist):
     h = _read(dist, "index.html")
     # 3 records of ÖRNEK İL MÜDÜRLÜĞÜ at score >= 2 (A-1, A-3, B-3, B-4 -> two cards + 2 folded)
-    cards = re.findall(r'<li class="card [^"]*">\s*<h2><a href="/ihale/([^/]+)/', h)
+    cards = re.findall(r'<li class="card [^"]*"[^>]*>\s*<h2><a href="/ihale/([^/]+)/', h)
     assert cards == ["2026-11-18-mal-A-1", "2026-11-18-mal-A-3", "2026-11-18-mal-B-1", "2026-11-18-mal-A-2"]
     assert "Bu idareden bugün 2 kayıt daha" in h
     i = h.index("kayıt daha")
@@ -390,7 +390,7 @@ def test_no_threshold_labels_outside_yontem(dist):
             continue
         t = p.read_text(encoding="utf-8")
         assert "≥ %" not in t and "%97" not in t, p
-    assert "Yaklaşık maliyete yakın (" in _read(dist, "index.html")
+    assert "Bedel yaklaşık maliyete yakın veya üzerinde (" in _read(dist, "index.html")
 
 
 def test_bedel_ratio_with_peer_context(dist):
@@ -548,14 +548,14 @@ def test_cluster_card_on_bugun(tmp_path):
     _build_full(_tmp_export(tmp_path, edit), tmp_path / "o")
     h = (tmp_path / "o/index.html").read_text(encoding="utf-8")
     assert "3 DHMİ ihalesi" in h and "Ortak ifade: «Malzemesi Alımı»" in h
-    assert "Hepsinde: Tek teklif, Yaklaşık maliyete yakın" in h
+    assert "Hepsinde: Tek teklif, Bedel yaklaşık maliyete yakın veya üzerinde" in h
     for rid in ("A-3", "B-3", "B-4"):                      # every member linked from inside the cluster card
         assert f'href="/ihale/2026-11-18-mal-{rid}/"' in h
     assert "En yüksek puan: 3,5" in h
     assert h.count('class="srcline"') == 6                       # A-1, three cluster items, B-1, A-2
     # a cluster is one unit: no separate cards for its members, and the idare-level fold is gone
     assert "kayıt daha" not in h
-    cards = re.findall(r'<li class="card (?:cluster )?[^"]*">\s*<h2>(?:<a href="/ihale/([^/]+)/|(\d+) DHM)', h)
+    cards = re.findall(r'<li class="card (?:cluster )?[^"]*"[^>]*>\s*<h2>(?:<a href="/ihale/([^/]+)/|(\d+) DHM)', h)
     assert [c[0] or "cluster" for c in cards] == ["2026-11-18-mal-A-1", "cluster", "2026-11-18-mal-B-1", "2026-11-18-mal-A-2"]
 
 
@@ -664,7 +664,9 @@ def test_live_build_has_no_design_direction_or_switch(dist):
     assert not (dist / "tokens").exists()
     for p in dist.rglob("*.html"):
         t = p.read_text(encoding="utf-8")
-        assert "data-direction" not in t and "<script" not in t and "tokens/" not in t, p
+        assert "data-direction" not in t and "tokens/" not in t, p
+        if p.relative_to(dist).as_posix() not in ("index.html", "idare/index.html"):      # only the two finders use a script
+            assert "<script" not in t, p
         assert "?yon=" not in t, p
     css = (dist / "style.css").read_text(encoding="utf-8")
     assert "data-direction" not in css and "--c-bg" not in css            # the live CSS is the plain one
@@ -827,7 +829,7 @@ def test_fold_entries_have_source_money_and_no_ocp_red_flag_wording(dist):
     h = _read(dist, "index.html")
     fold = h[h.index('class="card fold'):]
     fold = fold[:fold.index("</details>")]
-    entries = re.findall(r'<li class="ent">.*?</li>', fold, flags=re.S)
+    entries = re.findall(r'<li class="ent [^"]*"[^>]*>.*?</li>', fold, flags=re.S)
     assert len(entries) == 2
     for e in entries:
         assert 'class="srcline"' in e and 'class="money"' in e and "TRY" in e

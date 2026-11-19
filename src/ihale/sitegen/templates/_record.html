@@ -9,7 +9,8 @@
   {% for f in t.flags %}
     <li class="flag flag-{{ f.code }}">{{ f.text }}
       <span class="num">({{ flag_titles.get(f.code, f.code) }})</span>
-      {% if not compact and innocent.get(f.code) %}<span class="why">{{ innocent[f.code] }}</span>{% endif %}{% if not compact and f.code == 'tek_teklif' and t._brand %}<span class="why">{{ innocent_brand }}</span>{% endif %}</li>
+      {% if f.code == 'bedel_orani' and c.n_ikn > 1 %}<span class="why">Bu oran İKN'deki {{ c.n_ikn }} kısmın toplam bedeline göre hesaplanmıştır.</span>{% endif %}
+      {% if not compact and innocent.get(f.code) %}<span class="why">{% if f.code == 'bedel_orani' and f.value is number and f.value > 1 %}{{ innocent_bedel_over }}{% else %}{{ innocent[f.code] }}{% endif %}</span>{% endif %}{% if not compact and f.code == 'tek_teklif' and t._brand %}<span class="why">{{ innocent_brand }}</span>{% endif %}</li>
   {% endfor %}
   {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ t._idare_orani_text }}{% if not compact %}<span class="why">{{ innocent.idare_orani }}</span>{% endif %}</li>{% endif %}
   </ul>
@@ -40,8 +41,12 @@
 
 {% if c.n_ikn > 1 %}
 <p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.
-{% if c.siblings %}Diğer kayıtlar:
-{% for s in c.siblings[:5] %}<a href="{{ s._href }}">{{ s.id }}</a>{{ ", " if not loop.last }}{% endfor %}{% if c.siblings | length > 5 %} ve {{ c.siblings | length - 5 }} kayıt daha{% endif %}.{% endif %}</p>
+{% if compact %}{% set lp = c.siblings | selectattr('_page') | list %}{% if lp %} Tüm kayıtlar: <a href="{{ lp[0]._href }}">{{ lp[0].id }} sayfası</a>.{% endif %}{% endif %}</p>
+{% if not compact and c.siblings %}
+<details class="sibs"><summary>Bu İKN'nin tüm {{ c.n_ikn }} kaydı</summary>
+<ul>{% for s in c.siblings %}<li><a href="{{ s._href }}">{{ s.id }}</a>{% if s.sozlesme_bedeli %} · {{ s.sozlesme_bedeli | tr_money }}{% endif %}</li>{% endfor %}</ul>
+</details>
+{% endif %}
 {% endif %}
 
 <section aria-label="Bilgiler">

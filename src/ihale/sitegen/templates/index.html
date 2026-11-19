@@ -10,6 +10,11 @@
 <p class="muted">Gösterilenler, işaretlerin birleşiminden oluşan puanı yüksek olan kayıtlardır; tek başına işaret çok sayıda olağan ihalede de görülür. İşaretler hüküm değil, bültendeki rakamlardan hesaplanan olgulardır. <a href="/yontem/">Nasıl hesaplanıyor?</a></p>
 
 {% if day.flagged %}
+<div class="finder" id="finder" hidden>
+  <label>İl <select id="f-il"><option value="">Tümü</option>{% for il in provinces %}<option value="{{ il }}">{{ il }}</option>{% endfor %}</select></label>
+  <label>İdare adı <input type="search" id="f-q" placeholder="idare adı ara" autocomplete="off"></label>
+  <p class="muted" id="f-n" aria-live="polite"></p>
+</div>
 <div class="filter">
   <input type="radio" name="f" id="f-all" class="fin" checked>
   {% for c in chips %}
@@ -25,7 +30,7 @@
   {% for it in items %}
   {% if it.card %}
     {% set t = it.card %}
-    <li class="card {% for c in t._codes %}c-{{ c }} {% endfor %}">
+    <li class="card {% for c in t._codes %}c-{{ c }} {% endfor %}" data-il="{{ (t.idare_stats or {}).get('il') or '' }}" data-idare="{{ t._idare }}">
       <h2><a href="/ihale/{{ t.id }}/">{{ t._name }}</a></h2>
       {{ facts(t) }}
       {{ flags_list(t) }}
@@ -41,7 +46,7 @@
       {% if it.all_codes %}<p class="muted">Hepsinde: {% for c in it.all_codes %}{{ flag_titles.get(c, c) }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
       <ul class="clist">
       {% for t in it.cluster %}
-        <li class="ent"><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a>
+        <li class="ent {% for c in t._codes %}c-{{ c }} {% endfor %}" data-il="{{ (t.idare_stats or {}).get('il') or '' }}" data-idare="{{ t._idare }}"><a href="/ihale/{{ t.id }}/">{{ t._idare }}</a>
           <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
           <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
           {{ srcline(t) }}</li>
@@ -56,7 +61,7 @@
         <p class="muted">{{ it.idare }}</p>
         <ul class="clist">
         {% for t in it.fold %}
-          <li class="ent"><a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
+          <li class="ent {% for c in t._codes %}c-{{ c }} {% endfor %}" data-il="{{ (t.idare_stats or {}).get('il') or '' }}" data-idare="{{ t._idare }}"><a class="rt" href="/ihale/{{ t.id }}/">{{ t._name }}</a>
             <span class="money">{% if t.sozlesme_bedeli %}{{ t.sozlesme_bedeli | tr_money }}{% else %}okunamadı{% endif %}</span>
             <span class="sub muted">{% for f in t.flags %}{{ f.text }}{{ " · " if not loop.last }}{% endfor %} · Puan: {{ t.score | tr_score }}</span>
             {{ srcline(t) }}</li>
@@ -75,3 +80,16 @@
 <a href="/arsiv/">Önceki günler</a></p>
 {% endif %}
 {% endblock %}
+{% block foot %}{% if day and day.flagged %}
+<script>
+(function(){var f=document.getElementById("finder");if(!f)return;f.hidden=false;
+var il=document.getElementById("f-il"),q=document.getElementById("f-q"),n=document.getElementById("f-n");
+function low(s){return(s||"").toLocaleLowerCase("tr")}
+var units=document.querySelectorAll(".cards [data-il]"),boxes=document.querySelectorAll(".cards>li.cluster,.cards>li.fold");
+function apply(){var a=il.value,b=low(q.value.trim()),shown=0;
+ units.forEach(function(u){var ok=(!a||u.getAttribute("data-il")===a)&&(!b||low(u.getAttribute("data-idare")).indexOf(b)>=0);u.classList.toggle("nf",!ok);if(ok)shown++});
+ boxes.forEach(function(c){c.classList.toggle("nf",!c.querySelector(".ent:not(.nf)"))});
+ n.textContent=(a||b)?shown+" kayıt eşleşti":""}
+il.addEventListener("change",apply);q.addEventListener("input",apply)})();
+</script>
+{% endif %}{% endblock %}

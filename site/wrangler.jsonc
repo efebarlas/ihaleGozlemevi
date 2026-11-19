@@ -9,9 +9,9 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    // Only the bulk prefixes reach the Worker first; everything else is served by the asset layer
-    // (the Worker still wraps unknown paths via the 404 page).
-    "run_worker_first": ["/ihale/*", "/idare/*", "/yuklenici/*", "/gun/*"]
+    // Every request goes through the Worker first so that all responses (static HTML too) carry
+    // charset=utf-8 and X-Robots-Tag. Core pages still never touch D1.
+    "run_worker_first": true
   },
   "d1_databases": [
     {

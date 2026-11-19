@@ -48,8 +48,9 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
 <footer class="foot">
   <div class="wrap">
     <p>Bu site, resmî Kamu İhale Bülteni'nde yayımlanan bilgileri düzenler; herhangi bir değerlendirme veya suçlama içermez.</p>
-    <p><a href="{{ repo_url }}">Kaynak kod (GitHub)</a> · <a href="/yontem/">Yöntem ve sınırlar</a></p>
+    <p><a href="/yontem/">Yöntem ve sınırlar</a></p>
   </div>
 </footer>
+{% block foot %}{% endblock %}
 </body>
 </html>

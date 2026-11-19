@@ -85,3 +85,20 @@ body{font-variant-numeric:tabular-nums}
   .rules.stack td:first-child::before{content:none}
   .rules.stack td.z{display:none}
 }
+
+/* batch fixes: per-item chip filtering inside clusters/folds, finder, sibling list, toc */
+#f-tek_teklif:checked~.cards .ent:not(.c-tek_teklif){display:none}
+#f-diger_teklifler_elendi:checked~.cards .ent:not(.c-diger_teklifler_elendi){display:none}
+#f-bedel_orani:checked~.cards .ent:not(.c-bedel_orani){display:none}
+#f-tekrarlayan_yuklenici:checked~.cards .ent:not(.c-tekrarlayan_yuklenici){display:none}
+#f-idare_orani:checked~.cards .ent:not(.c-idare_orani){display:none}
+.nf{display:none!important}
+.finder{display:flex;flex-wrap:wrap;gap:.6rem 1rem;margin:.8rem 0;align-items:end}
+.finder[hidden]{display:none}
+.finder label{display:grid;gap:.2rem;font-size:.9rem}
+.finder select,.finder input{font:inherit;padding:.45rem .6rem;min-height:2.75rem;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.sibs ul{columns:1;padding-left:1.1rem;margin:.4rem 0}
+.sibs summary{cursor:pointer;min-height:2.75rem;display:flex;align-items:center}
+.toc ol{margin:.3rem 0 1rem;padding-left:1.2rem}
+.toc li{margin:.15rem 0}
+@media (min-width:40rem){.sibs ul{columns:2}}

@@ -6,6 +6,7 @@ Output is deterministic: no build timestamps, sorted iteration everywhere.
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import shutil
@@ -18,8 +19,9 @@ from markupsafe import Markup
 from ihale.indicators import usul_label
 
 from . import d1
+from .d1 import JV_LABEL
 from .brands import is_series_brand_purchase
-from .persons import PERSON_LABEL, is_natural_person
+from .persons import PERSON_LABEL, is_joint_venture, is_natural_person
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 PKG_DIR = Path(__file__).resolve().parent
@@ -39,7 +41,7 @@ FLAG_ORDER = ["tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlaya
 FLAG_TITLES = {
     "tek_teklif": "Tek teklif",
     "diger_teklifler_elendi": "Diğer teklifler elendi",
-    "bedel_orani": "Yaklaşık maliyete yakın",
+    "bedel_orani": "Bedel yaklaşık maliyete yakın veya üzerinde",
     "tekrarlayan_yuklenici": "Tekrarlayan yüklenici",
     "idare_orani": "İdarede tek teklif oranı yüksek",
     "tekrarlayan_eslesik": "Tekrarlayan yüklenici (başka bir işaretle birlikte)",
@@ -51,8 +53,10 @@ INNOCENT = {  # one neutral "also common when…" line per flag type (detail pag
     "diger_teklifler_elendi": "Teklifler belge eksikliği gibi biçimsel nedenlerle de elenebilir.",
     "bedel_orani": "Yaklaşık maliyet güncel piyasa fiyatlarıyla hazırlanmışsa bedel ona yakın çıkabilir.",
     "tekrarlayan_yuklenici": "Bölgedeki tek veya az sayıdaki tedarikçi aynı idareden sık sık iş alabilir.",
+    "tekrarlayan_eslesik": "Bölgedeki tek veya az sayıdaki tedarikçi aynı idareden sık sık iş alabilir.",
     "idare_orani": "Merkezî alım kurumları (ör. DMO 4734/3-g) ve acil durum alımları (21/b) yapıları gereği tek teklifle sonuçlanabilir.",
 }
+INNOCENT_BEDEL_OVER = "Yaklaşık maliyet ihale tarihinden önce hazırlanmışsa ve fiyatlar arttıysa bedel onu aşabilir."
 INNOCENT_BRAND = "Marka ve modeli belirtilmiş alımlarda tek teklif, yetkili satıcı yapısından kaynaklanabilir."
 PAGE_MAX_RECORDS = 50    # day pages: records per page (also bounded by bytes)
 PAGE_MAX_BYTES = 110_000  # keep every HTML page well under ~150 KB
@@ -166,7 +170,12 @@ def _usul_turu_label(code: str) -> str:
 
 
 def _pct1(x) -> str:
-    return f"%{float(x) * 100:.1f}".replace(".", ",")
+    """Bedel ratio, floored to one decimal (same floor rule as the flag text: 0.9996 is %99,9, never %100)."""
+    return f"%{math.floor(round(float(x) * 1000, 6)) / 10:.1f}".replace(".", ",")
+
+
+def _pct_floor(x) -> str:
+    return f"%{math.floor(round(float(x) * 100, 6))}"
 
 
 def bedel_line(t: dict) -> str | None:
@@ -175,8 +184,11 @@ def bedel_line(t: dict) -> str | None:
     if ind.get("bedel_orani") is None:
         return None
     out = f"{_pct1(ind['bedel_orani'])}"
+    k = (t.get("kisim") or {}).get("records_in_ikn", 1)
+    if k > 1:
+        out += f" (İKN'deki {k} kısmın toplam bedeline göre)"
     if ind.get("bedel_orani_peer_median") is not None and ind.get("bedel_orani_peer_n"):
-        out += f" · benzer idarelerde ortanca {_pct(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})"
+        out += f" · benzer idarelerde ortanca {_pct_floor(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})"
     return out
 
 
@@ -185,7 +197,7 @@ def bedel_peer_line(t: dict) -> str | None:
     if ind.get("bedel_orani_peer_median") is None or not ind.get("bedel_orani_peer_n"):
         return None
     return (f"Bedel / yaklaşık maliyet: bu kayıtta {_pct1(ind['bedel_orani'])} · "
-            f"benzer idarelerde ortanca {_pct(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})")
+            f"benzer idarelerde ortanca {_pct_floor(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})")
 
 
 def _usul_group_label(g: str) -> str:
@@ -250,6 +262,18 @@ def part_lines(t: dict) -> list[str]:
     return out
 
 
+def formula_line(t: dict) -> str | None:
+    """'Puan = (1,7 + 2,2) × 1,5 = 5,8' from the exported parts, weight and score."""
+    pts = [pt["points"] for pt in _parts(t) if pt.get("points") is not None]
+    if not pts or t.get("score") is None:
+        return None
+    inner = " + ".join(tr_score(p) for p in pts)
+    w = t.get("value_weight")
+    if w is not None and abs(float(w) - 1) > 1e-9:
+        return f"Puan = ({inner}) × {tr_score(w)} = {tr_score(t['score'])}"
+    return f"Puan = {inner} = {tr_score(t['score'])}"
+
+
 def weight_line(t: dict, part_rates: dict) -> str | None:
     """Neutral 'Tutar katsayısı' line for the score breakdown (contract §4.1 Materiality)."""
     w = t.get("value_weight")
@@ -282,6 +306,20 @@ def idare_orani_text(t: dict) -> str:
     if peer.get("tek_gecerli_teklif") is not None and peer.get("records"):
         out += f", karşılaştırma grubunda {_pct(peer['tek_gecerli_teklif'])} (n={tr_int(peer['records'])})"
     return out
+
+
+_DANGLING = re.compile(r"(?:[,;:\-–/(]|\b(?:ve|ile|için|ait|olan|ilgili|kapsamında)|\b\d+\.)$", re.I)
+
+
+def display_subject(s: str | None) -> str:
+    """The subject as printed; add an ellipsis when it ends mid-phrase (a dangling conjunction, comma, hyphen or an
+    unclosed parenthesis), which is how a cut-off bulletin line looks."""
+    s = (s or "").strip()
+    if not s:
+        return "(adsız ilan)"
+    if _DANGLING.search(s) or s.count("(") > s.count(")"):
+        return s + "…"
+    return s
 
 
 def _pct(x) -> str:
@@ -416,6 +454,16 @@ def fold_cards(flagged: list[dict]) -> list[dict]:
     return items
 
 
+def merge_tiny_tail(pages: list[list[int]], sizes: list[int], max_bytes: int) -> list[list[int]]:
+    """Fold a tiny last page (under 15% of a full page) into the previous one when the result stays under 130%."""
+    if len(pages) >= 2:
+        last = sum(sizes[i] for i in pages[-1])
+        prev = sum(sizes[i] for i in pages[-2])
+        if last < 0.15 * max_bytes and prev + last <= 1.3 * max_bytes:
+            return pages[:-2] + [pages[-2] + pages[-1]]
+    return pages
+
+
 def paginate(sizes: list[int], max_bytes: int | None = None, max_records: int | None = None) -> list[list[int]]:
     """Greedy split of row indexes into pages by record count and byte size."""
     max_bytes = max_bytes or PAGE_MAX_BYTES
@@ -478,11 +526,14 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     env = _env()
 
     cutoff = float(meta.get("bugun_cutoff", DEFAULT_CUTOFF))
+    flag_share = None            # filled below from meta counts: share of loaded records with at least one flag
     dates = sorted(days, reverse=True)
     latest = meta.get("latest_date") or (dates[0] if dates else None)
     types = sorted({t for d in days.values() for t in d.get("types", [])})
     type_text = ", ".join(TYPE_LABELS_LOWER.get(t, t) for t in types) or "—"
-    ctx_base = dict(preview=preview_design, innocent=INNOCENT, repo_url=REPO_URL, ekap_url=EKAP_URL, kurul_url=KURUL_URL, flag_titles=FLAG_TITLES)
+    ctx_base = dict(preview=preview_design, innocent=INNOCENT, innocent_bedel_over=INNOCENT_BEDEL_OVER,
+                    innocent_items=[(FLAG_TITLES[c], [INNOCENT[c]] + ([INNOCENT_BEDEL_OVER] if c == "bedel_orani" else []))
+                                    for c in FLAG_ORDER], ekap_url=EKAP_URL, kurul_url=KURUL_URL, flag_titles=FLAG_TITLES)
 
     def write(rel: str, template: str, **ctx):
         html = _squeeze(env.get_template(template).render(**ctx_base, **ctx))
@@ -496,12 +547,12 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
     def prep(t: dict) -> dict:
         t = dict(t)
         t["_codes"] = _flag_codes(t)
-        t["_name"] = t.get("konu") or t.get("title") or "(adsız ilan)"
+        t["_name"] = display_subject(t.get("konu") or t.get("title"))
         t["_idare"] = (t.get("idare") or {}).get("name") or "okunamadı"
         yname = (t.get("yuklenici") or {}).get("name")
         t["_person"] = is_natural_person(yname)
         # natural persons: the name appears only on the record's own detail page (SPEC §6.1)
-        t["_yuklenici"] = PERSON_LABEL if t["_person"] else (yname or "okunamadı")
+        t["_yuklenici"] = ((JV_LABEL if is_joint_venture(yname) else PERSON_LABEL) if t["_person"] else (yname or "okunamadı"))
         t["_bedel_peer"] = bedel_peer_line(t)
         iname = (t.get("idare") or {}).get("name")
         t["_idare_href"] = idare_href.get(iname)
@@ -522,6 +573,11 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
         wl = weight_line(t, meta.get("part_rates"))
         if wl:
             t["_parts"].append(wl)
+        fl = formula_line(t)
+        if fl:
+            t["_parts"].append(fl)
+        if t["_idare_orani"]:
+            t["_peer"] = None           # the flag text already states the same numbers (no duplicate line)
         return t
 
     idare_href = {e["name"]: f"/idare/{_safe(e['slug'])}/" for e in meta.get("idare_index") or []}
@@ -558,7 +614,7 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
                 reason = unread.get(key)
                 missing = v is None and key not in OPTIONAL_FIELDS
                 if key == "yuklenici" and t["_person"] and not t["_page"]:
-                    v = PERSON_LABEL
+                    v = t["_yuklenici"]
                 href = t["_idare_href"] if key == "idare" else (t["_yuk_href"] if key == "yuklenici" else None)
                 rows.append(dict(key=key, label=label, value=v, note=reason or "", href=href,
                                  unreadable=missing or (key in unread and reason == "")))
@@ -624,21 +680,35 @@ def build(export_dir: Path, out_dir: Path, preview_design: bool = False, split_b
             n = sum(1 for t in d["flagged"] if code in t["_codes"])
             if n:
                 chips.append(dict(code=code, title=FLAG_TITLES[code], n=n))
-    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips,
+    from ihale.slugs import tr_sort_key
+    provinces = sorted({(t.get("idare_stats") or {}).get("il") for t in (d["flagged"] if d else [])} - {None, ""},
+                       key=tr_sort_key)
+    write("index.html", "index.html", page="bugun", title="Bugün", day=d, chips=chips, provinces=provinces,
           items=fold_cards(d["flagged"]) if d else [])
 
+    _cnt = (meta.get("counts") or {}).values()
+    _rec = sum(c.get("records", 0) for c in _cnt)
+    _fl = sum(c.get("flagged", 0) for c in _cnt)
+    if _rec:
+        flag_share = dict(records=_rec, flagged=_fl, pct=f"%{round(100 * _fl / _rec)}")
     from .dossiers import build_dossiers
     href_by_id = {t["id"]: t["_href"] for ds in dates for t in day_ctx[ds]["tenders"]}
     build_dossiers(export_dir=export_dir, meta=meta, env=env, write=write, ctx_base=ctx_base,
                    render_fragment=lambda tpl, **kw: _squeeze(tpl.render(**ctx_base, **kw)),
                    href_by_id=href_by_id,
                    src_by_id={t["id"]: t["_c"]["src_text"] for ds in dates for t in day_ctx[ds]["tenders"] if t["_c"]["src_text"]}, idare_href=idare_href, yuk_href=yuk_href, idare_parent=idare_parent,
-                   fmt=dict(tr_money=tr_money, tr_int=tr_int, tr_date_short=tr_date_short, type_labels=TYPE_LABELS),
-                   paginate_list=lambda sizes, mb: paginate(sizes, max_bytes=mb, max_records=10**9))
+                   fmt=dict(tr_money=tr_money, tr_int=tr_int, tr_date_short=tr_date_short, type_labels=TYPE_LABELS,
+                    subject=display_subject),
+                   yk_label_by_id={t["id"]: t["_yuklenici"] for ds in dates for t in day_ctx[ds]["tenders"] if t["_person"]},
+                   paginate_list=lambda sizes, mb: merge_tiny_tail(paginate(sizes, max_bytes=mb, max_records=10**9), sizes, mb))
+
+    (out_dir / "arama-idare.json").write_text(
+        json.dumps([[e["name"], e["slug"]] for e in meta.get("idare_index") or []], ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8", newline="\n")
 
     write("yontem/index.html", "yontem.html", page="yontem", title="Yöntem", type_text=type_text,
           earliest=min(dates) if dates else None, latest=latest,
-          cutoff=tr_score(cutoff), rate_codes=RATE_CODES,
+          cutoff=tr_score(cutoff), rate_codes=RATE_CODES, flag_share=flag_share,
           part_rates=[(_usul_group_label(g), r) for g, r in sorted((meta.get("part_rates") or {}).items(),
                                                               key=lambda kv: (kv[0].split("/")[0] if kv[0].split("/")[0] in TYPE_LABELS else "", kv[0].endswith("hepsi"), kv[0]))],
           rules=[dict(r, effects_tr=[EFFECT_LABELS.get(e, e) for e in (r.get("effects") or [])])

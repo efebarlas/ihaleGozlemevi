@@ -1,18 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Yöntem</h1>
+<nav class="toc" aria-label="İçindekiler"><p><strong>İçindekiler</strong></p>
+<ol>
+  <li><a href="#veri">Veri kaynağı</a></li>
+  <li><a href="#kapsam">Kapsam</a></li>
+  <li><a href="#isaretler">İşaretler ve kuralları</a></li>
+  <li><a href="#puan">Puan ve sıralama</a></li>
+  <li><a href="#karsilastirma">Karşılaştırma grubu</a></li>
+  <li><a href="#gostergeler">Göstergeler</a></li>
+  <li><a href="#olagan">Her işaretin olağan açıklaması</a></li>
+  {% if rules %}<li><a href="#yapisal">Yapısal tek teklif durumları</a></li>{% endif %}
+  <li><a href="#sinirlar">Sınırlar</a></li>
+  <li><a href="#ilkeler">İlkeler</a></li>
+</ol></nav>
 <p>İhale Gözlemevi, kamu alımlarına ilişkin resmî ilanları her gün okunabilir bir listeye çevirir. Bu sayfa verinin nereden geldiğini, işaretlerin tam olarak nasıl hesaplandığını ve sınırlarını anlatır.</p>
 
-<h2>Veri kaynağı</h2>
+<h2 id="veri">Veri kaynağı</h2>
 <p>Tüm bilgiler, Kamu İhale Kurumu'nun EKAP üzerinden yayımladığı <strong>Kamu İhale Bülteni</strong>'ndeki sonuç ilanlarından alınır. Bültenin PDF dosyası otomatik okunur; her sonuç ilanı bir kayıt olur. Her kaydın sayfasında bülten tarihi, türü ve sayfa numarası ile <a href="{{ ekap_url }}">EKAP Bülten İndirme</a> bağlantısı bulunur; böylece her rakamı kaynağında kontrol edebilirsiniz.</p>
 <p>Bültenleri okuyan ve işaretlerin temelini hesaplayan açık kaynaklı <a href="https://github.com/gulmezeren2-byte/ihalent">ihalent</a> kütüphanesi (MIT lisansı) kullanılır.</p>
 
-<h2>Kapsam</h2>
+<h2 id="kapsam">Kapsam</h2>
 <p>Şu anda yalnızca <strong>{{ type_text }}</strong> sonuç ilanları var.
 {% if earliest %}Veri {{ earliest | tr_date_long }} tarihli bültenle başlar{% if latest %}; en son yüklenen bülten {{ latest | tr_date_long }} tarihlidir{% endif %}.{% endif %}
  Daha eski günler ve diğer ihale türleri sonradan eklenecektir.</p>
 
-<h2>İşaretler ve kuralları</h2>
+<h2 id="isaretler">İşaretler ve kuralları</h2>
 <p>İşaret, bir kaydın belirli bir rakamsal koşulu sağladığını söyler. Hiçbir işaret bir değerlendirme değildir; birçok olağan ihalede de görülür.</p>
 <dl class="method">
   <dt>Tek teklif</dt>
@@ -26,7 +39,7 @@
 </dl>
 
 <h2 id="puan">Puan ve Bugün sayfasındaki sıralama</h2>
-<p>İşaretler tek başlarına çok sayıda olağan ihalede görülür; ölçümlere göre tüm ihalelerin yaklaşık yarısında en az bir işaret vardır. Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; her işareti <strong>ne kadar nadir olduğuna göre</strong> ağırlıklandırarak bir <strong>puan</strong> hesaplar.</p>
+<p>İşaretler tek başlarına çok sayıda olağan ihalede görülür; {% if flag_share %}yüklenmiş {{ flag_share.records | tr_int }} kayıttan {{ flag_share.flagged | tr_int }} tanesinde ({{ flag_share.pct }}) en az bir işaret vardır.{% else %}kayıtların önemli bir bölümünde en az bir işaret vardır.{% endif %} Bu yüzden Bugün sayfası yalnızca işaretin tetiklenip tetiklenmediğine bakmaz; her işareti <strong>ne kadar nadir olduğuna göre</strong> ağırlıklandırarak bir <strong>puan</strong> hesaplar.</p>
 <p><strong>Nadirlik ağırlığı.</strong> Bir işaretin puanı, ln(1 / p) kuralıyla hesaplanır; burada p, o işaretin aynı ihale usulündeki kayıtlarda görülme oranıdır. Çok sık görülen bir işaret az, nadir görülen bir işaret çok puan getirir. Örneğin bir usulde tek teklif kayıtların %60'ında görülüyorsa bu işaret yaklaşık 0,5 puan, %10'unda görülüyorsa yaklaşık 2,3 puan sayılır. Kaydın puanı, işaretlerinin puanlarının toplamıdır; kayıt sayfasında dökümü görülür. Puan tek ondalıkla, virgülle gösterilir (örn. 4,8).</p>
 <p><strong>Tutar katsayısı.</strong> Aynı işaret, küçük bir alımda büyük bir alımdan daha az önem taşır. Bu yüzden puan, işaret puanlarının toplamının bir katsayıyla çarpılmasıyla bulunur: katsayı = 1 + 0,5 × log10(sözleşme bedeli ÷ aynı usuldeki ortanca bedel), 0,5 ile 1,5 arasına sıkıştırılır. Ortanca bedelin yaklaşık 10 katı bir alım 1,5; ortancanın yaklaşık onda biri bir alım 0,5 katsayısı alır. TRY dışındaki ya da okunamayan bedellerde katsayı 1'dir. Katsayı kayıt sayfasındaki dökümde ayrı bir satır olarak görünür.</p>
 <p>Tekrarlayan yüklenici işareti, aynı kayıtta başka bir işaret de varsa puan ekler; tek başına görülmesi puan eklemez ama işaret yine gösterilir. İdarede tek teklif oranı yüksek işareti, idarenin penceredeki en az 5 kaydı varsa ve tek geçerli teklif payı karşılaştırma grubunun payının en az iki katıysa puan ekler; işaretin metni, idarenin ve karşılaştırma grubunun gerçek oranlarını ve kayıt sayılarını (n) yazar.</p>
@@ -46,7 +59,7 @@
 </table></div>
 {% endif %}
 
-<h2>Karşılaştırma grubu</h2>
+<h2 id="karsilastirma">Karşılaştırma grubu</h2>
 <p>Karşılaştırma <strong>aynı usul içinde</strong> yapılır: örneğin bir idarenin 4734/3-g alımlarındaki tek geçerli teklif payı, diğer idarelerin yine 4734/3-g alımlarındaki payıyla yan yana konur; böylece farklı kuralları olan usuller birbirine karıştırılmaz. Satırda usul adı ve her iki tarafın kayıt sayısı (n) yazılır.</p>
 <p>Bir idarenin oranı tek başına anlam taşımaz; bu yüzden her kayıtta «Bu idare (n=…): %… tek geçerli teklif» satırı, benzer idarelerin oranıyla ve her iki tarafın kayıt sayısıyla (n) birlikte gösterilir. Bir idarenin yüklenmiş geçmişte en az 5 kaydı yoksa oran gösterilmez.</p>
 <p>Bültende sektör veya il alanı yoktur; bu yüzden grup yaklaşık bir yöntemle kurulur:</p>
@@ -75,8 +88,8 @@
 <h2 id="olagan">Her işaretin olağan açıklaması</h2>
 <p>Her işaret, masum açıklamaları da olan bir olgudur. Kayıt sayfalarında işaretin altında şu notlar yer alır:</p>
 <ul>
-{% for code, title in flag_titles.items() %}
-  <li><strong>{{ title }}:</strong> {{ innocent[code] }}</li>
+{% for title, texts in innocent_items %}
+  <li><strong>{{ title }}:</strong> {{ texts | join(" ") }}</li>
 {% endfor %}
   <li><strong>Marka veya model belirtilmiş alım:</strong> {{ innocent_brand }} Konu metninde marka ya da model kodu geçen kayıtlarda, tek teklif işaretinin altında bu not da görünür.</li>
 </ul>
@@ -94,9 +107,9 @@
 </table></div>
 {% endif %}
 
-<h2>Sınırlar</h2>
+<h2 id="sinirlar">Sınırlar</h2>
 <ul>
-  <li><strong>Bültenlerin göremediği.</strong> Bültenler, teklif verenlerin birbirinden bağımsız olup olmadığını ya da EKAP dışında yapılan alımları göstermez; bu göstergeler kesin sonuç değil, bakılacak yer önerisidir.</li>
+  <li><strong>Bültenlerin kapsamadıkları.</strong> Bültenler, teklif verenlerin birbirinden bağımsız olup olmadığını ya da EKAP dışında yapılan alımları göstermez; bu göstergeler kesin sonuç değil, bakılacak yer önerisidir.</li>
   <li><strong>Kısmi (kısımlı) ihaleler.</strong> Bir İKN için birden çok kayıt olabilir. Bedel oranı bu durumda aynı İKN'nin tüm kayıtlarının toplam bedeli üzerinden hesaplanır (aynı İKN, yüklenici ve bedele sahip tekrarlar bir kez sayılır); metin «Bu ihalenin N kısmının toplam bedeli…» biçimindedir. Kayıt sayfası, aynı İKN'nin o gün kaç kaydı olduğunu belirtir.</li>
   <li><strong>Para birimleri.</strong> Hiçbir zaman çevrilmez. Sözleşme bedelinin para birimi yaklaşık maliyetinkinden farklıysa oran hesaplanmaz ve alan işaret hesabında kullanılmaz.</li>
   <li><strong>Okunamayan alanlar.</strong> Bir işaret yalnızca gerekli tüm alanlar güvenle okunabildiğinde hesaplanır. Aksi hâlde alan «okunamadı» olarak gösterilir ve o işaret hesaplanmaz; işaretin görünmemesi, koşulun sağlanmadığı anlamına gelmez.</li>
@@ -106,7 +119,7 @@
   <li><strong>Okuma hataları.</strong> PDF'ten otomatik okuma hatalı olabilir. Önemli bir rakamı kullanmadan önce kaynak bültenle karşılaştırın.</li>
 </ul>
 
-<h2>İlkeler</h2>
+<h2 id="ilkeler">İlkeler</h2>
 <ul>
   <li>Bu site olguları gösterir; yargı bildirmez, kimseyi suçlamaz. İşaret, bir kaydın daha yakından bakmaya değip değmediğini belirlemek için bir başlangıç noktasıdır.</li>
   <li>Kişi adları yalnızca resmî bültende yayımlandığı şekliyle yer alır. Başka kaynaklardan bilgi eklenmez. Gerçek kişi olduğu anlaşılan (şirket biçimi taşımayan) yüklenicilerin adı yalnızca o kaydın kendi sayfasında görünür; diğer sayfalarda «Gerçek kişi yüklenici» yazar. Belirsiz durumlarda ad, bültende yazıldığı gibi gösterilir.</li>

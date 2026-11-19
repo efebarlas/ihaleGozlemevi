@@ -102,7 +102,8 @@ def main() -> int:
         # static pass-through
         for p, needle in (("/", b"<h1>"), ("/yontem/", b"Y\xc3\xb6ntem"), ("/arsiv/", b"Ar\xc5\x9fiv"), ("/idare/", b"\xc4\xb0dareler")):
             st, h, body = get("GET", p)
-            check(f"static {p}", st == 200 and needle in body and h.get("x-robots-tag") == "noindex, nofollow", f"{st}, {len(body)} bytes")
+            check(f"static {p}", st == 200 and needle in body and h.get("x-robots-tag") == "noindex, nofollow"
+                  and h.get("content-type", "").lower() == "text/html; charset=utf-8", f"{st}, {len(body)} bytes, {h.get('content-type')}")
         day = next(p for p in sorted(Path(SITE / "dist" / "gun").iterdir()))
         st, h, body = get("GET", f"/gun/{day.name}/")
         check("static /gun/<date>/ summary", st == 200 and b"Sayfalar" in body, f"{st}")

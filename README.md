@@ -57,3 +57,6 @@ The site is one Cloudflare Worker (`site/wrangler.jsonc`, `site/worker/index.js`
 - **Usage warnings:** after a remote deploy it logs the rows written today (tracked in `<data>/d1-usage.json`), the database size (`wrangler d1 info`) and rows read (`wrangler d1 insights`) where available, and at 80% of a free limit (100k rows written/day, 5M rows read/day, 5 GB storage, 500 MB per database) it logs `WARNING` lines and writes `<data>/logs/d1-usage-warning.txt` (removed again when usage is back under 80%).
 - **Stop rule:** if any wrangler output asks for a card, a paid plan or a new account, `PaymentRequired` ("STOP: …") is raised and nothing further runs.
 - **D1 down:** `/`, `/arsiv/`, `/yontem/` and the other core pages never touch D1; bulk pages answer 503 with a small page if D1 is unavailable.
+
+- **All responses go through the Worker** (`run_worker_first: true`), so static HTML also gets `content-type: text/html; charset=utf-8` and `X-Robots-Tag`; core pages still never read D1.
+- `arama-idare.json` (a static asset) feeds the name search on `/idare/`; the Bugün finder (`İl` select and idare-name box) and that search are the only scripts on the live site and stay hidden without JS.

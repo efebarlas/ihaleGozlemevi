@@ -74,6 +74,8 @@ export default {
     const res = await env.ASSETS.fetch(request);
     if (res.status === 404) return notFound(request, env);
     const headers = withRobots(new Headers(res.headers));
+    const ct = headers.get("content-type") || "";
+    if (/^text\/html/i.test(ct) && !/charset/i.test(ct)) headers.set("content-type", "text/html; charset=utf-8");
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
   },
 };

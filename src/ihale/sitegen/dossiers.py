@@ -79,7 +79,7 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
 
 
 def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment, ctx_base: dict, href_by_id: dict,
-                   idare_href: dict, yuk_href: dict, idare_parent: dict, src_by_id: dict, fmt: dict, paginate_list) -> None:
+                   idare_href: dict, yuk_href: dict, idare_parent: dict, src_by_id: dict, yk_label_by_id: dict, fmt: dict, paginate_list) -> None:
     """Write all dossier pages. `idare_href` / `yuk_href`: display name -> page path (for linking)."""
     flag_titles = ctx_base["flag_titles"]
     idx_i = meta.get("idare_index") or []
@@ -107,9 +107,11 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
         rows = []
         for a in d.get("timeline") or []:
             who, masked = _mask(a.get("yuklenici"))
+            if masked:
+                who = yk_label_by_id.get(a["id"], who)          # JV partners get their own label
             ys = None if masked else a.get("yuklenici_slug")
             rows.append(dict(
-                href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
+                href=link_for(a["id"]), title=fmt["subject"](a.get("konu")), date=tr_date_short(a["date"]),
                 who=who, who_yk=True, who_href=(f"/yuklenici/{ys}/" if ys and ys in yuks else None),
                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı",
                 flags=[flag_titles.get(f, "Diğer işaret") for f in a.get("flags") or []], second=None, src=source_text(a)))
@@ -150,7 +152,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
         for a in d.get("awards") or []:
             ih = a.get("idare") or {}
             rows.append(dict(
-                href=link_for(a["id"]), title=a.get("konu") or "(adsız ilan)", date=tr_date_short(a["date"]),
+                href=link_for(a["id"]), title=fmt["subject"](a.get("konu")), date=tr_date_short(a["date"]),
                 who=ih.get("name") or "okunamadı", who_href=(idare_href.get(ih.get("name"))),
                 bedel=tr_money(a["bedel"]) if a.get("bedel") else "okunamadı", flags=[],
                 second=a.get("usul"), src=source_text(a)))

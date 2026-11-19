@@ -22,6 +22,8 @@ MAX_STATEMENT_BYTES = 90_000
 BATCH_BYTES = 3_000_000       # one `wrangler d1 execute --file` per batch
 D1_MAX_ROWS_PER_RUN = 90_000  # D1 free tier: 100k rows written per day
 
+JV_LABEL = "Gerçek kişi içeren iş ortaklığı"
+
 SCHEMA = (
     "CREATE TABLE IF NOT EXISTS pages(path TEXT NOT NULL, part INTEGER NOT NULL, html TEXT NOT NULL, "
     "PRIMARY KEY(path, part)) WITHOUT ROWID;\n"
@@ -268,7 +270,7 @@ def masking_violations(url: str, html: str) -> list[str]:
         if own:
             if not _DETAIL.match(url):
                 out.append(f"{url}: own-page marker outside a detail page ({name!r})")
-        elif name not in (PERSON_LABEL, "okunamadı") and is_natural_person(name):   # placeholders are not names
+        elif name not in (PERSON_LABEL, JV_LABEL, "okunamadı") and is_natural_person(name):   # placeholders are not names
             out.append(f"{url}: unmasked natural person {name!r}")
     if re.match(r"^/yuklenici/(?!liste/)[^/]+/", url):          # a dossier page (not the index or its pages)
         t = _TITLE.search(html)
