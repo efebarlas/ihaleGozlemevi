@@ -1,4 +1,4 @@
-requests
+ihalent[bulletin]==0.5.1
 pdfplumber
 pypdf
 jinja2

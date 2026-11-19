@@ -25,9 +25,10 @@ from pathlib import Path
 from typing import Callable
 
 import ssl
-
-import requests
-from requests.adapters import HTTPAdapter
+import urllib.error
+import urllib.parse
+import urllib.request
+from http.cookiejar import CookieJar
 
 from . import config
 
@@ -62,6 +63,10 @@ class FormChangedError(EkapError):
 
 class UnexpectedResponseError(EkapError):
     """Response was neither a zip, a no-bulletin notice, nor an obvious block."""
+
+
+class BulletinMismatchError(EkapError):
+    """EKAP served a different bulletin than requested (a malformed request makes it quietly serve today's)."""
 
 
 class RequestBudgetExceeded(EkapError):
@@ -275,6 +280,16 @@ def classify_response(status: int, content_type: str, body: bytes, *, is_form_ge
     raise UnexpectedResponseError("POST returned HTML that is neither a zip nor a recognised no-bulletin notice")
 
 
+def check_zip_filename(headers, day: date, type_: str) -> None:
+    """Content-Disposition filename must be BULTEN_{ddmmyyyy}_{TYPE}.zip for the requested date and type."""
+    cd = next((v for k, v in headers.items() if k.lower() == "content-disposition"), "")
+    m = re.search(r"filename=\"?([^\";\s]+)", cd, re.I)
+    got = m.group(1) if m else None
+    expected = f"BULTEN_{day:%d%m%Y}_{type_.upper()}.zip"
+    if got is None or got.upper() != expected.upper():
+        raise BulletinMismatchError(f"requested {expected} but EKAP served {got!r}; not saving")
+
+
 # ---------------------------------------------------------------- storage
 def bulletin_paths(root: Path, day: date, type_: str) -> tuple[Path, Path]:
     d = Path(root) / day.isoformat()
@@ -299,39 +314,69 @@ def save_zip(root: Path, day: date, type_: str, payload: bytes) -> Path:
 
 
 # ---------------------------------------------------------------- client
-class _LegacyTLSAdapter(HTTPAdapter):
+@dataclass
+class _Response:
+    status_code: int
+    headers: dict
+    content: bytes
+    encoding: str = "utf-8"
+
+
+def _make_ssl_context() -> ssl.SSLContext:
     """ekap.kik.gov.tr only offers TLS1.2 RSA-kex suites (e.g. AES128-GCM-SHA256), which OpenSSL's
     default security level 2 refuses (SSLV3_ALERT_HANDSHAKE_FAILURE). Drop to level 1; keep cert
-    verification on."""
+    verification on (system trust store)."""
+    ctx = ssl.create_default_context()
+    ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
+    return ctx
 
-    def init_poolmanager(self, *args, **kwargs):
-        ctx = ssl.create_default_context()
-        ctx.set_ciphers("DEFAULT:@SECLEVEL=1")
-        kwargs["ssl_context"] = ctx
-        super().init_poolmanager(*args, **kwargs)
+
+class _UrllibSession:
+    """Minimal stdlib HTTP session (cookies kept, redirects followed, HTTP errors returned not raised).
+
+    Same `.headers` / `.request(method, url, data=dict, timeout=...)` shape the tests inject fakes for."""
+
+    def __init__(self):
+        self.headers: dict[str, str] = {}
+        self._opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(CookieJar()),
+            urllib.request.HTTPSHandler(context=_make_ssl_context()),
+        )
+
+    def request(self, method: str, url: str, data: dict | None = None, timeout=None, **_ignored) -> _Response:
+        body = urllib.parse.urlencode(data).encode("utf-8") if data is not None else None
+        req = urllib.request.Request(url, data=body, method=method, headers=dict(self.headers))
+        if body is not None:
+            req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        try:
+            resp = self._opener.open(req, timeout=max(timeout) if isinstance(timeout, tuple) else timeout)
+        except urllib.error.HTTPError as e:  # 4xx/5xx: let classify_response decide
+            resp = e
+        with resp:
+            content = resp.read()
+            headers = {k: v for k, v in resp.headers.items()}
+            charset = resp.headers.get_content_charset() or "utf-8"
+            return _Response(resp.status if hasattr(resp, "status") else resp.code, headers, content, charset)
 
 
 class EkapClient:
-    def __init__(self, limiter: RateLimiter | None = None, session: requests.Session | None = None,
+    def __init__(self, limiter: RateLimiter | None = None, session=None,
                  max_requests: int = MAX_REQUESTS_PER_RUN, form_cache: Path | None = None):
         self.limiter = limiter or RateLimiter(config.data_dir() / "ekap-last-request.txt")
-        if session is None:
-            session = requests.Session()
-            session.mount("https://", _LegacyTLSAdapter())
-        self.session = session
+        self.session = session if session is not None else _UrllibSession()
         self.session.headers["User-Agent"] = config.USER_AGENT
         self.max_requests = max_requests
         self.requests_made = 0
         self.form_cache = form_cache  # dev aid: reuse saved form HTML, skip the GET
         self._form: FormInfo | None = None
 
-    def _request(self, method: str, **kw) -> requests.Response:
+    def _request(self, method: str, **kw) -> _Response:
         if self.requests_made >= self.max_requests:
             raise RequestBudgetExceeded(f"cap of {self.max_requests} EKAP requests per run reached")
         self.limiter.wait()
         self.requests_made += 1
         try:
-            return self.session.request(method, FORM_URL, timeout=TIMEOUT, allow_redirects=True, **kw)
+            return self.session.request(method, FORM_URL, timeout=TIMEOUT, **kw)
         finally:
             self.limiter.mark()
 
@@ -362,6 +407,7 @@ class EkapClient:
         kind = classify_response(r.status_code, r.headers.get("Content-Type", ""), r.content)
         if kind == "no_bulletin":
             raise NoBulletinError(f"no {type_} bulletin for {day:%d.%m.%Y}")
+        check_zip_filename(r.headers, day, type_)
         return save_zip(root, day, type_, r.content)
 
 

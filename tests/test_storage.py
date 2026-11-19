@@ -60,9 +60,11 @@ def test_fetch_downloads_then_saves(data_dir, form_html, tmp_path):
     payload = tiny_zip()
 
     class Resp:
-        def __init__(self, content, ctype):
+        def __init__(self, content, ctype, disp=None):
             self.status_code, self.content, self.encoding = 200, content, "utf-8"
             self.headers = {"Content-Type": ctype}
+            if disp:
+                self.headers["Content-Disposition"] = disp
 
     class Sess:
         headers = {}
@@ -72,7 +74,7 @@ def test_fetch_downloads_then_saves(data_dir, form_html, tmp_path):
             Sess.seen.append((method, kw.get("data")))
             if method == "GET":
                 return Resp(form_html.encode("utf-8"), "text/html")
-            return Resp(payload, "text/html")
+            return Resp(payload, "text/html", "attachment;filename=BULTEN_18112026_MAL.zip")
 
     ticks = iter(range(10**6, 10**9, 100))
     rl = ekap.RateLimiter(tmp_path / "rl.txt", clock=lambda: next(ticks), sleep=lambda s: None)
@@ -86,3 +88,44 @@ def test_fetch_downloads_then_saves(data_dir, form_html, tmp_path):
 def test_unknown_type_rejected():
     with pytest.raises(ValueError):
         ekap.EkapClient(session=type("S", (), {"headers": {}})()).fetch(date(2026, 11, 18), "bogus")
+
+
+def _fetch_with_disposition(disp, form_html, tmp_path):
+    class Resp:
+        status_code, encoding = 200, "utf-8"
+
+        def __init__(self, content, headers):
+            self.content, self.headers = content, headers
+
+    class Sess:
+        headers = {}
+
+        def request(self, method, url, **kw):
+            if method == "GET":
+                return Resp(form_html.encode("utf-8"), {"Content-Type": "text/html"})
+            h = {"Content-Type": "text/html"}
+            if disp:
+                h["Content-Disposition"] = disp
+            return Resp(tiny_zip(), h)
+
+    ticks = iter(range(10**6, 10**9, 100))
+    rl = ekap.RateLimiter(tmp_path / "rl.txt", clock=lambda: next(ticks), sleep=lambda s: None)
+    return ekap.EkapClient(limiter=rl, session=Sess()).fetch(date(2026, 11, 18), "mal")
+
+
+@pytest.mark.parametrize("disp", [
+    "attachment;filename=BULTEN_17112026_MAL.zip",   # another day (EKAP served the wrong date)
+    "attachment;filename=BULTEN_18112026_HIZMET.zip",  # another type
+    None,                                            # cannot verify
+])
+def test_wrong_bulletin_is_rejected_and_not_saved(data_dir, form_html, tmp_path, disp):
+    with pytest.raises(ekap.BulletinMismatchError):
+        _fetch_with_disposition(disp, form_html, tmp_path)
+    assert not (config.bulletins_dir() / "2026-11-18").exists()
+
+
+def test_stdlib_session_shape():
+    s = ekap._UrllibSession()
+    assert hasattr(s, "headers") and callable(s.request)
+    ctx = ekap._make_ssl_context()
+    assert ctx.verify_mode.name == "CERT_REQUIRED" and ctx.check_hostname
