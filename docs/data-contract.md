@@ -72,6 +72,8 @@ Flags alone fire on roughly half of all tenders, and their base rates differ a l
 
 **Score.** The sum of points, a float. Export `score` rounded to 2 decimals and `score_parts` as `[{"code", "points", "p", "p_group"}]`, where `p_group` is the usul_turu used, or `"hepsi"` for the fallback.
 
+**Source inconsistency.** When sözleşme bedeli / estimate > 1.5, the `bedel_orani` flag is still shown as printed, with `source_check: true` and the appended text ` · Bültendeki iki rakam arasındaki fark olağan dışı; kaynakta yazım hatası olabilir.` It earns no points, isn't a partner for `tekrarlayan_eslesik`, and is excluded from p. Checked on 2026-11-19: all 8 such records in 30 days are printed that way in the bulletin, with no parse errors. One is exactly 1000×.
+
 **Groups.** The usul group is the record's `usul_turu`, with one split: 3-g records whose idare starts with `DEVLET MALZEME OFİSİ` form `istisna_3g_dmo` (label `4734/3-g (DMO)`). All other 3-g records stay in `istisna_3g` (label `4734/3-g (diğer idareler)`). DMO is 8,308 of 8,964 3-g records. This grouping is used for p, the bedel medians and the per-procedure peer chain.
 
 **p** = records in the group where the part's condition holds (counted regardless of structural exclusions) / records in the group where the part is computable.
