@@ -12,6 +12,8 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-19: M1 done. M2/M3 code landed. Running a 30-day mal backfill (polite, sequential) for base rates and the repeat-winner flag, then first deploy and the scheduled task.
 
+- 2026-11-19: independent label spot-check (fresh agent, page images, not the labeler): 10 records (B4, A76, B2, B275, A183 plus random B421, A184, A3, B3, B321), 80 fields, 0 mismatches.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
