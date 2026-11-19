@@ -177,7 +177,8 @@ Every flag lands on someone. A wrong or decontextualized flag costs that organiz
 - The bigger the claim, the more evidence it needs.
 
 **Innocent explanations go next to every flag.** Each flag type carries its common legitimate reasons, on the Yöntem page and inline. Examples:
-- DMO 3/g catalog buys are single-supplier by design.
+- Purchases from public suppliers named in 4734/3-e (prison and school workshops, DMO as a seller, TCDD, MKE and others) are single-supplier by law.
+- Where an exclusion rests on our own judgment rather than on the law (e.g. DMO's 3/g series purchases), Yöntem labels it as a judgment, and an agent checks the reasoning against the records.
 - 21/b can follow a real emergency.
 - A repeat winner may be the only local supplier.
 
