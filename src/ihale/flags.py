@@ -6,6 +6,7 @@ Keys are recomputed from the raw names here (not read from the DB), so a normali
 from __future__ import annotations
 
 import bisect
+import statistics
 from dataclasses import dataclass, field, fields
 from datetime import date, timedelta
 
@@ -31,6 +32,7 @@ IDARE_RATIO = 2                   # idare_orani: idare share >= 2x peer share
 ELENEN_PEER_MIN_N = 5             # peer mean of elenen_orani needs >= 5 eligible peer awards
 PAYI_MIN_AWARDS = 5               # yuklenici_payi needs >= 5 awards of the idare in the 365-day window
 PAYI_WINDOW_DAYS = 365
+BEDEL_PEER_MIN_N = 20             # peer median of bedel_orani needs >= 20 peer awards with a ratio
 
 log = logging.getLogger("ihale")
 
@@ -149,9 +151,21 @@ class _Tender:
     tek: bool | None          # tek_gecerli_teklif (either flag); None = unknown
     elen: float | None = None  # elenen_orani when toplam >= 2
     usul: str | None = None    # usul_turu code; None = unknown
+    ratio: float | None = None  # bedel_orani value (sum of lots / estimate), None = not computable
 
 
-def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
+def _ratio(r: Record, members: list[StoredRecord]) -> float | None:
+    """bedel_orani value: sum of the ikn's deduped bedels / estimate; None when not computable (same rules as the flag)."""
+    est = _estimate(r)
+    if est is None or est[1].kurus <= 0:
+        return None
+    if any(not m.record.confident("sozlesme_bedeli") or m.record.sozlesme_bedeli.currency != est[1].currency
+           for m in members):
+        return None
+    return sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus
+
+
+def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender]]:
     """Awards (distinct ikn; a record without a confident ikn is its own award) per sector, sorted by date.
 
     Only awards with a confident idare and a confident gecerli_teklif enter the rates. Kısmi lots of one ikn
@@ -170,19 +184,22 @@ def _tenders(stored: list[StoredRecord]) -> dict[str, list[_Tender]]:
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
         usul = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
+        ratio = _ratio(r, list(groups[r.ikn].values()) if r.confident("ikn") else [s])
         t = by_id.get(tid)
         if t is None:
             by_id[tid] = _Tender(r.bulletin_date, ik, peers.idare_turu(r.idare), peers.il_of(r.idare),
-                                 r.bulletin_type, tek, elen, usul)
+                                 r.bulletin_type, tek, elen, usul, ratio)
         else:
             t.date = min(t.date, r.bulletin_date)
+            if t.ratio is None:
+                t.ratio = ratio
             if t.usul is None:
                 t.usul = usul
             if t.tek is None:
                 t.tek, t.elen = tek, elen
     out: dict[str, list[_Tender]] = {}
     for t in by_id.values():
-        if t.tek is not None:
+        if t.tek is not None or t.ratio is not None:
             out.setdefault(t.sector, []).append(t)
     for v in out.values():
         v.sort(key=lambda t: t.date)
@@ -201,8 +218,16 @@ class _Window:
         self.turu_il: dict[tuple, list] = {}
         self.turu: dict[str, list] = {}
         self.all = [0, 0, 0, 0.0]
+        # bedel_orani values per scope, split by idare key so the own idare can be left out of its peers
+        self.rat: dict[tuple, dict[str, list[float]]] = {}
+        self._median_cache: dict = {}
         for t in tenders[lo:hi]:
             if usul is not None and t.usul != usul:
+                continue
+            if t.ratio is not None:
+                for scope in (("all",), ("turu", t.turu), ("turu_il", t.turu, t.il)):
+                    self.rat.setdefault(scope, {}).setdefault(t.idare_key, []).append(t.ratio)
+            if t.tek is None:
                 continue
             for acc in (self.idare.setdefault(t.idare_key, [0, 0, 0, 0.0]), self.all,
                         self.turu.setdefault(t.turu, [0, 0, 0, 0.0]),
@@ -212,6 +237,20 @@ class _Window:
                 if t.elen is not None:
                     acc[2] += 1
                     acc[3] += t.elen
+
+    def peer_ratio_median(self, ik: str, turu: str, il: str | None) -> tuple[float | None, int]:
+        """(median bedel_orani, n) of the peer chain, own idare excluded; first scope with n >= 20."""
+        key = (ik, turu, il)
+        if key not in self._median_cache:
+            result: tuple = (None, 0)
+            scopes = ([("turu_il", turu, il)] if il else []) + [("turu", turu), ("all",)]
+            for sc in scopes:
+                vals = [v for k, lst in self.rat.get(sc, {}).items() if k != ik for v in lst]
+                if len(vals) >= BEDEL_PEER_MIN_N:
+                    result = (round(statistics.median(vals), 6), len(vals))
+                    break
+            self._median_cache[key] = result
+        return self._median_cache[key]
 
 
 def _candidates(win: _Window, turu: str, il: str | None) -> list[tuple[str, list]]:
@@ -320,7 +359,7 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
     for v in hist.values():
         v.sort()
 
-    tenders = _tenders(stored)
+    tenders = _tenders(stored, groups)
     payi_idx = _PayiIndex(stored)
     windows: dict[tuple, _Window] = {}
 
@@ -348,6 +387,7 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                     "text": f"{r.toplam_teklif} teklif verildi, yalnızca kazananınki geçerli sayıldı"})
 
         # --- bedel_orani
+        ratio_val = None
         est = _estimate(r)
         ok = True
         if est is None:
@@ -368,6 +408,7 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
         if ok:
             total = sum(m.record.sozlesme_bedeli.kurus for m in members)
             est_k = est[1].kurus
+            ratio_val = total / est_k
             if total * 100 >= est_k * RATIO_THRESHOLD_PCT:
                 pct = total * 100 // est_k          # floor: 0.999 → 99
                 if len(members) == 1:
@@ -405,6 +446,7 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
         # --- idare_orani + score (§4.1) and indicators (§4.2)
         idare_fires = False
         elen_peer = {"peer": None, "n": 0}
+        bedel_peer = (None, 0)
         ik = normalize_key(r.idare) if r.confident("idare") else None
         if ik:
             wkey = (r.bulletin_type, r.bulletin_date, None)
@@ -424,6 +466,8 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
                     res.idare_stats["peer"] = None
                     res.idare_stats["peer_note"] = structural.PEER_NOTE
                     idare_fires = False
+                elif ratio_val is not None:     # per-procedure peer chain, like idare_stats
+                    bedel_peer = windows[ukey].peer_ratio_median(ik, peers.idare_turu(r.idare), peers.il_of(r.idare))
         have = {f["code"] for f in res.flags}
         if res.structural and structural.NO_SINGLE_BID_POINTS in rule.effects:
             have -= {"tek_teklif", "diger_teklifler_elendi"}      # still shown as flags, but no points
@@ -434,12 +478,13 @@ def compute_flags(stored: list[StoredRecord]) -> dict[int, FlagResult]:
             parts.append("idare_orani")
         res.score_parts = parts
         res.score = sum(SCORE_WEIGHTS[p] for p in parts)
-        res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx)
+        res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer)
         results[s.id] = res
     return results
 
 
-def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, payi_idx: "_PayiIndex") -> dict:
+def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, payi_idx: "_PayiIndex",
+                ratio_val: float | None = None, bedel_peer: tuple = (None, 0)) -> dict:
     elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
     karar = None
     if r.confident("ihale_tarihi") and r.confident("sozlesme_tarihi"):
@@ -462,4 +507,8 @@ def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, pay
         "karar_suresi_gun": karar,
         "usul_turu": code, "acik_olmayan": ind.acik_olmayan(code),
         "yuklenici_payi": payi, "yuklenici_payi_n": payi_n,
+        # the real value with its peer context (no threshold is ever exported); same number the flag uses
+        "bedel_orani": ratio_val,
+        "bedel_orani_peer_median": bedel_peer[0] if ratio_val is not None else None,
+        "bedel_orani_peer_n": bedel_peer[1] if ratio_val is not None and bedel_peer[0] is not None else None,
     }

@@ -81,7 +81,10 @@ def test_export_matches_contract_shape():
     assert d["tenders"][0].pop("structural") is None            # §4.1.1: null unless a rule matches
     indic, c_indic = d["tenders"][0].pop("indicators"), CONTRACT_DAY["tenders"][0].pop("indicators")
     assert shape(d) == shape(CONTRACT_DAY)
-    assert set(indic) == set(c_indic) | {"elenen_orani_peer_n"}     # the one key added for display of n
+    assert set(indic) == set(c_indic) | {"elenen_orani_peer_n", "bedel_orani", "bedel_orani_peer_median",
+                                         "bedel_orani_peer_n"}     # added for display of n and of the real value
+    assert indic.pop("bedel_orani") == 282_500_000 / 289_425_850       # the same number the flag uses
+    assert indic.pop("bedel_orani_peer_median") is None and indic.pop("bedel_orani_peer_n") is None
     assert indic == {"elenen_orani": 0.0, "elenen_orani_peer": None, "elenen_orani_peer_n": 0,
                      "karar_suresi_gun": 26, "usul_turu": "acik", "acik_olmayan": False,
                      "yuklenici_payi": None, "yuklenici_payi_n": 1}
