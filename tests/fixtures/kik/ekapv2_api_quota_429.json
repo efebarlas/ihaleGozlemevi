@@ -1,0 +1,1 @@
+{"exceptiontype":"EkapException","statustype":"warning","code":"API_QUOTA_EXCEEDED","message":"HAN.EXCEPTIONS.KURUM_IP_KOTASI.API_QUOTA_SIGN_IN","scope":"request-rule","suggestSignIn":true,"retryAfterSeconds":3600}

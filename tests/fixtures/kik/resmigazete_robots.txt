@@ -1,0 +1,39 @@
+User-agent: Googlebot
+Noindex:/arsiv/17961.pdf
+Noindex:/arsiv/21997.pdf
+Noindex:/arsiv/21164.pdf
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2%20(7).pdf 
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2 (7).pdf 
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2%20(7)-1.pdf
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2 (7)-1.pdf
+Noindex:/ilanlar/eskiilanlar/2010/01/20100128-2.htm
+Noindex:/eskiler/2014/04/20140425-14.pdf
+Noindex:/eskiler/2014/04/20140425-22.pdf 
+Noindex:/eskiler/2001/06/20010601.pdf
+Noindex:/arsiv/21568.pdf
+Noindex:/arsiv/23173.pdf
+Noindex:/ilanlar/eskiilanlar/2022/01/20220122-4-2.pdf 
+Noindex:/ilanlar/eskiilanlar/2022/03/20220306-4-2.pdf
+Noindex:/ilanlar/eskiilanlar/2023/01/20230122-4-4.pdf
+Noindex:/ilanlar/eskiilanlar/2010/02/20100207-2.htm
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2%20(7)-1.pdf
+Noindex:/ilanlar/eskiilanlar/2018/11/20181104-2.htm
+Noindex:/ilanlar/eskiilanlar/2014/05/20140508-4.htm
+Noindex:/eskiler/2012/11/20121114.pdf
+Noindex:/eskiler/2002/02/20020201.pdf
+Noindex:/ilanlar/eskiilanlar/2011/03/20110304-2.htm
+Noindex:/ilanlar/eskiilanlar/2011/03/20110304-2.htm#y01
+Noindex:/ilanlar/eskiilanlar/2024/01/20240103-4-5.pdf
+Noindex:/eskiler/2024/01/20240103.pdf
+Noindex:/ilanlar/eskiilanlar/2024/01/20240126-4-11.pdf
+Noindex:/ilanlar/eskiilanlar/2022/01/20220122-4-2.pdf
+Noindex:/eskiler/2023/11/20231103-11.pdf
+
+User-agent: Bingbot
+Noindex: /eskiler/2023/11/20231103-11.pdf
+
+User-agent: Slurp
+Noindex: /eskiler/2023/11/20231103-11.pdf
+
+User-agent: Yandex
+Noindex: /eskiler/2023/11/20231103-11.pdf
