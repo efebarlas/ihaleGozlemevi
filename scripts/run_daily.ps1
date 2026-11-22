@@ -14,7 +14,17 @@ $env:PYTHONIOENCODING = 'utf-8'
 $repo = Split-Path -Parent $PSScriptRoot
 $python = Join-Path $repo '.venv\Scripts\python.exe'
 
-if ($env:IHALE_DATA_DIR) { $dataDir = $env:IHALE_DATA_DIR } else { $dataDir = Join-Path $env:USERPROFILE 'ihaleGozlemevi-data' }
+# Same resolution as ihale.config: $env:IHALE_DATA_DIR, else the pointer file, else the old default.
+$pointer = Join-Path $env:USERPROFILE '.ihaleGozlemevi-data-dir'
+if ($env:IHALE_DATA_DIR) { $dataDir = $env:IHALE_DATA_DIR }
+elseif (Test-Path -LiteralPath $pointer) { $dataDir = ([System.IO.File]::ReadAllText($pointer)).Trim() }
+else { $dataDir = Join-Path $env:USERPROFILE 'ihaleGozlemevi-data' }
+# Missing-data guard (SSD unplugged): never create the data dir here; ihale itself also refuses.
+if (-not (Test-Path -LiteralPath (Join-Path $dataDir 'ihale.db'))) {
+    $fallback = Join-Path $env:TEMP 'ihaleGozlemevi-missing-data.log'
+    [System.IO.File]::AppendAllText($fallback, ("{0} ERROR data dir {1} or its ihale.db is missing (external drive unplugged?). Nothing was run.`r`n" -f (Get-Date -Format 's'), $dataDir))
+    exit 7
+}
 $logDir = Join-Path $dataDir 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 # Separate from the Python job's own YYYY-MM-DD.log so the two writers never contend for one file.
