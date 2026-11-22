@@ -34,6 +34,44 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 
 - 2026-11-21/22: **Live data moved to Efe's SSD**: `E:\ihaleGozlemevi\live-data` (exFAT, label T7). Verified identical (same ihale.db SHA-256, integrity ok, same file list). Resolution: `$IHALE_DATA_DIR`, else the pointer file `~/.ihaleGozlemevi-data-dir`, else the old default. The scheduled task sets IHALE_DATA_DIR itself. **Missing-data guard** (ab5a02f): if the folder or its ihale.db is missing (SSD unplugged), `data_dir()` raises and `run_daily.ps1` exits 7, doing nothing. A test run from E: outside the app worked except the deploy (no login, as before). Deployed 20 Nov data from E: (live). The old C: copy is deleted, except the EKAP limiter files, which the research scan started before the move still uses. A small backup of oracle, slugs and manifests is in `~/ihaleGozlemevi-small-backup`. D1 staging moved to the data dir and the empty-site deploy guards are in (d518c51). The last C: folder was deleted after the research scan switched to the E: limiter.
 
+## Handoff to the "ai" Windows account (2026-11-21 19:00 PT)
+Efe moved İhale Gözlemevi to the "ai" account. The yigit session family has stopped. Nothing under yigit calls EKAP or writes to `E:\ihaleGozlemevi\live-data` any more. The yigit `ihaleGozlemevi-daily` scheduled task is **disabled** (by the spec owner, not deleted).
+
+**Live site:** https://ihale-gozlemevi.clearpile-reader-server.workers.dev (unlisted).
+- **Data:** mal, hizmet and yapım, 21 Oct – 20 Nov 2026 (19,761 records), in the Sütun design.
+- **Last deploy:** 2026-11-21 ~18:35 PT. It includes the table_first peer classifier, the 0.7 confidence floor and the 30-award peer minimum (commit cd3e0a0 and earlier). Evidence: the live DB was re-flagged at 18:23 and exported at 18:26, and the D1 manifest was written at 18:35 by that deploy. Live, İzFAŞ (2026-11-20-hizmet-B-3) shows the peer "Türkiye'deki belediye şirketleri", which only exists after the 30-minimum change.
+- **D1 usage on 2026-11-22 UTC:** 20,164 rows written (`d1-usage.json`).
+
+**Hard stop in force (SPEC §7, EKAP login wall, 2026-11-21 18:15/18:16 PT, research job):** `E:\ihaleGozlemevi\live-data\BLOCKED` stays until Efe clears it. Every entry point and the EKAP client itself refuse while it exists, and there is a shared cap of 60 requests per UTC day (75d5699).
+
+**Done since M4 (all on main):**
+- M4 is complete: hizmet/yapım, Dosyalar, D1 page store (gzip, dry-run plus 80k daily budget guard, empty-site guards), the classifier experiment and table_first promotion, the simulated-user fixes, the identity guard and the Sütun port.
+- The data dir is on the SSD (pointer file plus missing-data guard).
+- **M5a** (1ce5254, c3dc9c1): the parser stores `downloaders`, `yuklenici_adresi` and `yuklenici_il` (schema v6). The address goes to the DB and raw_fields only, and a privacy test guarantees it never reaches export or site. Labels score 100% for downloaders and il, and 100% for the address on mal; two misses on hizmet/yapım are label errors ("Nıda", "Iş Merkezı" are printed with dotless ı).
+- **M5b** (a044c34): rule-anchored signals as indicators only (`idare_stats.usul_signal`, `indicators.pazarlik_21b`, `downloader_bid_ratio`), plus base_rates tables. No score points.
+- **M5c draft** (f343de1): the idare scorecard computation is a document only.
+
+**Half-done:**
+- **M5a re-parse of stored bulletins:** stopped after the first day. `E:\ihaleGozlemevi\live-data\ihale.db` has 2026-10-21 mal (697 records) re-parsed with the new columns. All other days don't have them yet. Re-parsing is idempotent, so scores are unaffected, and flags/export were not re-run after it. The backup made just before is `E:\ihaleGozlemevi\live-data\ihale.db.pre-m5a`.
+  - **To finish:** `ihale parse --date … --type …` for every stored bulletin (no download), then `flag`, `export`, and a deploy through the dry-run guard.
+- **Label fixes, two hand labels in `tests/labels/downloaders_address_2026-11-18.json`:** hizmet A-17 "Nıda" and yapım A-9 "Iş Merkezı" should be corrected to the printed text after a page check.
+
+**Next (`docs/m5-plan.md`):**
+- **c:** the IMCO scorecard implementation, then its page.
+- **d:** drift monitoring.
+- **e:** Sayıştay feasibility, at most ~10 polite requests, another host.
+- **f:** history backfill, blocked by the hard stop. It also needs Efe's approved daily budget, and none is approved.
+- **g:** the GTI weight fit, after history.
+
+**Spec-owner answers recorded for "ai":**
+- **(1)** The research archive holds no raw bulletins: the zips were deleted after parsing. It has only pdftotext text (`text/*.txt.gz`, ~99 bulletin-days) and `archive.db` (~11.3k records over 15 scattered dates). Reusing it is ai's call, and it saves few requests.
+- **(2)** No backfill budget is approved. That's Efe's decision under "ai", after the block clears.
+- **(3) Storage recommendation:** per-tender pages for recent months; older years on İdare/Yüklenici pages and day lists. 16 years of pre-rendered pages would be ~13 GB, against D1's 5 GB free.
+
+**Human checks still open:**
+- **Cloudflare login:** the one-time Cloudflare login for unattended deploys (`scripts\cloudflare_login.cmd`). Under "ai" this needs re-doing for that account's wrangler config.
+- **Publisher decision:** who publishes, at G-Public.
+
 ## Milestones
 | | Milestone | State |
 |---|---|---|
@@ -41,8 +79,8 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | M1 | Adopt ihalent | done (e096656; verified: adapter over ihalent 0.5.1 scores 100% correct+confident on all 6 core fields over 69 hand labels; ihalent alone 95.7% on bedel because it drops EUR; 626/626 notices, ToC complete; 69 s per day) |
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
-| M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Simulated-user check done (5 personas, about 85 requests, no blockers, no broken links). The fix batch (units, chip counts, rounding, the 'yakın' label above 100%, kısmi caveat, il filter, pazarlık share vs peers) is with the builders, to ship in one deploy. |
-| M5 | Weights, rules and history | planned (`docs/m5-plan.md`): offline pieces first (parser gap, rule signals, IMCO scorecard, drift); Sayıştay feasibility; history backfill blocked by the EKAP hard stop and the bulk-backfill rule |
+| M4 | Dosyalar and better peers | done. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Simulated-user check done (5 personas, about 85 requests, no blockers, no broken links). The fix batch (units, chip counts, rounding, the 'yakın' label above 100%, kısmi caveat, il filter, pazarlık share vs peers) is with the builders, to ship in one deploy. |
+| M5 | Weights, rules and history | in progress at handoff: a (code done, re-parse half-done) and b done, c drafted; plan in `docs/m5-plan.md`: offline pieces first (parser gap, rule signals, IMCO scorecard, drift); Sayıştay feasibility; history backfill blocked by the EKAP hard stop and the bulk-backfill rule |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
 - M4: each İdare page shows its procedure mix over time (açık / pazarlık incl. 21/b / istisna) and its volume trend, so displacement stays visible.
