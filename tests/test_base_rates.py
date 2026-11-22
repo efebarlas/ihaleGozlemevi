@@ -36,3 +36,17 @@ def test_report_contents(capsys):
     assert "Part base rates p by <type>/<usul group>" in out and "By type" in out and "score>=3.0" in out
     assert "Indicators by usul_turu" in out and "Indicators by section" in out
     assert "[mal/istisna_3g]" in out and "karar_suresi_gun" in out and "yuklenici_payi" in out
+
+
+def test_signal_tables_are_printed(capsys):
+    D = date(2026, 11, 18)
+    recs = []
+    for i in range(1, 8):
+        r = rec(i, ikn=f"2026/{i}", yuklenici=f"F{i}", idare="ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ")
+        r.ihale_usulu = "Pazarlık (MD 21 B)" if i % 2 else "Açık"
+        recs.append(r)
+    Store().replace_day(D, "mal", recs)
+    assert load().main([]) == 0
+    out = capsys.readouterr().out
+    assert "Rule-anchored signals" in out and "pazarlik_21b records" in out and "downloader_bid_ratio" in out
+    assert "idares with a signal   1" in out and "21/b share ratio" in out

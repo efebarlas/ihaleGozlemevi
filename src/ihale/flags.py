@@ -480,6 +480,8 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         v.sort()
 
     tenders = _tenders(stored, groups)
+    from . import dosyalar            # lazy: dosyalar imports flags
+    usul_pay = dosyalar.usul_pay_for(stored)
     payi_idx = _PayiIndex(stored)
     windows: dict[tuple, _Window] = {}
 
@@ -593,6 +595,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                 if ukey not in windows:
                     windows[ukey] = _Window(tenders.get(r.bulletin_type, []), r.bulletin_date, usul)
                 res.idare_stats, idare_fires = idare_stats(windows[ukey], r.idare, r.bulletin_type, usul)
+                res.idare_stats["usul_signal"] = usul_signal(usul_pay, ik, r.bulletin_type)
                 idare_computable = res.idare_stats["records"] >= IDARE_MIN_N and res.idare_stats["peer"] is not None
                 idare_raw = idare_fires
                 if rule and structural.OWN_PEER_GROUP in rule.effects:
@@ -637,6 +640,47 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
     return results, _score_all(results)
 
 
+def _share(block: dict, cats: tuple[str, ...], n: int | None, min_n: int) -> dict:
+    """{"awards": share, "try": share} of the given categories in a usul_pay shares block; None below min_n."""
+    if not n or n < min_n:
+        return {"awards": None, "try": None}
+    sh = block["shares"]
+    a = sum(sh[c]["awards"] for c in cats)
+    t = sum(sh[c]["try"] for c in cats)
+    tot = sum(sh[c]["try"] for c in sh)
+    return {"awards": a / n, "try": t / tot if tot > 0 else None}
+
+
+def usul_signal(pay: dict, ik: str, btype: str) -> dict | None:
+    """The idare's pazarlık and 21/b shares (by award count and by TRY, over the loaded window) beside its peer
+    group's, with n and the ratio idare/peer. An indicator only: no score points until base rates are measured."""
+    block = pay.get(ik, {}).get(btype)
+    if block is None:
+        return None
+    peer = block["peer"]
+    out = {"type": btype, "window": "all", "n": block["n"],
+           "peer_label": peer["label"] if peer else None, "peer_n": peer["n"] if peer else None}
+    for key, cats in (("pazarlik", ("pazarlik_21b", "pazarlik_diger")), ("pazarlik_21b", ("pazarlik_21b",))):
+        mine = _share(block, cats, block["n"], IDARE_MIN_N)
+        theirs = _share(peer, cats, peer["n"], PEER_MIN_N) if peer else {"awards": None, "try": None}
+        rnd = lambda x: None if x is None else round(x, 4)       # noqa: E731  (the ratio uses unrounded shares)
+        out[key] = {basis: {"idare": rnd(mine[basis]), "peer": rnd(theirs[basis]),
+                            "ratio": rnd(mine[basis] / theirs[basis])
+                            if mine[basis] is not None and theirs[basis] else None}
+                    for basis in ("awards", "try")}
+    return out
+
+
+def _downloader_ratio(r: Record, counts_ok: bool) -> float | None:
+    """downloaders / toplam_teklif; None when the parser has not stored `downloaders` (before and after it lands)."""
+    dl = getattr(r, "downloaders", None)
+    if not isinstance(dl, int) or isinstance(dl, bool) or dl < 0:
+        return None
+    if r.confidence.get("downloaders", 1.0) < CONFIDENT or not counts_ok or not r.toplam_teklif:
+        return None
+    return round(dl / r.toplam_teklif, 4)
+
+
 def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, payi_idx: "_PayiIndex",
                 ratio_val: float | None = None, bedel_peer: tuple = (None, 0), check: str | None = None) -> dict:
     elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
@@ -664,6 +708,9 @@ def _indicators(r: Record, ik: str | None, counts_ok: bool, elen_peer: dict, pay
         # the real value with its peer context (no threshold is ever exported); same number the flag uses
         "bedel_orani": ratio_val,
         "source_check": check,
+        # rule-anchored signals (M5b): indicators only, no score points until base rates are measured
+        "pazarlik_21b": None if code is None else code == "pazarlik_21b",
+        "downloader_bid_ratio": _downloader_ratio(r, counts_ok),
         "bedel_orani_peer_median": bedel_peer[0] if ratio_val is not None else None,
         "bedel_orani_peer_n": bedel_peer[1] if ratio_val is not None and bedel_peer[0] is not None else None,
     }

@@ -198,6 +198,18 @@ def _usul_pay(rows: list[dict], idare_name: dict[str, str]) -> dict[str, dict]:
     return out
 
 
+def usul_pay_for(stored: list[StoredRecord]) -> dict[str, dict]:
+    """ik → {type: usul_pay block} over all loaded history (shared with flags.usul_signal)."""
+    names: dict[str, list[str]] = defaultdict(list)
+    for s in stored:
+        r = s.record
+        ik = normalize_key(r.idare) if r.confident("idare") else None
+        if ik:
+            names[ik].append(r.idare)
+    idare_name = {k: _common_name(v) for k, v in names.items()}
+    return _usul_pay(_tender_rows(stored, idare_name), idare_name)
+
+
 def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None) -> tuple[list[dict], list[dict]]:
     """Write idare/ and yuklenici/ files under `out`; return (idare_index, yuklenici_index) for meta.json."""
     slug_map = slug_map or SlugMap()

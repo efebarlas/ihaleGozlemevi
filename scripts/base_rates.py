@@ -82,6 +82,41 @@ def indicator_tables(rows: list[dict]) -> None:
                 print(f"    {name:<18}{_quantiles(vals)}")
 
 
+def signal_tables(rows: list[dict]) -> None:
+    """Rule-anchored signals (M5b) so thresholds can be chosen from data: the idare-level usul_signal (one value per
+    idare and type, idares with >= 5 awards), per type and per peer group, and the record-level indicators."""
+    print(chr(10) + "Rule-anchored signals (indicators only, no score points)")
+    for typ in sorted({r["type"] for r in rows}):
+        rs = [r for r in rows if r["type"] == typ]
+        print(f"  [{typ}] records={len(rs)}")
+        pz = [r["ind"].get("pazarlik_21b") for r in rs if r["ind"].get("pazarlik_21b") is not None]
+        print(f"    pazarlik_21b records   {pct(sum(pz), len(pz))} of {len(pz)}")
+        dl = [r["ind"]["downloader_bid_ratio"] for r in rs if r["ind"].get("downloader_bid_ratio") is not None]
+        print(f"    downloader_bid_ratio   {_quantiles(dl)}")
+        idares = {}
+        for r in rs:
+            if r["sig"] and r["idare"]:
+                idares.setdefault(r["idare"], r["sig"])
+        def vals(key, basis, field, items=None):
+            return [v["sig"][key][basis][field] if "sig" in v else v[key][basis][field]
+                    for v in (items if items is not None else [{"sig": x} for x in idares.values()])
+                    if (v["sig"] if "sig" in v else v)[key][basis][field] is not None]
+        print(f"    idares with a signal   {len(idares)}")
+        for key in ("pazarlik", "pazarlik_21b"):
+            for basis in ("awards", "try"):
+                print(f"    {key:<13} {basis:<6} idare share  {_quantiles(vals(key, basis, 'idare'))}")
+                print(f"    {key:<13} {basis:<6} peer share   {_quantiles(vals(key, basis, 'peer'))}")
+                print(f"    {key:<13} {basis:<6} ratio        {_quantiles(vals(key, basis, 'ratio'))}")
+        by_peer: dict[str, list[dict]] = defaultdict(list)
+        for sig in idares.values():
+            if sig["peer_label"]:
+                by_peer[sig["peer_label"]].append(sig)
+        print("    21/b share ratio (idare/peer, by awards) per peer group, largest groups:")
+        for label, sigs in sorted(by_peer.items(), key=lambda kv: -len(kv[1]))[:8]:
+            rat = [x["pazarlik_21b"]["awards"]["ratio"] for x in sigs if x["pazarlik_21b"]["awards"]["ratio"] is not None]
+            print(f"      {label[:46]:<46} idares={len(sigs):<4} {_quantiles(rat)}")
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--date", type=date.fromisoformat, help="only report records of this bulletin date")
@@ -98,7 +133,8 @@ def main(argv=None) -> int:
             continue
         have = {x["code"] for x in f.flags}
         rows.append({
-            "date": r.bulletin_date, "type": r.bulletin_type, "ikn": r.ikn, "usul": r.ihale_usulu or "(boş)", "section": r.section,
+            "date": r.bulletin_date, "type": r.bulletin_type, "ikn": r.ikn, "idare": r.idare,
+            "sig": (f.idare_stats or {}).get("usul_signal"), "usul": r.ihale_usulu or "(boş)", "section": r.section,
             "tek": bool(have & {"tek_teklif", "diger_teklifler_elendi"}),
             "tek_teklif": "tek_teklif" in have, "diger": "diger_teklifler_elendi" in have,
             "ind": f.indicators or {}, "bedel": "bedel_orani" in have,
@@ -139,6 +175,7 @@ def main(argv=None) -> int:
 
     part_rate_tables(part_rates, rows)
     indicator_tables(rows)
+    signal_tables(rows)
 
     print("\nScore distribution (records)")
     dist = Counter(r["score"] for r in rows)
