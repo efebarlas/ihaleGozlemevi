@@ -64,8 +64,8 @@ Efe moved İhale Gözlemevi to the "ai" account. The yigit session family has st
 - **M5c draft** (f343de1): the idare scorecard computation is a document only.
 
 **Half-done:**
-- **M5a re-parse of stored bulletins:** stopped after the first day. `E:\ihaleGozlemevi\live-data\ihale.db` has 2026-10-21 mal (697 records) re-parsed with the new columns. All other days don't have them yet. Re-parsing is idempotent, so scores are unaffected, and flags/export were not re-run after it. The backup made just before is `E:\ihaleGozlemevi\live-data\ihale.db.pre-m5a`.
-  - **To finish:** `ihale parse --date … --type …` for every stored bulletin (no download), then `flag`, `export`, and a deploy through the dry-run guard.
+- **M5a DONE (2026-11-22, orchestrator):** all 22 stored days re-parsed from cached files (no EKAP), 19,761 records, integrity ok; parsed fields identical to the pre-reparse backup (`ihale.db.pre-m5a-reparse`), only score/flags were reset and recomputed by `flag`. Address and downloaders reach neither export nor site (only a field name in `unreadable`). `build` + deploy dry-run: 0 changed pages (the new columns are private), 0 D1 rows, so live is unchanged and still correct. The two hand labels were fixed to the printed text ("Nıda", "Iş Merkezı"). 914 tests pass.
+- **Next: M5g scoring precision (spec owner 2026-11-22, before M5c):** (1) DMO brand-specified purchases -> `structural.marka_belirli`, no tek_teklif/bedel_orani points, ~40 hand-labelled sample first; (2) municipality-owned companies as winners (Er Konut, Ulaşımpark; confirm each from a public source) -> 'belediye şirketi' in-house award, own group or no repeat-winner points; (3) data check: median price/yaklaşık maliyet 0.419 for >=4 valid bids vs 0.763 for 2-3 (kısmi teklif, unit-price, parse errors?). Report Bugün before/after, deploy via guard. Offline only.
 - **Label fixes, two hand labels in `tests/labels/downloaders_address_2026-11-18.json`:** hizmet A-17 "Nıda" and yapım A-9 "Iş Merkezı" should be corrected to the printed text after a page check.
 
 **Next (`docs/m5-plan.md`):**
