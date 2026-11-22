@@ -326,3 +326,82 @@ def test_fixture_accuracy_per_type(kind, by_key, hizmet, yapim):
             assert not (got != exp and confident), (kind, lab["section"], lab["seq"], f, got, exp)
     for f in CORE_FIELDS:
         assert good[f] / len(labels) >= 0.95, (kind, f, good[f], len(labels))
+
+
+# ------------------------------------------------------- downloaders and contractor address (M5a)
+
+def test_downloaders_and_address_long_layout(by_key):
+    r = by_key["A", 1]
+    assert r.downloaders == 5 and r.confidence["downloaders"] >= CONFIDENT
+    assert r.yuklenici_adresi == ("Selahaddin-i Eyyubi Mahallesi 1511. Cad. Çavlı Kent 4 B ve C Girişli Blok Apt. No: 30 A "
+                                  "Merkez/Bingöl Bingöl Merkez/Bingöl")
+    assert r.yuklenici_il == "Bingöl" and r.confident("yuklenici_adresi") and r.confident("yuklenici_il")
+    assert ("4", "Yüklenicinin adresi", r.yuklenici_adresi) in r.raw_fields
+    assert ("3", "Dokümanı EKAP üzerinden e-imza kullanarak indiren sayısı", "5") in r.raw_fields
+
+
+def test_short_layout_has_no_downloaders_but_an_address(by_key):
+    r = by_key["B", 1]
+    assert r.downloaders is None and "downloaders" not in r.confidence       # absent by layout, not attempted
+    assert r.yuklenici_adresi.endswith("Tuzla/İstanbul") and r.yuklenici_il == "İstanbul"
+    # label between value lines (B-2): address still read; two-line address
+    assert by_key["B", 2].yuklenici_adresi == "Ahi Evran OSB Mahallesi Osmanlı Cad. No: 1 Sincan/Ankara Sincan/Ankara"
+    assert by_key["A", 76].downloaders is None and by_key["A", 76].yuklenici_il == "Şanlıurfa"
+
+
+def test_address_after_page_break_and_other_types(hizmet, yapim):
+    b5 = hizmet["B", 5]          # record starts on p53, the address is on p54
+    assert b5.yuklenici_adresi == ("Dudullu OSB Mah. DES-2 Cad. Teknopark Binası Blok No: 8 İç Kapı No: 44 "
+                                   "Ümraniye / İstanbul Ümraniye/İstanbul")
+    a6 = hizmet["A", 6]
+    assert a6.downloaders == 3 and a6.yuklenici_il == "Kayseri"
+    assert yapim["A", 2].downloaders == 20 and yapim["A", 2].yuklenici_il == "Kastamonu"
+    assert yapim["B", 4].yuklenici_adresi == "Çengeldere Mahallesi Şehzade Cad. No: 34 Beykoz/İstanbul Beykoz/İstanbul"
+
+
+def test_address_cell_logic_across_pages_and_centred_label():
+    from ihalent.bulletin import Line, Word
+    from ihale.parse import _address_from_lines, _province_of
+
+    def line(page, top, left="", right="", colon=False):
+        ws = []
+        if left:
+            ws.append(Word(page, 75.0, top, top + 8, left))
+        if colon:
+            ws.append(Word(page, 242.0, top, top + 8, ":"))
+        if right:
+            ws.append(Word(page, 248.0, top, top + 8, right))
+        return Line(page, top, ws)
+
+    # label near the page foot, the rest of the value on the next page, then the record end
+    foot = [line(1, 700, "f) Yüklenicinin adresi", "Gül Mah. 5 Sok. No: 3", True), line(1, 711.5, right="Kapı No: 4 Merkez/Van"),
+            line(2, 90, right="Merkez/Van"), line(2, 101.5, "Kamuoyuna saygıyla duyurulur.")]
+    # the record-end line is cut off by the caller; a left-labelled line stops the cell
+    assert _address_from_lines(foot[:3], 241.0) == "Gül Mah. 5 Sok. No: 3 Kapı No: 4 Merkez/Van Merkez/Van"
+    # label vertically centred: a value line above, one below; the previous cell (14.5 pt above) is not taken
+    mid = [line(1, 100, right="Önceki hücre devamı"), line(1, 114.5, right="Birinci satır"),
+           line(1, 126, "f) Yüklenicinin adresi", "", True), line(1, 137.5, right="Üçüncü satır Konak/İzmir")]
+    assert _address_from_lines(mid, 241.0) == "Birinci satır Üçüncü satır Konak/İzmir"
+    assert _address_from_lines([line(1, 100, "f) Yüklenicinin adresi", "", True)], 241.0) == ""   # known empty
+    assert _address_from_lines([line(1, 100, "e) Yüklenicinin uyruğu", "Türkiye", True)], 241.0) is None  # label absent
+    assert _province_of("X Mah. Çankaya/Ankara") == "Ankara" and _province_of("X Mah. Çankaya/Atlantis") is None
+    assert _province_of("X Mah. Merkez/AFYONKARAHİSAR") == "Afyonkarahisar"
+
+
+def test_store_roundtrip_and_migration_of_the_new_columns(tmp_path):
+    import sqlite3
+    from datetime import date as _d
+    from ihale.store import Store
+
+    path = tmp_path / "old.db"
+    Store(path)                                           # fresh schema
+    with sqlite3.connect(path) as c:                      # simulate a v5 database without the new columns
+        c.execute("ALTER TABLE records DROP COLUMN yuklenici_il")
+        c.execute("ALTER TABLE records DROP COLUMN downloaders")
+        c.execute("UPDATE meta SET value='5' WHERE key='schema_version'")
+    s = Store(path)                                       # migrates
+    from rec_helpers import rec
+    r = rec(1, yuklenici_adresi="Mah. Merkez/Van", yuklenici_il="Van", downloaders=7)
+    s.replace_day(_d(2026, 11, 18), "mal", [r])
+    got = s.all_records()[0].record
+    assert (got.yuklenici_adresi, got.yuklenici_il, got.downloaders) == ("Mah. Merkez/Van", "Van", 7)

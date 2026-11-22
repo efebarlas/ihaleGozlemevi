@@ -11,13 +11,13 @@ from pathlib import Path
 from . import config
 from .model import Money, Record
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 MONEY_FIELDS = ("yaklasik_maliyet", "esas_kisim_yaklasik_maliyet", "sozlesme_bedeli")
 DATE_FIELDS = ("ihale_tarihi", "sozlesme_tarihi")
 TEXT_FIELDS = ("ikn", "title", "idare", "ihale_turu", "ihale_usulu", "konu", "sozlesme_suresi",
-               "yuklenici", "yuklenici_uyrugu", "yuklenici_adresi")
-INT_FIELDS = ("toplam_teklif", "gecerli_teklif")
+               "yuklenici", "yuklenici_uyrugu", "yuklenici_adresi", "yuklenici_il")
+INT_FIELDS = ("toplam_teklif", "gecerli_teklif", "downloaders")
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS records (
     sozlesme_bedeli_kurus INTEGER, sozlesme_bedeli_cur TEXT,
     sozlesme_bedeli_alt_kurus INTEGER, sozlesme_bedeli_alt_cur TEXT,
     sozlesme_suresi TEXT, yuklenici TEXT, yuklenici_uyrugu TEXT, yuklenici_adresi TEXT,
+    yuklenici_il TEXT, downloaders INTEGER,
     confidence TEXT NOT NULL DEFAULT '{}',
     warnings TEXT NOT NULL DEFAULT '[]',
     raw_fields TEXT NOT NULL DEFAULT '[]',
@@ -158,7 +159,8 @@ class Store:
                 have = {r["name"] for r in c.execute("PRAGMA table_info(records)")}
                 for col, decl in (("raw_fields", "TEXT NOT NULL DEFAULT '[]'"), ("score", "INTEGER"),
                                   ("score_parts", "TEXT"), ("idare_stats", "TEXT"), ("indicators", "TEXT"),
-                                  ("structural", "TEXT"), ("score_raw", "REAL"), ("value_weight", "REAL")):
+                                  ("structural", "TEXT"), ("score_raw", "REAL"), ("value_weight", "REAL"),
+                                  ("yuklenici_il", "TEXT"), ("downloaders", "INTEGER")):
                     if col not in have:
                         c.execute(f"ALTER TABLE records ADD COLUMN {col} {decl}")
                 c.execute("UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),))

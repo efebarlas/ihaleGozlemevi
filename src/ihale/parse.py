@@ -20,8 +20,13 @@ What the adapter adds on top of ihalent (each is a shortfall for our use):
   (``BulletinRead.rejected``). Each one still becomes a Record (so the day's count stays honest)
   with whatever is recoverable (printed seq, section, pages, ikn from the header line), confidence
   below ``CONFIDENT`` and a warning carrying ihalent's reason.
-* **Not provided:** ihalent drops the contractor's address on purpose, so ``yuklenici_adresi`` is
-  always ``None`` and has no confidence entry (never attempted).
+* **Contractor address (4f / 3e)** (M5a). ihalent drops that row on purpose, so it is recovered here from the same word
+  list: the value cell of the "Yüklenicinin adresi" label (a block of right-column lines, cut by line spacing like
+  ihalent's own cells, continued across a page break until ``Kamuoyuna saygıyla duyurulur.``), joined with single
+  spaces. ``yuklenici_il`` is the trailing ``İlçe/İl`` token when it is one of the 81 provinces. PRIVACY (SPEC §6.1):
+  the address is stored in the DB and ``raw_fields`` only and must never reach an export or the site.
+* **Downloaders (3a)**: ``Record.downloaders`` from ihalent's field "Dokümanı EKAP üzerinden e-imza kullanarak indiren
+  sayısı" (long layout only; absent in the short layout, then None with no confidence entry).
 
 Confidence (docs/data-contract.md §1): ≥ CONFIDENT only when ihalent produced the value (label found
 in the right part of the form) and the value matches its expected shape. Empty value after the colon:
@@ -40,6 +45,8 @@ from pathlib import Path
 from ihalent import bulletin as ib
 
 from .model import Money, Record
+from .keys import turkish_lower
+from .peers import PROVINCES
 
 log = logging.getLogger(__name__)
 
@@ -57,6 +64,7 @@ _RE_DATE = re.compile(r"^(\d{2})\.(\d{2})\.(\d{4})$")
 _RE_INT = re.compile(r"^\d+$")
 # the bulletin itself says there is no estimate: "- TRY", "... yaklaşık maliyeti bulunmamaktadır."
 _RE_NO_AMOUNT = re.compile(r"bulunmamakta|^-+(\s*[A-Za-z]{2,4})?$", re.IGNORECASE)
+_RE_ADDRESS_TAIL = re.compile(r"\S+/\S+$")
 _HEADINGS = ("A- 4734", "B- 4734", "1. İHALE SONUÇ", "1.1. ", "1. İSTİSNA", "2. KAPSAM", "2.1. ", "1. KAPSAM")
 
 _SECTION_MAP = {"4734": "A", "istisna": "B", "kapsam-disi": "B"}
@@ -168,6 +176,9 @@ def _fill_from_notice(rec: Record, n: ib.BulletinNotice) -> None:
     uyruk = n.value("4", "Yüklenicinin uyruğu")
     if uyruk is not None:
         _set(rec, "yuklenici_uyrugu", uyruk, "text")
+    dl = next((v for p, lab, v in n.fields if p == "3" and ib._fold(lab).startswith("dokumani")), None)
+    if dl is not None:  # long layout only; the short layout has no such row
+        _set(rec, "downloaders", dl, "int")
     # header block (ihalent only fills it when the title repeat was found)
     rec.title = n.title
     rec.idare = n.authority
@@ -207,6 +218,8 @@ def _words_and_pages(pdf_path: Path) -> tuple[list[ib.Word], dict[int, int]]:
 def _scan(words: list[ib.Word], pages: dict[int, int]) -> list[dict]:
     """Per ``SONUÇ İLANI``: printed seq, A/B heading, source pages and the header's ikn."""
     lines = ib.lines_from_words(words)
+    colon_x = ib.colon_column(lines)
+    left_limit = (colon_x - ib.COLON_TOLERANCE) if colon_x is not None else None
     out: list[dict] = []
     section: str | None = None
     cur: dict | None = None
@@ -226,6 +239,7 @@ def _scan(words: list[ib.Word], pages: dict[int, int]) -> list[dict]:
                 "page_end": pages.get(line.page, line.page),
                 "ikn": None,
                 "open": True,
+                "lines": [],
             }
             out.append(cur)
         elif cur is not None and cur["open"]:
@@ -236,14 +250,88 @@ def _scan(words: list[ib.Word], pages: dict[int, int]) -> list[dict]:
                 continue
             else:
                 cur["page_end"] = pages.get(line.page, line.page)
+                cur["lines"].append(line)
                 if cur["ikn"] is None:
                     h = _RE_HEADER_IKN.match(t)
                     if h:
                         cur["ikn"] = h.group(1)
+    for rec in out:
+        rec["address"] = _address_from_lines(rec.pop("lines"), left_limit)
     return out
 
 
+def _split_line(line, left_limit: float) -> tuple[str, str, bool]:
+    """(left label text, right value text, has colon) of one layout line."""
+    left = [w.text for w in line.words if w.x0 < left_limit]
+    right = [w.text for w in line.words if w.x0 >= left_limit]
+    colon = bool(right) and right[0] == ":"
+    return " ".join(left), " ".join(right[1:] if colon else right), colon
+
+
+def _address_from_lines(lines, left_limit: float | None) -> str | None:
+    """The value cell of "Yüklenicinin adresi": None when the label is absent, "" when it is empty.
+
+    The cell is the label line's right-column text plus value-only lines (no label text) directly above or below it,
+    at most CELL_GAP apart on the same page, and below it also across a page break up to the record end."""
+    if left_limit is None:
+        return None
+    parts = [_split_line(ln, left_limit) for ln in lines]
+    idx = next((k for k, (left, _, colon) in enumerate(parts)
+                if colon and "yuklenicinin adresi" in ib._fold(left)), None)
+    if idx is None:
+        return None
+    cell = [parts[idx][1]]
+    # value lines printed above the label (label vertically centred in a multi-line cell)
+    k, prev = idx - 1, lines[idx]
+    while (k >= 0 and not parts[k][0] and parts[k][1] and lines[k].page == prev.page
+           and prev.top - lines[k].top <= ib.CELL_GAP):
+        cell.insert(0, parts[k][1])
+        prev, k = lines[k], k - 1
+    # value lines below it; a new page may continue the cell (the gap check only applies within a page)
+    k, prev = idx + 1, lines[idx]
+    while k < len(lines) and not parts[k][0] and parts[k][1]:
+        if lines[k].page == prev.page and lines[k].top - prev.top > ib.CELL_GAP:
+            break
+        cell.append(parts[k][1])
+        prev, k = lines[k], k + 1
+    return _clean(" ".join(cell))
+
+
+def _province_of(address: str) -> str | None:
+    """The province in the trailing ``İlçe/İl`` token, canonical spelling, else None."""
+    toks = address.split()
+    token = toks[-1] if toks else ""
+    if "/" not in token:
+        return None
+    last = turkish_lower(token.rsplit("/", 1)[1])
+    return next((p for p in PROVINCES if turkish_lower(p) == last), None)
+
+
 # ----------------------------------------------------------------- top level
+
+def _fill_address(rec: Record, address: str | None) -> None:
+    """yuklenici_adresi / yuklenici_il from the recovered cell (see module docstring)."""
+    conf, warn = rec.confidence, rec.warnings
+    if address is None:
+        rec.yuklenici_adresi = rec.yuklenici_il = None
+        conf["yuklenici_adresi"] = conf["yuklenici_il"] = 0.0
+        warn.append("yuklenici_adresi: etiket bulunamadı")
+        return
+    if not address:
+        rec.yuklenici_adresi = rec.yuklenici_il = None
+        conf["yuklenici_adresi"] = conf["yuklenici_il"] = 1.0  # known empty
+        return
+    rec.yuklenici_adresi = address
+    shaped = bool(_RE_ADDRESS_TAIL.search(address))        # ends with the printed "İlçe/İl"
+    conf["yuklenici_adresi"] = OK if shaped else 0.5
+    if not shaped:
+        warn.append(f"yuklenici_adresi: sonunda İlçe/İl yok ({address[-40:]!r})")
+    il = _province_of(address)
+    rec.yuklenici_il = il
+    conf["yuklenici_il"] = OK if (il and shaped) else 0.3
+    if not il:
+        warn.append(f"yuklenici_il: sondaki belirteç bir il değil ({address[-30:]!r})")
+
 
 def parse_words(
     words: list[ib.Word], pages: dict[int, int], bulletin_date: date, bulletin_type: str, source_file: str
@@ -278,8 +366,11 @@ def parse_words(
         if info["seq"] is None:
             rec.warnings.append("sıra numarası bulunamadı")
         try:
+            _fill_address(rec, info.get("address"))
             if notice is not None:
                 _fill_from_notice(rec, notice)
+                if rec.yuklenici_adresi:
+                    rec.raw_fields.append(("4", "Yüklenicinin adresi", rec.yuklenici_adresi))
             else:
                 reason = rej.reason if rej else "ihalent bu ilanı okumadı"
                 rec.warnings.append(f"ihalent ilanı reddetti: {reason}")

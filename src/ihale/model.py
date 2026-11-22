@@ -62,7 +62,9 @@ class Record:
     sozlesme_suresi: str | None = None
     yuklenici: str | None = None
     yuklenici_uyrugu: str | None = None
-    yuklenici_adresi: str | None = None
+    yuklenici_adresi: str | None = None   # PRIVATE (KVKK): DB and raw_fields only, never exported (M5a)
+    yuklenici_il: str | None = None       # province from the trailing İlçe/İl of the address (one of the 81)
+    downloaders: int | None = None        # 3a: number who downloaded the documents with e-imza (long layout only)
 
     # per-field confidence in [0, 1], keyed by the attribute names above.
     # Every field the parser attempted has an entry. Absent-by-layout fields

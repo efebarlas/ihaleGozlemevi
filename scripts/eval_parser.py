@@ -143,6 +143,44 @@ def raw_ihalent_table(read, recs, labels) -> None:
         print(f"  {f:18s} {n:3d} {100*ok/max(n,1):6.1f}%  {bad[:4]}")
 
 
+def extras_table(recs, btype: str, path: Path, show: int) -> None:
+    """downloaders / yuklenici_adresi / yuklenici_il vs the hand labels (company records only), plus coverage."""
+    EX = ("downloaders", "yuklenici_adresi", "yuklenici_il")
+    print("\ncoverage (share of all records with a confident, non-empty value):")
+    for f in EX:
+        n = sum(1 for r in recs if r.confident(f))
+        print(f"  {f:18s} {n}/{len(recs)} ({100*n/max(len(recs),1):.1f}%)  none-by-layout "
+              f"{sum(1 for r in recs if f not in r.confidence)}")
+    if not path.exists():
+        return
+    labs = [x for x in json.loads(path.read_text(encoding="utf-8")) if x["type"] == btype]
+    if not labs:
+        return
+    by_key = {(r.section, r.seq): r for r in recs}
+    stats = {f: collections.Counter() for f in EX}
+    bad = []
+    for lab in labs:
+        r = by_key.get((lab["section"], lab["seq"]))
+        for f in EX:
+            exp = lab[f]
+            exp = _ws(exp) if isinstance(exp, str) else exp
+            got = getattr(r, f) if r else None
+            got = _ws(got) if isinstance(got, str) else got
+            ok = exp == got
+            # a label of null on a layout without the field = "absent": parser must leave it None, no confidence entry
+            conf = (r is not None and ((exp is None and f not in r.confidence) or r.confidence.get(f, 0.0) >= CONFIDENT))
+            s = stats[f]; s["n"] += 1; s["correct"] += ok; s["conf_ok"] += ok and conf
+            if not (ok and conf):
+                bad.append((lab["section"], lab["seq"], lab["page_start"], f, exp, got, r.confidence.get(f) if r else None))
+    print(f"\nextras labels ({btype}): {len(labs)} company records")
+    print(f"{'field':20s} {'n':>4s} {'correct':>9s} {'correct+confident':>19s}")
+    for f in EX:
+        s = stats[f]
+        print(f"{f:20s} {s['n']:4d} {100*s['correct']/s['n']:8.1f}% {100*s['conf_ok']/s['n']:18.1f}%")
+    for b in bad[:show]:
+        print(f"  {b[0]}-{b[1]} p.{b[2]} {b[3]}: label={b[4]!r} parsed={b[5]!r} conf={b[6]}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--type", choices=("mal", "hizmet", "yapim"), default="mal")
@@ -195,6 +233,7 @@ def main() -> int:
     print(f"warnings: {sum(warn.values())} {warn.most_common(6)}")
 
     # --------------------------------------------------------------- labels
+    extras_table(recs, btype, ROOT / "tests" / "labels" / "downloaders_address_2026-11-18.json", args.show)
     if not labels_path.exists():
         print(f"\nno labels at {labels_path}; accuracy not computed")
         return 0
