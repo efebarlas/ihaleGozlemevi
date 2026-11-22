@@ -52,7 +52,9 @@ Efe moved İhale Gözlemevi to the "ai" account. The yigit session family has st
   - Test-run from Task Scheduler: it read the C: data dir and exited 3 on BLOCKED, as designed.
 - Unattended deploys still need Efe's Cloudflare login (he does it himself). Pushing needs a GitHub credential under ai.
 
-**Hard stop in force (SPEC §7, EKAP login wall, 2026-11-21 18:15/18:16 PT, research job):** `E:\ihaleGozlemevi\live-data\BLOCKED` stays until Efe clears it. Every entry point and the EKAP client itself refuse while it exists, and there is a shared cap of 60 requests per UTC day (75d5699).
+**Hard stop cleared 2026-11-21 19:08 PT by Efe** ("Checked, clear it"). The marker text is archived in `logs/BLOCKED-cleared-2026-11-21.txt`. The 60/day shared cap still applies. The record below is kept for history.
+
+**Hard stop (SPEC §7, EKAP login wall, 2026-11-21 18:15/18:16 PT, research job):** `E:\ihaleGozlemevi\live-data\BLOCKED` stays until Efe clears it. Every entry point and the EKAP client itself refuse while it exists, and there is a shared cap of 60 requests per UTC day (75d5699).
 
 **Done since M4 (all on main):**
 - M4 is complete: hizmet/yapım, Dosyalar, D1 page store (gzip, dry-run plus 80k daily budget guard, empty-site guards), the classifier experiment and table_first promotion, the simulated-user fixes, the identity guard and the Sütun port.
