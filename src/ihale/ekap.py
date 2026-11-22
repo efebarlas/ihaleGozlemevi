@@ -19,7 +19,7 @@ import sys
 import time
 import zipfile
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Callable
@@ -36,6 +36,7 @@ BASE_URL = "https://ekap.kik.gov.tr"
 FORM_URL = f"{BASE_URL}/EKAP/Ilan/BultenIndirme.aspx"
 MIN_INTERVAL = 10.0
 MAX_REQUESTS_PER_RUN = 20
+DAILY_REQUEST_LIMIT = 60  # all processes together, per UTC day; only an explicit constructor argument changes it
 TIMEOUT = (15, 120)  # connect, read
 
 TYPE_CODES = {"mal": "1", "yapim": "2", "hizmet": "3", "danismanlik": "4"}
@@ -70,10 +71,22 @@ class BulletinMismatchError(EkapError):
 
 
 class RequestBudgetExceeded(EkapError):
-    """Per-run request cap reached."""
+    """Per-run or per-UTC-day request cap reached."""
 
 
 # ---------------------------------------------------------------- rate limiter
+def check_blocked_marker() -> None:
+    """Raise BlockedError (sending nothing) while the data dir's BLOCKED marker exists (SPEC §6/§7).
+
+    The path comes from `pipeline.blocked_marker()`; imported lazily because pipeline imports this module.
+    Any client that talks to an EKAP or KİK host must call this before each request."""
+    from . import pipeline
+
+    m = pipeline.blocked_marker()
+    if m.exists():
+        raise BlockedError(f"{m} exists: a hard stop is in force. No EKAP/KİK request was sent; do not work around it.")
+
+
 class _FileLock:
     """Tiny cross-process lock on a file (msvcrt on Windows, fcntl elsewhere)."""
 
@@ -155,6 +168,40 @@ class RateLimiter:
         """Stamp 'now' (response finished)."""
         with self._lock:
             self._write(self.clock())
+
+
+class DailyBudget:
+    """Request count per UTC day, shared by every process and client instance (file lock + count file).
+
+    File: `<dir>/ekap-requests-<YYYY-MM-DD>.txt` holding one integer. `reserve()` counts a request *before* it is
+    sent, so a crash or a failed request still uses budget. Opening a new client does not reset anything.
+    """
+
+    def __init__(self, directory: Path, limit: int = DAILY_REQUEST_LIMIT,
+                 now: Callable[[], datetime] = lambda: datetime.now(timezone.utc)):
+        self.directory = Path(directory)
+        self.limit = limit
+        self.now = now
+
+    def _file(self) -> Path:
+        return self.directory / f"ekap-requests-{self.now().astimezone(timezone.utc):%Y-%m-%d}.txt"
+
+    def used(self) -> int:
+        try:
+            return int(self._file().read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            return 0
+
+    def reserve(self) -> int:
+        """Count one request or raise RequestBudgetExceeded (nothing is counted on refusal). Returns the new count."""
+        f = self._file()
+        f.parent.mkdir(parents=True, exist_ok=True)
+        with _FileLock(f.with_suffix(".lock")):
+            n = self.used()
+            if n >= self.limit:
+                raise RequestBudgetExceeded(f"daily cap of {self.limit} EKAP requests (UTC day, all processes) reached")
+            f.write_text(str(n + 1), encoding="utf-8")
+            return n + 1
 
 
 # ---------------------------------------------------------------- form parsing
@@ -361,8 +408,11 @@ class _UrllibSession:
 
 class EkapClient:
     def __init__(self, limiter: RateLimiter | None = None, session=None,
-                 max_requests: int = MAX_REQUESTS_PER_RUN, form_cache: Path | None = None):
+                 max_requests: int = MAX_REQUESTS_PER_RUN, form_cache: Path | None = None,
+                 daily_limit: int = DAILY_REQUEST_LIMIT, budget: DailyBudget | None = None):
         self.limiter = limiter or RateLimiter(config.data_dir() / "ekap-last-request.txt")
+        # the count file lives next to the limiter's timestamp file, so clients sharing a limiter share the budget
+        self.budget = budget or DailyBudget(self.limiter.state_file.parent, daily_limit)
         self.session = session if session is not None else _UrllibSession()
         self.session.headers["User-Agent"] = config.USER_AGENT
         self.max_requests = max_requests
@@ -371,8 +421,10 @@ class EkapClient:
         self._form: FormInfo | None = None
 
     def _request(self, method: str, **kw) -> _Response:
+        check_blocked_marker()  # before EVERY request, so direct users of the client cannot bypass the hard stop
         if self.requests_made >= self.max_requests:
             raise RequestBudgetExceeded(f"cap of {self.max_requests} EKAP requests per run reached")
+        self.budget.reserve()
         self.limiter.wait()
         self.requests_made += 1
         try:
