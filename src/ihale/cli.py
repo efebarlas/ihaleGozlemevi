@@ -6,6 +6,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from . import config, ekap, pipeline
+from .keepawake import keep_awake
 
 # exit codes: 0 ok, 1 error, 2 usage, 3 BLOCKED (EKAP hard stop / marker present), 4 no bulletin (fetch only),
 # 5 backfill stopped at the request cap (also backfill-history: shared daily cap)
@@ -127,7 +128,7 @@ def cmd_deploy(args) -> int:
 
 
 def cmd_run(args) -> int:
-    with pipeline.file_logging():
+    with keep_awake(), pipeline.file_logging():
         return pipeline.run_daily(args.date, args.types, deploy=not args.no_deploy)
 
 
@@ -143,7 +144,7 @@ def cmd_backfill_history(args) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
-    with pipeline.file_logging():
+    with keep_awake(), pipeline.file_logging():
         client = ekap.EkapClient(max_requests=args.max_requests + 5)   # run() enforces --max-requests itself
         return bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
                       max_requests=args.max_requests, min_gap=args.min_gap_seconds,
