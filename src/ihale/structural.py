@@ -151,6 +151,51 @@ def record_rule(idare: str | None, title: str | None, yuklenici_key: str | None)
     return None
 
 
+# ---------------------------------------------------------------------------------------------- M5h (2026-11-22)
+# Peer categories: a narrow class of orders whose single-bid / price pattern has a structural cause gets its own
+# peer group, so p is computed among like tenders. Points are NOT zeroed; the flags stay and ln(1/p) does the rest.
+SAGLIK_MARKET = "saglik_market"
+MEB_TASIMA = "meb_tasima"
+CATEGORY_LABELS = {
+    SAGLIK_MARKET: "DMO sağlık ve ilaç",
+    MEB_TASIMA: "MEB taşımalı eğitim / araç kiralama",
+}
+
+
+def _sole_source_health(t: str) -> bool:
+    """DMO health orders with a sole-source cause: Sağlık Market, J-coded drug lists, "ilaç" and enteral products.
+    Consumables (tıbbi sarf A/B grubu, gloves) are left out: they usually have several suppliers."""
+    import re
+    if "sağlık market" in t or "enteral" in t or re.search(r"(?<![a-z0-9])j\d{4}(?![a-z0-9])", t):
+        return True
+    return "ilaç" in t and "ilaç haznesi" not in t
+
+
+def _school_transport(t: str) -> bool:
+    """`t` = folded işin adı + konu of a Milli Eğitim idare. Student transport: "taşımalı", a taşıma merkezi, or
+    taşıma together with students / the school year. Meal transport and building moves don't count."""
+    if "yemek" in t or "gıda" in t:
+        return False
+    if "taşımalı" in t or "taşıma merkez" in t:
+        return True
+    if "taşınması" in t and "öğrenci" in t:
+        return True
+    return "taşıma" in t and any(w in t for w in ("öğrenci", "öğretim yılı", "eğitim", "2026-2027", "2026/2027"))
+
+
+def peer_category(idare: str | None, title: str | None) -> str | None:
+    """`saglik_market`: DMO idare and a sole-source health title (Sağlık Market, J-code drug lists, ilaç, enteral). `meb_tasima`: Milli Eğitim idare and school transport in the işin adı + konu
+    (`title` may carry both). Anything else None."""
+    if not idare or not title:
+        return None
+    name, t = _fold(idare), _fold(title)
+    if name.startswith(DMO_PREFIX) and _sole_source_health(t):
+        return SAGLIK_MARKET
+    if ("milli eğitim" in name or "millî eğitim" in name) and _school_transport(t):
+        return MEB_TASIMA
+    return None
+
+
 def record_rules_meta() -> list[dict]:
     return [
         {"id": "marka-belirli", "match_tr": "İdare Devlet Malzeme Ofisi; işin adında marka/model adı geçiyor",

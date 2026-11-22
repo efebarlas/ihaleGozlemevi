@@ -223,7 +223,7 @@ def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender
         counts_ok = r.confident("gecerli_teklif") and r.confident("toplam_teklif")
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
-        usul = ind.usul_group(r.idare, ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None)
+        usul = ind.usul_group(r.idare, ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None, f"{r.title or ''} {r.konu or ''}")
         ratio = _ratio(r, list(groups[r.ikn].values()) if r.confident("ikn") else [s])
         t = by_id.get(tid)
         if t is None:
@@ -579,7 +579,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         bedel_peer = (None, 0)
         idare_computable = False
         usul_code = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
-        usul = ind.usul_group(r.idare if r.confident("idare") else None, usul_code)   # DMO 3-g split off
+        usul = ind.usul_group(r.idare if r.confident("idare") else None, usul_code, f"{r.title or ''} {r.konu or ''}")   # DMO 3-g split off
         rule = None
         rec_rule = None
         ik = normalize_key(r.idare) if r.confident("idare") else None
