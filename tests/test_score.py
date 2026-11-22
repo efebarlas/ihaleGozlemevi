@@ -51,11 +51,11 @@ def test_repeat_adds_two_only_with_another_flag():
 
 def test_idare_orani_fires_with_local_peers():
     own = [mk(i, SAGLIK, True) for i in range(5)]
-    a = first(own + peers_of(25, 5, fmt=SUBE))          # 20% tek among peers
+    a = first(own + peers_of(35, 7, fmt=SUBE))          # 20% tek among peers
     st = a.idare_stats
     assert st["records"] == 5 and st["tek_gecerli_teklif"] == 1.0
     assert st["idare_turu"] == "sağlık" and st["il"] == "Antalya" and st["window_days"] == 30
-    assert st["peer"] == {"label": "Antalya'daki sağlık idareleri (mal, açık)", "records": 25, "tek_gecerli_teklif": 0.2}
+    assert st["peer"] == {"label": "Antalya'daki sağlık idareleri (mal, açık)", "records": 35, "tek_gecerli_teklif": 0.2}
     assert "idare_orani" in a.part_codes
 
 
@@ -68,24 +68,24 @@ def test_idare_below_minimum_sample_has_no_rate_and_no_part():
 
 def test_idare_share_must_be_double_peer_share():
     own = [mk(i, SAGLIK, i < 3) for i in range(5)]                 # 60%
-    assert "idare_orani" not in first(own + peers_of(20, 7, fmt=SUBE)).part_codes    # peers 35%: 60 < 70
-    assert "idare_orani" in first(own + peers_of(20, 6, fmt=SUBE)).part_codes        # peers 30%: 60 >= 60
+    assert "idare_orani" not in first(own + peers_of(40, 14, fmt=SUBE)).part_codes    # peers 35%: 60 < 70
+    assert "idare_orani" in first(own + peers_of(40, 12, fmt=SUBE)).part_codes        # peers 30%: 60 >= 60
 
 
 def test_zero_rates_do_not_fire():
-    a = first([mk(i, SAGLIK, False) for i in range(5)] + peers_of(25, 0, fmt=SUBE))
+    a = first([mk(i, SAGLIK, False) for i in range(5)] + peers_of(35, 0, fmt=SUBE))
     assert a.idare_stats["tek_gecerli_teklif"] == 0.0 and "idare_orani" not in a.part_codes
 
 
 def test_peer_fallback_chain_and_labels():
     own = [mk(i, SAGLIK, True) for i in range(5)]
-    # 10 same turu+il (<20), 15 other-il sağlık → turu nationwide has 25
-    group = peers_of(10, 1, fmt=SUBE) + peers_of(15, 3, start=2000)
+    # 10 same turu+il (<30), 25 other-il sağlık → turu nationwide has 35
+    group = peers_of(10, 1, fmt=SUBE) + peers_of(25, 3, start=2000)
     st = first(own + group).idare_stats
-    assert st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, açık)" and st["peer"]["records"] == 25
+    assert st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, açık)" and st["peer"]["records"] == 35
     # only non-sağlık peers → whole sector
-    st = first(own + peers_of(22, 2, fmt="KONYA BELEDİYESİ {}", start=3000)).idare_stats
-    assert st["peer"]["label"] == "Tüm idareler (mal, açık)" and st["peer"]["records"] == 22
+    st = first(own + peers_of(32, 2, fmt="KONYA BELEDİYESİ {}", start=3000)).idare_stats
+    assert st["peer"]["label"] == "Tüm idareler (mal, açık)" and st["peer"]["records"] == 32
     # nothing big enough → no peer, no idare_orani
     a = first(own + peers_of(5, 0, fmt="KONYA BELEDİYESİ {}", start=3000))
     assert a.idare_stats["peer"] is None and "idare_orani" not in a.part_codes
@@ -93,14 +93,14 @@ def test_peer_fallback_chain_and_labels():
 
 def test_unknown_il_skips_the_il_group():
     own = [mk(i, "SAĞLIK BAKANLIĞI", True) for i in range(5)]
-    st = first(own + peers_of(25, 5)).idare_stats
+    st = first(own + peers_of(35, 7)).idare_stats
     assert st["il"] is None and st["peer"]["label"] == "Türkiye'deki sağlık idareleri (mal, açık)"
 
 
 def test_peers_exclude_the_idare_itself_and_other_sectors():
     own = [mk(i, SAGLIK, True) for i in range(6)]
     assert first(own + peers_of(30, 0, fmt=SUBE, type_="hizmet")).idare_stats["peer"] is None
-    assert first(own + peers_of(20, 0, fmt=SUBE)).idare_stats["peer"]["records"] == 20
+    assert first(own + peers_of(30, 0, fmt=SUBE)).idare_stats["peer"]["records"] == 30
 
 
 def test_window_is_30_days():
@@ -121,3 +121,21 @@ def test_idare_stats_none_without_confident_idare():
     (a,) = run(rec(1, conf={"idare": 0.2}))
     (b,) = run(rec(1, idare=None))
     assert a.idare_stats is None and b.idare_stats is None
+
+
+def test_peer_group_minimum_is_30_and_falls_back_to_the_wider_group():
+    from ihale.flags import PEER_MIN_N
+    assert PEER_MIN_N == 30
+    own = [mk(i, SAGLIK, True) for i in range(5)]
+    wider = peers_of(10, 1, start=2000)                                   # other provinces, same turu: 10 more
+    local29 = peers_of(29, 6, fmt=SUBE)
+    st = first(own + local29 + wider).idare_stats                         # il group has 29 (< 30) → turu nationwide (39)
+    assert st["peer"]["records"] == 39 and st["peer"]["label"].startswith("Türkiye'deki")
+    st = first(own + local29[:-1] + peers_of(1, 0, fmt=SUBE, start=900) + peers_of(1, 0, fmt=SUBE, start=901)).idare_stats
+    assert st["peer"]["records"] == 30 and st["peer"]["label"].startswith("Antalya'daki")   # exactly 30: local group
+
+
+def test_bedel_peer_and_usul_pay_use_the_same_minimum():
+    from ihale.flags import BEDEL_PEER_MIN_N
+    from ihale.dosyalar import PEER_MIN_AWARDS
+    assert BEDEL_PEER_MIN_N == PEER_MIN_AWARDS == 30

@@ -108,7 +108,7 @@ USUL_PAY_CATEGORIES = [
     {"code": "istisna", "label": "İstisna"},
     {"code": "diger", "label": "Diğer"},
 ]
-PEER_MIN_AWARDS = 20
+PEER_MIN_AWARDS = 30
 
 
 def pay_category(usul_code: str | None) -> str:

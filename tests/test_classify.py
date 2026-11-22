@@ -288,18 +288,19 @@ def test_eval_without_two_runs_says_so(tmp_path, monkeypatch, capsys):
 
 
 # ---------------------------------------------------------------- table_first, new-names log
-def test_table_first_uses_any_confidence_table_row(tmp_path, monkeypatch):
-    write_table(tmp_path, monkeypatch, [row("A BELEDİYESİ", "diger", "Van", 0.2)])
+def test_table_first_uses_a_table_row_down_to_the_0_7_floor(tmp_path, monkeypatch):
+    write_table(tmp_path, monkeypatch, [row("A BELEDİYESİ", "diger", "Van", 0.7), row("B BELEDİYESİ", "diger", "Van", 0.8)])
     a = classify.classify("A BELEDİYESİ", "table_first")
-    assert (a.turu, a.il, a.confidence, a.source) == ("diger", "Van", 0.2, "table_first:table")   # unlike hybrid
-    assert classify.classify("A BELEDİYESİ", "hybrid").source == "hybrid:keywords"
+    assert (a.turu, a.il, a.confidence, a.source) == ("diger", "Van", 0.7, "table_first:table")   # boundary: used
+    assert classify.classify("A BELEDİYESİ", "hybrid").source == "hybrid:keywords"                # unlike hybrid (< 0.9)
+    assert classify.classify("B BELEDİYESİ", "table_first").source == "table_first:table"
     miss = classify.classify("KONYA BELEDİYESİ", "table_first")
     assert (miss.turu, miss.source) == ("belediye", "table_first:keywords")
     assert "table_first" in classify.PEER_CLASSIFIERS and "table_first" in classify.IMPLEMENTATIONS
 
 
 def test_table_first_as_peer_classifier(tmp_path, monkeypatch):
-    write_table(tmp_path, monkeypatch, [row("Y KURUMU", "adalet", "Van", 0.3)])
+    write_table(tmp_path, monkeypatch, [row("Y KURUMU", "adalet", "Van", 0.7)])
     monkeypatch.setenv(classify.PEER_ENV, "table_first")
     assert (peers.idare_turu("Y KURUMU"), peers.il_of("Y KURUMU")) == ("adalet", "Van")
     assert peers.idare_turu("KONYA BELEDİYESİ") == "belediye"
@@ -331,3 +332,25 @@ def test_eval_scores_table_first(tmp_path, monkeypatch):
     buf = io.StringIO()
     ev.report(LABELS, [], out=lambda s="": buf.write(s + "\n"))
     assert "table_first" in buf.getvalue()
+
+
+def test_table_first_confidence_floor_falls_back_to_keywords(tmp_path, monkeypatch):
+    # the real case: an ownerless health application centre that the table guessed as a university at 0.55
+    name = "SAĞLIK UYGULAMA VE ARAŞTIRMA MERKEZİ MÜDÜRLÜĞÜ"
+    write_table(tmp_path, monkeypatch, [row(name, "universite", None, 0.55), row("EDGE KURUMU", "adalet", None, 0.69)])
+    c = classify.classify(name, "table_first")
+    assert c.source == "table_first:keywords_lowconf" and c.turu == classify.classify_keywords(name).turu == "saglik"
+    assert classify.classify("EDGE KURUMU", "table_first").source == "table_first:keywords_lowconf"     # 0.69 < 0.7
+    assert classify.classify("OLMAYAN BIR KURUM", "table_first").source == "table_first:keywords"      # plain miss
+    assert classify.classify(name, "table").turu == "universite"                                       # `table` itself unchanged
+    monkeypatch.setenv(classify.PEER_ENV, "table_first")
+    assert peers.idare_turu(name) == "saglik"                      # the weak guess cannot move peer groups
+
+
+def test_eval_scores_table_first_with_the_floor(tmp_path, monkeypatch):
+    write_table(tmp_path, monkeypatch, [row("KONYA BELEDİYESİ", "diger", "Konya", 0.5),          # wrong and weak
+                                        row("ÖRNEK GAYRİ KURUM", "adalet", "Van", 0.95)])
+    ev = load_eval()
+    tf = ev.evaluate(LABELS, "table_first")
+    assert tf["turu_correct"] == 4 and tf["covered"] == 4          # the weak wrong row is ignored: keywords say belediye
+    assert ev.evaluate(LABELS, "table")["turu_correct"] == 1       # table alone has 2 rows, one of them wrong

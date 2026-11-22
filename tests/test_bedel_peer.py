@@ -53,33 +53,33 @@ def test_kismi_ratio_is_the_sum_over_lots():
     assert run(*lots)[0].indicators["bedel_orani"] == 0.9
 
 
-def test_peer_median_needs_20_and_excludes_own_idare():
+def test_peer_median_needs_30_and_excludes_own_idare():
     own = mk(1, SAGLIK, 0.99)
-    p19 = peers_ratio(19, lambda i: 0.5)
-    ind19 = run(own, *p19)[0].indicators
-    assert ind19["bedel_orani_peer_median"] is None and ind19["bedel_orani_peer_n"] is None
-    p20 = peers_ratio(20, lambda i: 0.5 if i < 10 else 0.7)                       # median 0.6
-    i20 = run(own, *p20)[0].indicators
-    assert i20["bedel_orani_peer_median"] == 0.6 and i20["bedel_orani_peer_n"] == 20
+    p29 = peers_ratio(29, lambda i: 0.5)
+    ind29 = run(own, *p29)[0].indicators
+    assert ind29["bedel_orani_peer_median"] is None and ind29["bedel_orani_peer_n"] is None
+    p30 = peers_ratio(30, lambda i: 0.5 if i < 15 else 0.7)                       # median 0.6
+    i30 = run(own, *p30)[0].indicators
+    assert i30["bedel_orani_peer_median"] == 0.6 and i30["bedel_orani_peer_n"] == 30
     own2 = mk(2, SAGLIK, 0.1)                                                     # own idare's other award: excluded
-    assert run(own, own2, *p20)[0].indicators["bedel_orani_peer_n"] == 20
+    assert run(own, own2, *p30)[0].indicators["bedel_orani_peer_n"] == 30
 
 
 def test_peer_median_uses_the_same_procedure_chain():
     own = mk(1, SAGLIK, 0.99, usul="4734 / 3-g")
     other_usul = peers_ratio(30, lambda i: 0.2, usul="Açık")
     assert run(own, *other_usul)[0].indicators["bedel_orani_peer_median"] is None
-    same = peers_ratio(25, lambda i: 0.8, usul="4734 / 3-g", start=2000)
+    same = peers_ratio(35, lambda i: 0.8, usul="4734 / 3-g", start=2000)
     i = run(own, *other_usul, *same)[0].indicators
-    assert i["bedel_orani_peer_median"] == 0.8 and i["bedel_orani_peer_n"] == 25
+    assert i["bedel_orani_peer_median"] == 0.8 and i["bedel_orani_peer_n"] == 35
 
 
 def test_peer_chain_falls_back_from_il_to_turu():
     own = mk(1, SAGLIK, 0.99)
     local = peers_ratio(10, lambda i: 0.4, fmt="ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ ŞUBE {}", start=100)
-    national = peers_ratio(12, lambda i: 0.6, start=300)
+    national = peers_ratio(22, lambda i: 0.6, start=300)
     i = run(own, *local, *national)[0].indicators
-    assert i["bedel_orani_peer_n"] == 22 and i["bedel_orani_peer_median"] == 0.6   # 10x0.4 + 12x0.6 → median 0.6
+    assert i["bedel_orani_peer_n"] == 32 and i["bedel_orani_peer_median"] == 0.6   # 10x0.4 + 22x0.6 → median 0.6
 
 
 def test_dmo_is_scored_like_any_idare_with_a_peer_median():

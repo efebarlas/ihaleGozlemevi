@@ -70,10 +70,10 @@ def test_bedel_median_fallback_is_per_type():
 def test_peer_chain_and_labels_stay_inside_the_type():
     own = [mk(i, "yapim", "Açık", tek=True, idare="ANTALYA BELEDİYESİ") for i in range(6)]
     mal_peers = pop("mal", 40, 0, 1000)                                      # other type: must not be peers
-    yapim_peers = [mk(2000 + i, "yapim", "Açık", idare=f"KONYA BELEDİYESİ {i}") for i in range(25)]
+    yapim_peers = [mk(2000 + i, "yapim", "Açık", idare=f"KONYA BELEDİYESİ {i}") for i in range(35)]
     res, _ = full(own + mal_peers + yapim_peers)
     st = res[0].idare_stats
-    assert st["peer"]["records"] == 25
+    assert st["peer"]["records"] == 35
     assert st["peer"]["label"] == "Türkiye'deki belediyeler (yapım, açık)"
     res2, _ = full(own + mal_peers)
     assert res2[0].idare_stats["peer"] is None

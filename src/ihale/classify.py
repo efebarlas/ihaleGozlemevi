@@ -210,12 +210,18 @@ def classify_hybrid(name: str | None) -> Classification:
     return Classification(k.turu, k.il, k.confidence, "hybrid:keywords")
 
 
+TABLE_FIRST_MIN_CONFIDENCE = 0.7     # below this a table row is only a guess and must not move a record
+
+
 def classify_table_first(name: str | None) -> Classification:
+    """The table whenever the key is present with confidence >= 0.7; keywords on a miss or a low-confidence row
+    (source `table_first:keywords_lowconf`), so a weak table guess cannot move a record on or off Bugün."""
     t = classify_table(name)
-    if t.turu is not None:
+    if t.turu is not None and t.confidence >= TABLE_FIRST_MIN_CONFIDENCE:
         return Classification(t.turu, t.il, t.confidence, "table_first:table")
     k = classify_keywords(name)
-    return Classification(k.turu, k.il, k.confidence, "table_first:keywords")
+    source = "table_first:keywords" if t.turu is None else "table_first:keywords_lowconf"
+    return Classification(k.turu, k.il, k.confidence, source)
 
 
 _IMPL = {"keywords": classify_keywords, "table": classify_table, "hybrid": classify_hybrid,

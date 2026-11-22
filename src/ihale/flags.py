@@ -40,12 +40,12 @@ REPEAT_MIN_IKNS = 3
 REPEAT_WINDOW_DAYS = 365          # bulletin dates in [d - 365 days, d]
 IDARE_WINDOW_DAYS = 30            # idare/peer stats: tenders dated in (d - 30 days, d]
 IDARE_MIN_N = 5                   # an idare-level rate needs >= 5 awards (tenders) in the window
-PEER_MIN_N = 20                   # a peer group needs >= 20 awards, excluding the idare itself
+PEER_MIN_N = 30                   # a peer group needs >= 30 awards, excluding the idare itself (else the next wider one)
 IDARE_RATIO = 2                   # idare_orani: idare share >= 2x peer share
 ELENEN_PEER_MIN_N = 5             # peer mean of elenen_orani needs >= 5 eligible peer awards
 PAYI_MIN_AWARDS = 5               # yuklenici_payi needs >= 5 awards of the idare in the 365-day window
 PAYI_WINDOW_DAYS = 365
-BEDEL_PEER_MIN_N = 20             # peer median of bedel_orani needs >= 20 peer awards with a ratio
+BEDEL_PEER_MIN_N = 30             # peer median of bedel_orani needs >= 30 peer awards with a ratio
 
 log = logging.getLogger("ihale")
 
