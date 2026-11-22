@@ -235,7 +235,12 @@ Pressure can move bad behavior out of view: into procedures, channels or tricks 
 **Hard stops** (escalate to Efe, work on other things meanwhile):
 - Making the site public: indexable, or shared or linked anywhere.
 - Money: a paid plan, a payment method, a new account.
-- EKAP blocking, CAPTCHA or login. The pipeline's `BLOCKED` marker in the data dir halts every EKAP request until Efe clears it. Every process shares a cap of 60 EKAP requests per UTC day, enforced in the client. Bulk historical backfills need Efe's OK with a daily request budget. (First block: 2026-11-21, during a spec-owner research backfill.)
+- EKAP blocking, CAPTCHA or login. The pipeline's `BLOCKED` marker in the data dir halts every EKAP request until Efe clears it. Bulk historical backfills need Efe's OK with a daily request budget. (First block: 2026-11-21, during a spec-owner research backfill. Efe cleared it the same evening.)
+  - **Approved history backfill budget (Efe, 2026-11-21):** 150 requests per UTC day for the backfill. They run spread out across the Turkish night, about one request every 2.5–4 minutes, never in a burst; that 2026-11-21 block followed ~140 requests in 100 minutes.
+  - The daily run keeps its own headroom on top of that. The client-enforced shared cap is raised from 60 to the backfill budget plus that headroom.
+  - **Ramp:** after 3 consecutive clean nights, the spec owner may raise the budget step by step. Any block stops everything as before.
+  - **Evidence:** when a response triggers the block detector, its body is saved, so a false positive (e.g. an error page carrying the site's "Giriş yap" link) can be told apart from a real login wall.
+  - **Storage:** backfilled bulletins are cached locally. How much of the history reaches the site follows the storage plan in PLAN.md and the D1 budget guard.
 - Irreversible git operations on `main` (force-push, history rewrite).
 - Any dependency that isn't permissively licensed (see §4.1).
 - Contacting outside projects or people, including issues or PRs on ihalent.
