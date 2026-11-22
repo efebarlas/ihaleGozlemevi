@@ -42,6 +42,16 @@ Efe moved İhale Gözlemevi to the "ai" account. The yigit session family has st
 - **Last deploy:** 2026-11-21 ~18:35 PT. It includes the table_first peer classifier, the 0.7 confidence floor and the 30-award peer minimum (commit cd3e0a0 and earlier). Evidence: the live DB was re-flagged at 18:23 and exported at 18:26, and the D1 manifest was written at 18:35 by that deploy. Live, İzFAŞ (2026-11-20-hizmet-B-3) shows the peer "Türkiye'deki belediye şirketleri", which only exists after the 30-minimum change.
 - **D1 usage on 2026-11-22 UTC:** 20,164 rows written (`d1-usage.json`).
 
+**Cutover done under "ai" (2026-11-21 ~19:00 PT, spec owner):**
+- **Live data moved back to the internal drive:** `C:\Users\ai\ihaleGozlemevi-data`. That's the code's default, so there's no pointer file. Writing was quiet since 18:51. The copy was verified: same 8,502 files and sizes, same ihale.db SHA-256, integrity ok, 19,761 records. BLOCKED, `ihale.db.pre-m5a` and the half-done M5a state came across unchanged.
+  - The E: copy was renamed to `E:\ihaleGozlemevi\live-data-backup-2026-11-21` and kept as a backup. Anything still pointed at the old path now fails loudly (exit 7).
+  - `research-archive` stays on E:.
+  - Wherever this file says `E:\ihaleGozlemevi\live-data` below, read `C:\Users\ai\ihaleGozlemevi-data`.
+- **Daily task `ihaleGozlemevi-daily-ai`** at 21:30, as user ai: interactive logon, start-when-available, 2 h limit. yigit's disabled task still holds the old name.
+  - It puts Node (fnm, `C:\Users\ai\.fnm\aliases\default`) on PATH itself and passes the script's exit code through.
+  - Test-run from Task Scheduler: it read the C: data dir and exited 3 on BLOCKED, as designed.
+- Unattended deploys still need Efe's Cloudflare login (he does it himself). Pushing needs a GitHub credential under ai.
+
 **Hard stop in force (SPEC §7, EKAP login wall, 2026-11-21 18:15/18:16 PT, research job):** `E:\ihaleGozlemevi\live-data\BLOCKED` stays until Efe clears it. Every entry point and the EKAP client itself refuse while it exists, and there is a shared cap of 60 requests per UTC day (75d5699).
 
 **Done since M4 (all on main):**
