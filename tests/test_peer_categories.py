@@ -50,3 +50,16 @@ def test_category_has_its_own_rates_and_label_but_keeps_points():
     pa = next(p for p in a.score_parts if p["code"] == "tek_teklif")
     pb = next(p for p in open_tek.score_parts if p["code"] == "tek_teklif")
     assert pa["p"] > pb["p"] and pa["p_group"] == "mal/saglik_market"
+
+
+def test_delete_override_is_per_run_and_default_off(monkeypatch):
+    import pytest
+    from ihale.sitegen import _delete_override
+    monkeypatch.delenv("IHALE_MAX_DELETE_FRACTION", raising=False)
+    assert _delete_override(lambda m: None) == {}                       # normal 5% guard
+    monkeypatch.setenv("IHALE_MAX_DELETE_FRACTION", "0.08")
+    logs = []
+    assert _delete_override(logs.append) == {"max_delete_fraction": 0.08} and "override" in logs[0]
+    monkeypatch.setenv("IHALE_MAX_DELETE_FRACTION", "0.9")
+    with pytest.raises(ValueError):
+        _delete_override(lambda m: None)

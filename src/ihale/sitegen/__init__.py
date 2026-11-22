@@ -809,6 +809,19 @@ def run_with_retries(args: list[str], *, sleep=time.sleep) -> str:
     raise AssertionError("unreachable")
 
 
+def _delete_override(log) -> dict:
+    """One-time per-run override of the empty-site deletion limit: IHALE_MAX_DELETE_FRACTION (e.g. 0.08), 0 < x <= 0.2.
+    Unset = the normal 5% guard. Never set it in a scheduled task or config; log every use."""
+    raw = os.environ.get("IHALE_MAX_DELETE_FRACTION")
+    if not raw:
+        return {}
+    x = float(raw)
+    if not 0 < x <= 0.2:
+        raise ValueError(f"IHALE_MAX_DELETE_FRACTION={raw} out of range (0 < x <= 0.2)")
+    log(f"WARNING: one-time deletion limit override {x:.0%} (IHALE_MAX_DELETE_FRACTION), default is 5%")
+    return {"max_delete_fraction": x}
+
+
 def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: Path | None = None,
            batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN, dry_run: bool = False,
            export_dir: Path | None = None) -> str:
@@ -878,7 +891,7 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
     plan = d1.sync_pages(stage_db=stage_db, manifest_path=manifest_path, batch_dir=batch_dir, execute=execute,
-                         between=between, max_rows=max_rows, dry_run=dry_run,
+                         between=between, max_rows=max_rows, dry_run=dry_run, **_delete_override(log),
                          rows_today=0 if local else d1.rows_written_today(usage_path, today), log=lambda m: log(m))
     if dry_run:
         return "dry-run"
