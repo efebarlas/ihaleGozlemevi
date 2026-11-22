@@ -13,6 +13,7 @@ BULTEN_{ddmmyyyy}_{TYPE}.pdf and BULTEN_{ddmmyyyy}_{TYPE}_SONUC.pdf (results). S
 from __future__ import annotations
 
 import io
+import json
 import os
 import re
 import sys
@@ -36,7 +37,7 @@ BASE_URL = "https://ekap.kik.gov.tr"
 FORM_URL = f"{BASE_URL}/EKAP/Ilan/BultenIndirme.aspx"
 MIN_INTERVAL = 10.0
 MAX_REQUESTS_PER_RUN = 20
-DAILY_REQUEST_LIMIT = 60  # all processes together, per UTC day; only an explicit constructor argument changes it
+DAILY_REQUEST_LIMIT = 200  # all processes together, per UTC day (150 history backfill + headroom for the daily run, ~10-25); only an explicit constructor argument changes it
 TIMEOUT = (15, 120)  # connect, read
 
 TYPE_CODES = {"mal": "1", "yapim": "2", "hizmet": "3", "danismanlik": "4"}
@@ -360,6 +361,33 @@ def save_zip(root: Path, day: date, type_: str, payload: bytes) -> Path:
     return d
 
 
+# ---------------------------------------------------------------- evidence for block detections
+MAX_EVIDENCE_BYTES = 5_000_000
+
+
+def save_blocked_response(directory: Path, *, status: int, content_type: str, body: bytes, url: str,
+                          type_: str | None, day: date | None, reason: str, headers: dict | None = None) -> Path | None:
+    """Keep the response that tripped the block detector under `<directory>/logs/blocked-responses/`
+    (body as .html/.bin plus a .json sidecar) so a false positive can be told from a real login wall later.
+    NEVER raises: evidence is best effort and must not interfere with the hard stop."""
+    try:
+        out = Path(directory) / "logs" / "blocked-responses"
+        out.mkdir(parents=True, exist_ok=True)
+        now = datetime.now(timezone.utc)
+        stem = f"{now:%Y%m%dT%H%M%S%fZ}-{type_ or 'form'}-{day.isoformat() if day else 'none'}"
+        textual = "html" in (content_type or "").lower() or "text" in (content_type or "").lower()
+        body_path = out / (stem + (".html" if textual and body[:2] != b"PK" else ".bin"))
+        body_path.write_bytes(body[:MAX_EVIDENCE_BYTES])
+        meta = {"saved_at_utc": now.isoformat(timespec="seconds"), "reason": reason, "status": status,
+                "content_type": content_type, "url": url, "type": type_, "day": day.isoformat() if day else None,
+                "body_bytes": len(body), "truncated": len(body) > MAX_EVIDENCE_BYTES, "body_file": body_path.name,
+                "headers": {str(k): str(v)[:300] for k, v in (headers or {}).items()}}
+        (out / (stem + ".json")).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        return body_path
+    except Exception:  # noqa: BLE001
+        return None
+
+
 # ---------------------------------------------------------------- client
 @dataclass
 class _Response:
@@ -432,13 +460,23 @@ class EkapClient:
         finally:
             self.limiter.mark()
 
+    def _classify(self, r: _Response, type_: str | None = None, day: date | None = None, **kw) -> str:
+        """classify_response, but a BlockedError first saves the offending response (never fails the stop)."""
+        try:
+            return classify_response(r.status_code, r.headers.get("Content-Type", ""), r.content, **kw)
+        except BlockedError as e:
+            save_blocked_response(self.limiter.state_file.parent, status=r.status_code,
+                                  content_type=r.headers.get("Content-Type", ""), body=r.content, url=FORM_URL,
+                                  type_=type_, day=day, reason=str(e), headers=r.headers)
+            raise
+
     def load_form(self) -> FormInfo:
         if self._form is None:
             if self.form_cache and Path(self.form_cache).exists():
                 html = Path(self.form_cache).read_text(encoding="utf-8")
             else:
                 r = self._request("GET")
-                classify_response(r.status_code, r.headers.get("Content-Type", ""), r.content, is_form_get=True)
+                self._classify(r, is_form_get=True)
                 html = r.content.decode(r.encoding or "utf-8", errors="replace")
                 if self.form_cache:
                     Path(self.form_cache).parent.mkdir(parents=True, exist_ok=True)
@@ -456,7 +494,7 @@ class EkapClient:
             return d
         info = self.load_form()
         r = self._request("POST", data=build_postback(info, type_, day))
-        kind = classify_response(r.status_code, r.headers.get("Content-Type", ""), r.content)
+        kind = self._classify(r, type_, day)
         if kind == "no_bulletin":
             raise NoBulletinError(f"no {type_} bulletin for {day:%d.%m.%Y}")
         check_zip_filename(r.headers, day, type_)

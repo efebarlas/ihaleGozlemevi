@@ -8,7 +8,7 @@ from pathlib import Path
 from . import config, ekap, pipeline
 
 # exit codes: 0 ok, 1 error, 2 usage, 3 BLOCKED (EKAP hard stop / marker present), 4 no bulletin (fetch only),
-# 5 backfill stopped at the request cap
+# 5 backfill stopped at the request cap (also backfill-history: shared daily cap)
 BULLETIN_TYPES = sorted(ekap.TYPE_CODES)
 DEFAULT_TYPES = ["mal", "hizmet", "yapim"]     # run / backfill; resolved at call time (tests patch it)
 
@@ -136,6 +136,20 @@ def cmd_backfill(args) -> int:
         return pipeline.backfill(args.days, args.types, args.max_requests)
 
 
+def cmd_backfill_history(args) -> int:
+    from . import backfill_history as bh
+    try:
+        window = bh.parse_window(args.window_utc)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    with pipeline.file_logging():
+        client = ekap.EkapClient(max_requests=args.max_requests + 5)   # run() enforces --max-requests itself
+        return bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
+                      max_requests=args.max_requests, min_gap=args.min_gap_seconds,
+                      max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="ihale", description="Ihale Gozlemevi pipeline")
     sub = p.add_subparsers(dest="command", required=True)
@@ -181,6 +195,18 @@ def build_parser() -> argparse.ArgumentParser:
     bf.add_argument("--max-requests", type=int, default=None,
                     help=f"raise the per-run EKAP request cap (default {ekap.MAX_REQUESTS_PER_RUN})")
     bf.set_defaults(func=cmd_backfill)
+
+    bh = sub.add_parser("backfill-history", help="fetch ONLY: old bulletins into the cache, walking back from the oldest "
+                        "stored day, slowly, inside a night window (no parse, no DB, no site)")
+    bh.add_argument("--max-requests", type=int, default=150, help="EKAP requests this run may use (default 150)")
+    bh.add_argument("--min-gap-seconds", type=float, default=150.0, help="min gap between requests (default 150)")
+    bh.add_argument("--max-gap-seconds", type=float, default=240.0, help="max gap; the gap is random in between (default 240)")
+    bh.add_argument("--window-utc", default="22:00-04:30",
+                    help="only run inside this UTC window HH:MM-HH:MM (default 22:00-04:30 = 01:00-07:30 TRT)")
+    bh.add_argument("--types", nargs="+", default=None, type=str, help="default: mal hizmet yapim, in that order")
+    bh.add_argument("--start", type=parse_day, default=None, help="first day to try (default: day before the oldest stored)")
+    bh.add_argument("--earliest", type=parse_day, default=date(2010, 1, 1), help="stop at this day (default 2010-01-01)")
+    bh.set_defaults(func=cmd_backfill_history)
     return p
 
 
