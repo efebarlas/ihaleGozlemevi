@@ -42,7 +42,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 | M2 | Store and flag | done (cc13bd4; 534 tests; 30-day backfill 13,830 records; rarity-weighted score within procedure, value weight, 3-g DMO split, typo rule; oracle candidates) |
 | M3 | Site v1, unlisted, with the daily run | live 2026-11-19 at https://ihale-gozlemevi.clearpile-reader-server.workers.dev (noindex header + meta, robots disallow, verified). Daily task `ihaleGozlemevi-daily` at 21:30 PT registered and test-run outside the app: everything works except deploy, which waits on the one-time Cloudflare login (human check). Until then a session deploys. |
 | M4 | Dosyalar and better peers | in progress. Done: hizmet/yapım, İdare/Yüklenici pages, OCDS/FtM exports (private), D1 page store (live). Blocked: KİK decisions/debarment (EKAP sign-in wall). Classifier: table wins (97.5% vs 89%), shadow then promote. Simulated-user check done (5 personas, about 85 requests, no blockers, no broken links). The fix batch (units, chip counts, rounding, the 'yakın' label above 100%, kısmi caveat, il filter, pazarlık share vs peers) is with the builders, to ship in one deploy. |
-| M5 | History | not started |
+| M5 | Weights, rules and history | planned (`docs/m5-plan.md`): offline pieces first (parser gap, rule signals, IMCO scorecard, drift); Sayıştay feasibility; history backfill blocked by the EKAP hard stop and the bulk-backfill rule |
 
 ## Queued for later milestones (SPEC §6.2 release policy)
 - M4: each İdare page shows its procedure mix over time (açık / pazarlık incl. 21/b / istisna) and its volume trend, so displacement stays visible.
