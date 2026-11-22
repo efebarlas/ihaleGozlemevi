@@ -160,6 +160,18 @@ def export_step(store: Store | None = None) -> Path:
     return out
 
 
+def drift_step(store: Store | None = None) -> None:
+    """Weekly drift summary into the logs (once per ISO week). A failure here never stops the run."""
+    try:
+        from . import drift
+        store = store or Store()
+        p = drift.write_weekly(store.all_records())
+        if p:
+            log.info("drift summary: %s", p)
+    except Exception as e:  # noqa: BLE001
+        _log_exc("drift summary failed (continuing)", e)
+
+
 def build_site(out_dir: Path | None = None) -> None:
     out_dir = out_dir or repo_root() / "site" / "dist"
     sitegen_module().build(export_dir(), out_dir)
@@ -265,6 +277,7 @@ def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> i
             parse_and_store(day, t, store)
         flag_all(store)
         export_step(store)
+        drift_step(store)
         build_site()
         if deploy:
             deploy_site()

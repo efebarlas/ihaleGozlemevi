@@ -106,6 +106,14 @@ def cmd_export_open(args) -> int:
     return 0
 
 
+def cmd_drift(args) -> int:
+    from . import drift
+    from .store import Store
+    p = drift.write_weekly(Store().all_records(), force=args.force)
+    print(p if p else "this week's drift summary already exists (use --force to rewrite it)")
+    return 0
+
+
 def cmd_build(args) -> int:
     try:
         pipeline.build_site(args.out)
@@ -176,6 +184,10 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--date", type=parse_day, help=day_help + " (default: the latest stored day)")
     g.add_argument("--all", action="store_true", help="every stored day")
     eo.set_defaults(func=cmd_export_open)
+
+    dr = sub.add_parser("drift", help="weekly drift summary (idare procedure mix vs own history) into the logs")
+    dr.add_argument("--force", action="store_true", help="rewrite this ISO week's file")
+    dr.set_defaults(func=cmd_drift)
 
     b = sub.add_parser("build", help="build the static site from the export")
     b.add_argument("--out", type=Path, default=None,
