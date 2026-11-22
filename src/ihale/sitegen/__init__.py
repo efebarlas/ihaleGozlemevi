@@ -740,6 +740,7 @@ _URL_RE = re.compile(r"https://[A-Za-z0-9.-]+\.workers\.dev\S*")
 
 
 BudgetExceeded = d1.BudgetExceeded
+EmptySiteError = d1.EmptySiteError
 PLACEHOLDER_D1_ID = "00000000-0000-0000-0000-000000000000"
 D1_NAME = "ihale-pages"
 log = print
@@ -807,7 +808,8 @@ def run_with_retries(args: list[str], *, sleep=time.sleep) -> str:
 
 
 def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: Path | None = None,
-           batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN, dry_run: bool = False) -> str:
+           batch_dir: Path | None = None, max_rows: int = d1.D1_MAX_ROWS_PER_RUN, dry_run: bool = False,
+           export_dir: Path | None = None) -> str:
     """Deploy: changed bulk pages to D1, then the Worker + static assets, then D1 deletions.
 
     Returns the Worker URL (or "local" with local=True, which only fills the local D1 used by `wrangler dev --local`
@@ -819,7 +821,8 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
     dist = Path(dist_dir) if dist_dir else SITE_DIR / "dist"
     index = dist / "index.html"
     if not index.is_file():
-        raise RuntimeError(f"nothing to deploy: {index} missing (run build first)")
+        log(f"empty-site guard (c): {index} is missing")
+        raise EmptySiteError(f"nothing to deploy: {index} missing (run build first)")
     if (dist / "tokens").exists() or any(
             "data-direction" in f.read_text(encoding="utf-8", errors="replace") for f in (index, dist / "yontem" / "index.html")
             if f.is_file()):
@@ -837,6 +840,7 @@ def deploy(dist_dir: Path | None = None, *, local: bool = False, manifest_path: 
 
     from ihale import config
     data = config.data_dir()
+    d1.check_export_not_empty(export_dir or data / "export", log=lambda m: log(m))
     manifest_path = manifest_path or data / f"d1-manifest-{'local' if local else 'remote'}-{d1.MANIFEST_VERSION}.json"
     batch_dir = batch_dir or data / "d1-batches"
     where = ["--local"] if local else ["--remote"]

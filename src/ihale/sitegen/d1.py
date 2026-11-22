@@ -26,6 +26,14 @@ D1_DAILY_LIMIT = 100_000      # D1 free tier: rows written per UTC day
 D1_MAX_ROWS_PER_RUN = 80_000  # budget: 80% of the daily limit, counting today's tally plus this run's plan
 
 
+MIN_EXPORT_RECORDS = 1_000    # empty-site guard (a): the export must hold at least this many records in total
+MAX_DELETE_FRACTION = 0.05    # empty-site guard (b): a run may delete at most 5% of the deployed pages
+
+
+class EmptySiteError(RuntimeError):
+    """The deploy would publish (almost) nothing: refused before any write."""
+
+
 class BudgetExceeded(RuntimeError):
     """Today's D1 rows written plus the planned rows would pass the budget: nothing is written or deployed."""
 MANIFEST_VERSION = "v2"       # v2 = gzip BLOB table `pg`; a v1 manifest (table `pages`) is never reused
@@ -63,7 +71,17 @@ def is_bulk(path: str) -> bool:
     return any(r.match(path) for r in _BULK)
 
 
+SITE_DIR = Path(__file__).resolve().parents[3] / "site"
+
+
 def staging_path(out_dir: Path) -> Path:
+    """Where the staged bulk pages live. For the repo's own `site/dist` that is `<data dir>/site-build/` (off C: and
+    out of OneDrive; a missing data dir fails loudly through config.DataDirMissing); any other output dir (tests, ad-hoc
+    builds) keeps its staging file next to it."""
+    out_dir = Path(out_dir)
+    if out_dir.resolve() == (SITE_DIR / "dist").resolve():
+        from ihale import config
+        return config.data_dir() / "site-build" / "dist-pages.sqlite"
     return out_dir.with_name(out_dir.name + "-pages.sqlite")
 
 
@@ -76,6 +94,7 @@ class Stage:
 
     def __init__(self, path: Path):
         self.path = path
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         for suffix in ("", "-journal", "-wal", "-shm"):
             p = Path(str(path) + suffix)
             if p.exists():
@@ -238,15 +257,47 @@ def plan_report(plan: Plan, *, rows_today: int = 0, max_rows: int = D1_MAX_ROWS_
     ])
 
 
+def export_record_count(export_dir: Path) -> int:
+    """Total records in the export's latest meta.json (sum over its days)."""
+    meta = Path(export_dir) / "meta.json"
+    try:
+        counts = json.loads(meta.read_text(encoding="utf-8")).get("counts") or {}
+    except (OSError, ValueError) as e:
+        raise EmptySiteError(f"empty-site guard: cannot read {meta} ({type(e).__name__}); refusing to deploy") from e
+    return sum(int(c.get("records", 0)) for c in counts.values())
+
+
+def check_export_not_empty(export_dir: Path, log: Callable[[str], None] = print) -> int:
+    n = export_record_count(export_dir)
+    log(f"empty-site guard (a): export meta.json holds {n} records (minimum {MIN_EXPORT_RECORDS})")
+    if n < MIN_EXPORT_RECORDS:
+        raise EmptySiteError(f"empty-site guard: the export has only {n} records (minimum {MIN_EXPORT_RECORDS}); "
+                             "refusing to deploy. Is the data complete?")
+    return n
+
+
+def check_deletions(plan: "Plan", manifest: dict, log: Callable[[str], None] = print,
+                    max_fraction: float = MAX_DELETE_FRACTION) -> None:
+    deployed = sum(1 for k in manifest if not k.startswith("__"))
+    pct = 100 * len(plan.deletes) / deployed if deployed else 0.0
+    log(f"empty-site guard (b): the plan deletes {len(plan.deletes)} of {deployed} deployed pages ({pct:.1f}%, maximum {100 * max_fraction:.0f}%)")
+    if deployed and len(plan.deletes) > max_fraction * deployed:
+        raise EmptySiteError(f"empty-site guard: the plan would delete {len(plan.deletes)} of {deployed} deployed pages "
+                             f"({pct:.1f}%, more than {100 * max_fraction:.0f}%); refusing to deploy. "
+                             "Was the build made from incomplete data?")
+
+
 def sync_pages(*, stage_db: Path, manifest_path: Path, batch_dir: Path, execute: Callable[[Path], None],
                between: Callable[[], None] | None = None, max_rows: int = D1_MAX_ROWS_PER_RUN,
-               rows_today: int = 0, dry_run: bool = False, log: Callable[[str], None] = print) -> Plan:
+               rows_today: int = 0, dry_run: bool = False, log: Callable[[str], None] = print,
+               max_delete_fraction: float = MAX_DELETE_FRACTION) -> Plan:
     """Push changed pages to D1, run `between` (the Worker deploy), then push deletions (and drop the v1 tables);
     update the manifest after each successful batch. Idempotent: a re-run after a failure repeats only what is not
     in the manifest. With dry_run nothing is written (no batch files, no execute, no manifest change)."""
     manifest = load_manifest(manifest_path)
     plan = make_plan(stage_db, manifest)
     log(plan_report(plan, rows_today=rows_today, max_rows=max_rows))
+    check_deletions(plan, manifest, log, max_delete_fraction)                        # before any write, dry run included
     if rows_today + plan.rows > max_rows:
         raise BudgetExceeded(f"D1 write budget: {rows_today} rows already written today (UTC) + {plan.rows} planned = "
                              f"{rows_today + plan.rows}, over the budget of {max_rows} (80% of the free {D1_DAILY_LIMIT}/day). "

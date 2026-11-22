@@ -21,6 +21,8 @@ node_modules/
 
 # built site
 /site/dist/
+# bulk staging now lives in <data dir>/site-build/ (never in the repo); old location, ignored in case it reappears
+/site/dist-pages.sqlite
 
 # Efe's design guidance and anything derived from it stays private (SPEC §9.2)
 /design/BRIEF.md

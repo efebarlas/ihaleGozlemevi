@@ -114,6 +114,9 @@ NASTY = "it's 100% a;b -- c /* d */ \n\r\n İİıışşğğüüööçç ''quoted
 def _isolated_data_dir(tmp_path, monkeypatch):
     """deploy() keeps its manifests and the daily usage tally in the data dir: never touch the real one in tests."""
     monkeypatch.setenv("IHALE_DATA_DIR", str(tmp_path / "datadir"))
+    (tmp_path / "datadir" / "export").mkdir(parents=True)                   # a plausible export for the empty-site guard (a)
+    (tmp_path / "datadir" / "export" / "meta.json").write_text(
+        json.dumps({"counts": {"2026-11-18": {"records": 4000}, "2026-11-17": {"records": 1500}}}), encoding="utf-8")
 
 
 def _apply(db: sqlite3.Connection, stmts: list[str]):
@@ -235,7 +238,7 @@ def test_changed_page_shrinks_and_deleted_page_is_removed(tmp_path):
     old_parts = fake.db.execute("SELECT count(*) FROM pg WHERE path='/ihale/a/'").fetchone()[0]
     assert old_parts >= 3
     stage2 = _mk_stage(tmp_path / "s2.sqlite", {"/ihale/a/": "short", "/ihale/b/": "keep", "/ihale/new/": "n"})
-    plan = _sync(tmp_path, stage2, fake)
+    plan = _sync(tmp_path, stage2, fake, max_delete_fraction=1.0)
     assert [u[0] for u in plan.upserts] == ["/ihale/a/", "/ihale/new/"] and plan.deletes == ["/ihale/c/"]
     assert plan.rows == (old_parts + 1) + 1 + 1                            # a: old parts + 1 new part; new; delete c
     assert fake.db.execute("SELECT count(*) FROM pg WHERE path='/ihale/a/'").fetchone()[0] == 1       # no stale part
@@ -251,7 +254,7 @@ def test_deletions_run_after_the_between_step(tmp_path):
     events = []
     d1.sync_pages(stage_db=stage2, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b",
                   execute=lambda f: (events.append("exec"), fake(f)), between=lambda: events.append("deploy"),
-                  log=lambda m: None)
+                  log=lambda m: None, max_delete_fraction=1.0)
     assert events == ["exec", "deploy", "exec"]                             # upserts, Worker deploy, deletions
     assert "/ihale/c/" not in fake.pages()
 
@@ -410,7 +413,7 @@ def test_v2_manifest_file_is_separate_from_the_v1_one(tmp_path, monkeypatch):
     dist = _fake_dist(tmp_path)
     monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: "")
     monkeypatch.setattr(sitegen, "log", lambda m: None)
-    (tmp_path / "datadir").mkdir()
+    (tmp_path / "datadir").mkdir(exist_ok=True)
     (tmp_path / "datadir" / "d1-manifest-local.json").write_text('{"/ihale/a/": ["old", 3]}', encoding="utf-8")   # a v1 manifest
     sitegen.deploy(dist, local=True, batch_dir=tmp_path / "b")
     assert (tmp_path / "datadir" / f"d1-manifest-local-{d1.MANIFEST_VERSION}.json").is_file()
@@ -607,3 +610,92 @@ def test_deploy_budget_exceeded_does_no_d1_write_and_no_worker_deploy(tmp_path, 
     assert calls == []                                                     # no d1 execute, no `wrangler deploy`
     assert not (tmp_path / "b").exists() and not (tmp_path / "m.json").exists()
     assert issubclass(sitegen.BudgetExceeded, RuntimeError)
+
+# ------------------------------------------------------------------ empty-site guard and staging location
+def _write_meta(tmp_path, records):
+    p = tmp_path / "datadir" / "export" / "meta.json"
+    p.write_text(json.dumps({"counts": {"2026-11-18": {"records": records}}}), encoding="utf-8")
+
+
+def test_guard_a_refuses_a_nearly_empty_export_and_prints_the_numbers(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    _write_meta(tmp_path, 999)
+    logs = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("nothing may be deployed"))
+    monkeypatch.setattr(sitegen, "log", logs.append)
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
+    for dry in (False, True):                                               # the dry-run plan refuses too
+        with pytest.raises(sitegen.EmptySiteError, match="only 999 records"):
+            sitegen.deploy(dist, dry_run=dry, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+    assert any("holds 999 records (minimum 1000)" in m for m in logs)
+    assert not (tmp_path / "b").exists() and not (tmp_path / "m.json").exists()
+    _write_meta(tmp_path, 1000)                                             # exactly the minimum passes
+    assert sitegen.deploy(dist, dry_run=True, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b") == "dry-run"
+    (tmp_path / "datadir" / "export" / "meta.json").unlink()                # an unreadable export is refused as well
+    with pytest.raises(sitegen.EmptySiteError, match="cannot read"):
+        sitegen.deploy(dist, dry_run=True, manifest_path=tmp_path / "m.json", batch_dir=tmp_path / "b")
+
+
+def test_guard_b_refuses_deleting_more_than_five_percent_of_the_deployed_pages(tmp_path):
+    pages = {f"/ihale/{i:03d}/": f"p{i}" for i in range(100)}
+    fake = FakeD1()
+    _sync(tmp_path, _mk_stage(tmp_path / "s.sqlite", pages), fake)
+    fake.files.clear()
+    logs = []
+    six_gone = {k: v for k, v in pages.items() if int(k[-4:-1]) >= 6}       # 6 of 100 deleted = 6%
+    with pytest.raises(d1.EmptySiteError, match=r"delete 6 of 100 deployed pages \(6.0%"):
+        d1.sync_pages(stage_db=_mk_stage(tmp_path / "s2.sqlite", six_gone), manifest_path=tmp_path / "m.json",
+                      batch_dir=tmp_path / "b", execute=fake, log=logs.append)
+    assert fake.files == [] and any("deletes 6 of 100 deployed pages (6.0%, maximum 5%)" in m for m in logs)
+    assert len(d1.load_manifest(tmp_path / "m.json")) >= 100                # nothing was touched
+    five_gone = {k: v for k, v in pages.items() if int(k[-4:-1]) >= 5}      # exactly 5% is allowed
+    plan = d1.sync_pages(stage_db=_mk_stage(tmp_path / "s3.sqlite", five_gone), manifest_path=tmp_path / "m.json",
+                         batch_dir=tmp_path / "b", execute=fake, log=lambda m: None)
+    assert len(plan.deletes) == 5
+    with pytest.raises(d1.EmptySiteError):                                  # an empty staged site would delete everything
+        d1.sync_pages(stage_db=_mk_stage(tmp_path / "s4.sqlite", {}), manifest_path=tmp_path / "m.json",
+                      batch_dir=tmp_path / "b2", execute=fake, dry_run=True, log=lambda m: None)
+
+
+def test_guard_b_applies_to_the_dry_run_plan(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    (tmp_path / "datadir").mkdir(exist_ok=True)
+    manifest = tmp_path / "m.json"
+    d1.save_manifest(manifest, {f"/ihale/gone{i}/": ["x", 1] for i in range(30)} | {"/ihale/a/": ["old", 1]})
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("nothing may be deployed"))
+    monkeypatch.setattr(sitegen, "log", lambda m: None)
+    monkeypatch.setattr(sitegen, "_d1_id", lambda: "11111111-2222-3333-4444-555555555555")
+    with pytest.raises(sitegen.EmptySiteError, match="delete 30 of 31"):
+        sitegen.deploy(dist, dry_run=True, manifest_path=manifest, batch_dir=tmp_path / "b")
+
+
+def test_guard_c_refuses_when_index_html_is_missing(tmp_path, monkeypatch):
+    dist = _fake_dist(tmp_path)
+    (dist / "index.html").unlink()
+    logs = []
+    monkeypatch.setattr(sitegen, "_run_wrangler", lambda args: pytest.fail("nothing may be deployed"))
+    monkeypatch.setattr(sitegen, "log", logs.append)
+    with pytest.raises(sitegen.EmptySiteError, match="nothing to deploy"):
+        sitegen.deploy(dist, dry_run=True)
+    assert any("guard (c)" in m and "index.html" in m for m in logs)
+    assert issubclass(sitegen.EmptySiteError, RuntimeError)
+
+
+def test_default_staging_lives_in_the_data_dir_not_the_repo(tmp_path):
+    p = d1.staging_path(Path(sitegen.SITE_DIR) / "dist")
+    assert p == (tmp_path / "datadir").resolve() / "site-build" / "dist-pages.sqlite"
+    assert "OneDrive" not in str(p) and not str(p).startswith(str(Path(sitegen.SITE_DIR)))
+    other = tmp_path / "x" / "dist"
+    assert d1.staging_path(other) == tmp_path / "x" / "dist-pages.sqlite"        # ad-hoc output dirs keep it next to them
+    st = d1.Stage(p)                                                            # creating it makes the site-build folder
+    st.add("/ihale/a/", "a")
+    st.close()
+    assert p.is_file()
+
+
+def test_missing_data_dir_fails_the_default_staging_loudly(tmp_path, monkeypatch):
+    from ihale import config
+    monkeypatch.delenv("IHALE_ALLOW_NEW_DATA_DIR", raising=False)
+    monkeypatch.setenv("IHALE_DATA_DIR", str(tmp_path / "unplugged"))
+    with pytest.raises(config.DataDirMissing):
+        d1.staging_path(Path(sitegen.SITE_DIR) / "dist")
