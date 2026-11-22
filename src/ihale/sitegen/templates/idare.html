@@ -22,6 +22,28 @@
 <p class="muted">Kayıt: bültendeki sonuç ilanı satırı. İKN: ihale kayıt numarası (bir İKN'nin birden fazla kaydı olabilir). Aşağıdaki haftalık dağılım ve yüklenici listeleri İKN, döküm ve «n» değerleri kayıt sayar.</p>
 {% if d.natural_person_awards %}<p class="muted">Bu idarenin {{ d.natural_person_awards | tr_int }} İKN'sinde yüklenici gerçek kişi ya da gerçek kişi içeren iş ortaklığıdır; adları bu sayfada gösterilmez.</p>{% endif %}
 
+{% if scorecards %}
+<h2>İdare karnesi (deneysel)</h2>
+<p class="muted">{{ scorecard_note }}</p>
+{% for sc in scorecards %}
+<h3>{{ type_labels.get(sc.type, sc.type) }} ({{ sc.n | tr_int }} İKN{% if sc.low %}, düşük örnek{% endif %})</h3>
+{% if sc.index is not none %}<p>Bileşik gösterge: <strong>{{ sc.index | round(0) | int }}</strong> / 100 (üç alt göstergenin ortalaması; tek başına okunmamalıdır).</p>
+{% else %}<p class="muted">Bileşik gösterge için yeterli karşılaştırma yok; alt göstergeler aşağıda.</p>{% endif %}
+<div class="tw"><table class="rules stack">
+  <thead><tr><th>Alt gösterge / bileşen</th><th>Bu idare (n)</th><th>Karşılaştırma grubundaki yüzdelik</th></tr></thead>
+  <tbody>
+  {% for s in sc.subs %}
+    <tr><td><strong>{{ s.label }}</strong></td><td data-label="Bu idare">{% if s.index is not none %}alt gösterge {{ s.index | round(0) | int }}{% else %}—{% endif %}</td><td data-label="Yüzdelik"></td></tr>
+    {% for c in s.comps %}
+    <tr><td>{{ comp_labels.get(c.code, c.code) }}</td><td data-label="Bu idare">{% if c.code == "downloader_bid_ratio" %}{{ ("%.1f" | format(c.value)).replace(".", ",") }} kat{% else %}{{ c.value | tr_pct }}{% endif %} (n={{ c.n | tr_int }})</td>
+        <td data-label="Yüzdelik">{% if c.pct is not none %}%{{ c.pct | round(0) | int }} · {{ c.peer }}, {{ c.peer_n | tr_int }} idare{% else %}karşılaştırma grubu yetersiz (30 idare gerekir){% endif %}</td></tr>
+    {% endfor %}
+  {% endfor %}
+  </tbody>
+</table></div>
+{% endfor %}
+{% endif %}
+
 <h2>Haftalık usul dağılımı (İKN sayısı)</h2>
 {% if mix %}
 <p class="muted">Her satır bir ISO haftasıdır; çubuk uzunluğu o haftanın İKN sayısıyla orantılıdır. Açık usulden pazarlığa ya da istisnaya kayma varsa tabloda görünür.</p>

@@ -17,6 +17,8 @@ ROW_BYTES_NEXT = 100_000
 ROW_MAX = 50
 LIST_BYTES = 100_000
 MIX_GRAYS = [1.0, 0.75, 0.55, 0.4, 0.28, 0.18, 0.1]   # one entry per category slot (k); tones and hatch patterns live in the template, no hues
+from ihale.scorecard import COMPONENT_LABELS as COMP_LABELS  # noqa: E402
+
 USUL_NOTE = "Usul dağılımı alım türüne ve idarenin görevine göre değişir; tek başına bir sonuç değildir."
 PEER_MIN_N = 20        # same minimum as the export: a peer group below this is not shown
 IDARE_NOTE = "Bir idarenin tablosu tek başına bir sonuç değildir; usul ve alım türü farklılıkları rakamları etkiler."
@@ -78,6 +80,28 @@ def mix_rows(d: dict) -> tuple[list[dict], list[dict], int]:
                          cells=[counts.get(c["code"], 0) for c in cats], segs=segs))
     legend = [dict(label=c["label"], k=min(i, len(MIX_GRAYS) - 1)) for i, c in enumerate(cats)]
     return rows, legend, peak
+
+
+SCORECARD_NOTE = ("Karne bir risk göstergesidir, vaka değildir: idareyi benzer idarelerle kıyaslar ve hiçbir şeyin yanlış "
+                  "olduğunu söylemez. Deneysel; yalnızca şu ana kadar yüklenen bültenlerden hesaplanır ve ağırlıklar eşittir "
+                  "(henüz doğrulanmadı).")
+
+
+def scorecard_blocks(d: dict) -> list[dict]:
+    """One block per bulletin type from the export's `scorecard` (every component with its value, percentile and n)."""
+    out = []
+    for typ, c in sorted((d.get("scorecard") or {}).items()):
+        subs = []
+        for code, s in (c.get("sub") or {}).items():
+            comps = []
+            for cc, v in (s.get("components") or {}).items():
+                if v is None:
+                    continue
+                comps.append(dict(code=cc, value=v.get("value"), n=v.get("n"), pct=v.get("percentile"),
+                                  peer=(v.get("peer") or {}).get("label"), peer_n=(v.get("peer") or {}).get("idares")))
+            subs.append(dict(code=code, label=s.get("label"), index=s.get("index"), comps=comps))
+        out.append(dict(type=typ, n=c.get("n"), index=c.get("index"), low=bool(c.get("low_sample")), subs=subs))
+    return out
 
 
 def usul_tables(d: dict) -> list[dict]:
@@ -159,6 +183,7 @@ def build_dossiers(*, export_dir: Path, meta: dict, env, write, render_fragment,
         n = len(pages)
         base = dict(d=d, mix=mix, legend=legend, groups=groups, note=IDARE_NOTE, npages=n,
                     usul_tables=usul_tables(d), usul_note=USUL_NOTE,
+                    scorecards=scorecard_blocks(d), scorecard_note=SCORECARD_NOTE, comp_labels=COMP_LABELS,
                     top_count=top(d.get("top_yuklenici_by_count")), top_try=top(d.get("top_yuklenici_by_try")),
                     parent=idare_parent.get(d["name"]), kind="idare", slug=slug, total_rows=len(rows))
         write(f"idare/{slug}/index.html", "idare.html", page="idare", title=d["name"], pn=1,

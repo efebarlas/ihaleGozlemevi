@@ -12,7 +12,7 @@ from collections import Counter, defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import flags, indicators as ind, peers
+from . import flags, indicators as ind, peers, scorecard
 from .keys import normalize_key
 from .sitegen.persons import PERSON_LABEL, is_natural_person
 from .slugs import SlugMap, tr_sort_key
@@ -250,6 +250,7 @@ def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None
                 groups_of[t.idare_key].add((typ, t.usul))
     windows: dict[tuple, flags._Window] = {}
     usul_pay = _usul_pay(_tender_rows(stored, idare_name), idare_name)
+    cards = scorecard.compute(stored)
 
     def window(typ, usul):
         if (typ, usul) not in windows:
@@ -339,6 +340,7 @@ def build(stored: list[StoredRecord], out: Path, slug_map: SlugMap | None = None
             "totals": totals, "procedure_categories": PROCEDURE_CATEGORIES, "procedure_mix": procedure_mix,
             "tek_gecerli_by_group": shares,
             "usul_pay_categories": USUL_PAY_CATEGORIES, "usul_pay": usul_pay.get(ik, {}),
+            "scorecard": cards.get(ik, {}),
             "timeline": timeline,
             "top_yuklenici_by_count": top_count, "top_yuklenici_by_try": top_try,
             "natural_person_awards": len(person_awards)})
