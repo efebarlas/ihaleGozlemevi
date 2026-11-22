@@ -63,3 +63,13 @@ def test_delete_override_is_per_run_and_default_off(monkeypatch):
     monkeypatch.setenv("IHALE_MAX_DELETE_FRACTION", "0.9")
     with pytest.raises(ValueError):
         _delete_override(lambda m: None)
+
+
+def test_dmo_arac_group_is_the_i_nolu_unit():
+    i_nolu = "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA DAİRE BAŞKANLIĞI"
+    v_nolu = "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA DAİRE BAŞKANLIĞI"
+    assert structural.peer_category(i_nolu, "SATIH KAPLAMA ARACI") == "dmo_arac"
+    assert structural.peer_category(v_nolu, "SATIH KAPLAMA ARACI") is None
+    assert structural.peer_category("DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ III NOLU SATIN ALMA", "X") is None
+    assert structural.peer_category(i_nolu, "VAN İLİ J0952 DİNOPROSTON") == "saglik_market"        # health wins
+    assert ind.usul_label("dmo_arac") == "DMO araç ve iş makinesi siparişleri"

@@ -156,9 +156,11 @@ def record_rule(idare: str | None, title: str | None, yuklenici_key: str | None)
 # peer group, so p is computed among like tenders. Points are NOT zeroed; the flags stay and ln(1/p) does the rest.
 SAGLIK_MARKET = "saglik_market"
 MEB_TASIMA = "meb_tasima"
+DMO_ARAC = "dmo_arac"
 CATEGORY_LABELS = {
     SAGLIK_MARKET: "DMO sağlık ve ilaç",
     MEB_TASIMA: "MEB taşımalı eğitim / araç kiralama",
+    DMO_ARAC: "DMO araç ve iş makinesi siparişleri",
 }
 
 
@@ -184,13 +186,19 @@ def _school_transport(t: str) -> bool:
 
 
 def peer_category(idare: str | None, title: str | None) -> str | None:
-    """`saglik_market`: DMO idare and a sole-source health title (Sağlık Market, J-code drug lists, ilaç, enteral). `meb_tasima`: Milli Eğitim idare and school transport in the işin adı + konu
+    """`saglik_market`: DMO idare and a sole-source health title (Sağlık Market, J-code drug lists, ilaç,
+    enteral). `dmo_arac`: DMO "I NOLU" Satın Alma Dairesi (vehicle and machinery orders). `meb_tasima`: Milli Eğitim idare and school transport in the işin adı + konu
     (`title` may carry both). Anything else None."""
     if not idare or not title:
         return None
     name, t = _fold(idare), _fold(title)
     if name.startswith(DMO_PREFIX) and _sole_source_health(t):
         return SAGLIK_MARKET
+    if name.startswith(DMO_PREFIX):
+        import re
+        if re.search(r"(?<![a-zçğıöşü])[iı] nolu(?![a-zçğıöşü])", name):     # "I NOLU" Satın Alma Dairesi: vehicles and machinery
+            return DMO_ARAC
+        return None
     if ("milli eğitim" in name or "millî eğitim" in name) and _school_transport(t):
         return MEB_TASIMA
     return None

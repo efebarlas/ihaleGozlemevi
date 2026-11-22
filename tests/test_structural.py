@@ -10,7 +10,7 @@ from ihale.store import Store, StoredRecord
 from rec_helpers import rec
 
 D = date(2026, 11, 18)
-DMO = "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ I NOLU SATIN ALMA ŞUBESİ"
+DMO = "DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ V NOLU SATIN ALMA ŞUBESİ"
 G, E3 = "4734 / 3-g", "4734 / 3-e"
 REASON_3E = ("4734 sayılı Kanun md. 3/e: alım, Kanunda adı sayılan kamu kuruluşundan (ör. ceza infaz kurumu "
              "işyurtları, DMO, TCDD, Et ve Balık Kurumu) yapılır; tek tedarikçi Kanun gereğidir.")
