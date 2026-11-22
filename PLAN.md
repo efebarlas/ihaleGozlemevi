@@ -55,6 +55,7 @@ Rules: SPEC.md is the source of truth, and only the spec owner edits it. The spe
 - Launch is pull-only: no bots or push alerts aimed at named bodies.
 
 ## Decisions needed (Efe)
+- **HARD STOP (SPEC §7, EKAP block), 2026-11-21 18:15/18:16 PT:** the spec owner's research backfill got two login-wall responses. `E:\ihaleGozlemevi\live-data\BLOCKED` is set, and all runs exit 3 without contacting EKAP. Efe decides when it's cleared. No session probes, retries or deletes the marker. The site stays up with data through 20 Nov. Hardening in progress (code only): marker check inside the EKAP client, plus a cross-process cap of 60 requests per UTC day.
 - (spec owner) Who publishes the site: the footer GitHub link, which shows Efe's account, was removed until this is decided (G-Public item).
 
 ## Human checks queued
