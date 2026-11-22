@@ -24,6 +24,8 @@ def data_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("IHALE_DATA_DIR", str(d))
     # tests start from an empty store on purpose; the missing-data guard is tested in test_config.py
     monkeypatch.setenv("IHALE_ALLOW_NEW_DATA_DIR", "1")
+    # peer-group tests are written against the legacy rules; production default is table_first (test_classify)
+    monkeypatch.setenv("IHALE_PEER_CLASSIFIER", "legacy")
     return d
 
 

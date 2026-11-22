@@ -20,9 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(autouse=True)
 def isolated(monkeypatch, tmp_path):
-    """No real table, default peer classifier; tests that need a table write their own."""
+    """No real table, legacy peer classifier (these tests predate the table_first promotion);
+    tests that need a table or another classifier set their own."""
     monkeypatch.setenv(classify.TABLE_ENV, str(tmp_path / "no-such-table.jsonl"))
-    monkeypatch.delenv(classify.PEER_ENV, raising=False)
+    monkeypatch.setenv(classify.PEER_ENV, "legacy")
     classify._cached.cache_clear()
 
 
@@ -147,8 +148,13 @@ def test_unknown_implementation_rejected():
 
 
 # ---------------------------------------------------------------- peer config
+def test_production_default_is_table_first(monkeypatch):
+    monkeypatch.delenv(classify.PEER_ENV, raising=False)
+    assert classify.peer_classifier() == "table_first"
+
+
 def test_default_peer_classifier_is_todays_rules():
-    assert classify.peer_classifier() == "legacy"
+    assert classify.peer_classifier() == "legacy"          # conftest pins legacy for these tests
     assert peers.idare_turu("ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ") == "sağlık"          # legacy codes, unchanged
     assert peers.idare_turu("KONYA BELEDİYESİ") == "belediye"
     assert peers.idare_turu("TCDD 5. BÖLGE") == "diğer"

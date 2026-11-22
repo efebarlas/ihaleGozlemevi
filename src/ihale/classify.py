@@ -235,8 +235,12 @@ def classify(name: str | None, impl: str = "keywords") -> Classification:
 
 
 def peer_classifier() -> str:
-    """The implementation feeding the peer groups: $IHALE_PEER_CLASSIFIER, default `legacy` (today's rules)."""
-    v = (os.environ.get(PEER_ENV) or "legacy").strip().lower()
+    """The implementation feeding the peer groups: $IHALE_PEER_CLASSIFIER, default `table_first`.
+
+    Promoted 2026-11-22 after the SPEC §11 evaluation (table 97.5% vs keywords 89.0% turu on 200 independent
+    hand labels) and three shadow runs (261 stable disagreements, 3% table misses -> keywords). `legacy` stays
+    selectable for comparison."""
+    v = (os.environ.get(PEER_ENV) or "table_first").strip().lower()
     if v not in PEER_CLASSIFIERS:
         raise ValueError(f"{PEER_ENV}={v!r}; expected one of {PEER_CLASSIFIERS}")
     return v
