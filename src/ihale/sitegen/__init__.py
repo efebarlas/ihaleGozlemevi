@@ -63,6 +63,8 @@ PAGE_MAX_BYTES = 110_000  # keep every HTML page well under ~150 KB
 EFFECT_LABELS = {
     "no_single_bid_points": "Tek teklif işaretleri gösterilir ama puan eklemez",
     "own_peer_group": "İdare yalnızca kendi geçmişiyle karşılaştırılır",
+    "no_competition_points": "Tek teklif, bedel/maliyet oranı ve tekrar işaretleri gösterilir ama puan eklemez",
+    "no_repeat_single_points": "Tek teklif ve tekrarlayan yüklenici işaretleri gösterilir ama puan eklemez",
 }
 MAX_CARDS_PER_IDARE = 2  # Bugün: more from the same idare are folded into one line
 # detail pages only for records with score > 0 (keeps the file count bounded)

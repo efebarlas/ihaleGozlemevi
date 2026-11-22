@@ -122,7 +122,7 @@ def test_export_carries_structural_and_meta_rules():
     assert day["tenders"][0]["structural"] == {"id": "istisna-3e", "text": REASON_3E}
     assert day["tenders"][1]["structural"] is None
     meta = json.loads((out / "meta.json").read_text(encoding="utf-8"))
-    (rule,) = meta["structural_rules"]
+    rule = meta["structural_rules"][0]
     assert set(rule) == {"id", "match_tr", "effects", "reason_tr", "added"}
     assert rule["id"] == "istisna-3e" and rule["effects"] == ["no_single_bid_points"]
     assert rule["reason_tr"] == REASON_3E and rule["added"] == "2026-11-19"

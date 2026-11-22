@@ -581,6 +581,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         usul_code = ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None
         usul = ind.usul_group(r.idare if r.confident("idare") else None, usul_code)   # DMO 3-g split off
         rule = None
+        rec_rule = None
         ik = normalize_key(r.idare) if r.confident("idare") else None
         if ik:
             wkey = (r.bulletin_type, r.bulletin_date, None)
@@ -590,6 +591,9 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
             rule = structural.match(r.idare, usul_code)
             if rule:
                 res.structural = {"id": rule.id, "text": rule.reason_tr}
+            rec_rule = structural.record_rule(r.idare, r.title, normalize_key(r.yuklenici) if r.confident("yuklenici") else None)
+            if rec_rule:      # record-level rules (M5g) win over the usul-level one for the display text
+                res.structural = {k: v for k, v in rec_rule.items() if k != "effects"}
             if usul:     # idare comparison runs within the record's procedure group
                 ukey = (r.bulletin_type, r.bulletin_date, usul)
                 if ukey not in windows:
@@ -625,8 +629,14 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         res.cond, res.computable = cond, comp
         b = r.sozlesme_bedeli
         res.bedel_try = b.kurus / 100 if r.confident("sozlesme_bedeli") and b.currency == "TRY" and b.kurus > 0 else None
-        if res.structural and structural.NO_SINGLE_BID_POINTS in rule.effects:
+        if rule and structural.NO_SINGLE_BID_POINTS in rule.effects:
             have -= {"tek_teklif", "diger_teklifler_elendi"}      # still shown as flags, but no points
+        rec_fx = set(rec_rule["effects"]) if rec_rule else set()
+        if structural.NO_COMPETITION_POINTS in rec_fx:      # brand-specified DMO order: one dealer can bid
+            have -= {"tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_yuklenici"}
+            idare_fires = False
+        if structural.NO_REPEAT_AND_SINGLE_POINTS in rec_fx:      # municipality's own company
+            have -= {"tek_teklif", "diger_teklifler_elendi", "tekrarlayan_yuklenici"}
         parts = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
         if idare_fires:
             parts.add("idare_orani")
