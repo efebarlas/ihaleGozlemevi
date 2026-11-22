@@ -235,7 +235,7 @@ Pressure can move bad behavior out of view: into procedures, channels or tricks 
 **Hard stops** (escalate to Efe, work on other things meanwhile):
 - Making the site public: indexable, or shared or linked anywhere.
 - Money: a paid plan, a payment method, a new account.
-- EKAP blocking, CAPTCHA or login.
+- EKAP blocking, CAPTCHA or login. The pipeline's `BLOCKED` marker in the data dir halts every EKAP request until Efe clears it. Every process shares a cap of 60 EKAP requests per UTC day, enforced in the client. Bulk historical backfills need Efe's OK with a daily request budget. (First block: 2026-11-21, during a spec-owner research backfill.)
 - Irreversible git operations on `main` (force-push, history rewrite).
 - Any dependency that isn't permissively licensed (see §4.1).
 - Contacting outside projects or people, including issues or PRs on ihalent.
