@@ -152,11 +152,42 @@ def cmd_backfill_history(args) -> int:
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 2
+    plan = None
+    if not args.no_plan:
+        pf = args.plan or bh.plan_path()
+        if args.plan or pf.is_file():
+            try:
+                plan = bh.load_plan(pf)
+            except (OSError, ValueError) as e:
+                print(f"bad plan file: {e}", file=sys.stderr)
+                return 2
+    if args.dry_run:      # no EKAP, no state files: show what would be asked first
+        todo = [e for e in (plan or []) if not ekap.bulletin_paths(config.bulletins_dir(), e.day, e.type)[1].exists()]
+        print(f"plan: {len(plan or [])} targets, {len(todo)} not cached yet; first 10:")
+        for e in todo[:10]:
+            print(f"  {e.day.isoformat()} {e.type}")
+        return 0
     with keep_awake(), pipeline.file_logging():
         client = ekap.EkapClient(max_requests=args.max_requests + 5)   # run() enforces --max-requests itself
         return bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
                       max_requests=args.max_requests, min_gap=args.min_gap_seconds,
-                      max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window)
+                      max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window, plan=plan)
+
+
+def cmd_backfill_plan(args) -> int:
+    from . import backfill_plan as bp
+    text = bp.render(args.seed)
+    if not args.write:
+        print(text, end="")
+        return 0
+    from . import backfill_history as bh
+    path = bh.plan_path()
+    if path.exists() and not args.force:
+        print(f"{path} exists; not overwritten (--force to replace)", file=sys.stderr)
+        return 2
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path}")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -219,7 +250,17 @@ def build_parser() -> argparse.ArgumentParser:
     bh.add_argument("--types", nargs="+", default=None, type=str, help="default: mal hizmet yapim, in that order")
     bh.add_argument("--start", type=parse_day, default=None, help="first day to try (default: day before the oldest stored)")
     bh.add_argument("--earliest", type=parse_day, default=date(2010, 1, 1), help="stop at this day (default 2010-01-01)")
+    bh.add_argument("--plan", type=Path, default=None,
+                    help="ordered `YYYY-MM-DD type` targets fetched before the walk (default: <data>/backfill-plan.txt if present)")
+    bh.add_argument("--no-plan", action="store_true", help="ignore the plan file: day-by-day walk only")
+    bh.add_argument("--dry-run", action="store_true", help="print the first 10 uncached plan targets and exit (no EKAP)")
     bh.set_defaults(func=cmd_backfill_history)
+
+    bp = sub.add_parser("backfill-plan", help="print (or --write into the data dir) the seeded phase-1 target list")
+    bp.add_argument("--seed", type=int, default=20261123)
+    bp.add_argument("--write", action="store_true")
+    bp.add_argument("--force", action="store_true", help="overwrite an existing plan file")
+    bp.set_defaults(func=cmd_backfill_plan)
     return p
 
 

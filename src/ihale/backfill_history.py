@@ -4,6 +4,12 @@ only (no parse, no DB, no site), very slowly, only inside a night window.
 Hard stops (SPEC §6/§7): any BlockedError (or an existing BLOCKED marker) stops everything and is never worked
 around. Spacing is on top of ekap.RateLimiter: `min_gap`..`max_gap` seconds (random) between EKAP requests.
 
+With a plan (data dir `backfill-plan.txt`, see backfill_plan.py) the listed (date, type) targets come first, in file
+order, then the day-by-day walk continues.
+
+The per-run request cap counts requests of THIS run (client.requests_made); the per-UTC-day counter is a shared
+backstop only, so its reset at 00:00 UTC cannot let a run exceed max_requests.
+
 Exit codes: 0 done / request budget of this run used / outside the window, 1 error, 3 BLOCKED, 5 shared daily cap.
 """
 from __future__ import annotations
@@ -13,6 +19,8 @@ import logging
 import random
 import re
 import time
+from collections import deque
+from dataclasses import dataclass
 from datetime import date, datetime, time as dtime, timedelta, timezone
 from pathlib import Path
 from typing import Callable
@@ -28,6 +36,46 @@ DEFAULT_MAX_GAP = 240.0
 DEFAULT_WINDOW_UTC = "22:00-04:30"       # 01:00-07:30 Europe/Istanbul
 DEFAULT_EARLIEST = date(2010, 1, 1)
 TYPES = ("mal", "hizmet", "yapim")
+
+
+MAX_HOPS = 3                                  # planned day without any bulletin: try up to 3 following business days
+PLAN_FILE = "backfill-plan.txt"
+
+
+@dataclass(frozen=True)
+class PlanEntry:
+    day: date
+    type: str
+    origin: date          # the day the plan asked for (a hop moves `day` on, never `origin`)
+    hop: int = 0
+
+
+def _next_business_day(d: date) -> date:
+    d += timedelta(days=1)
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    return d
+
+
+def plan_path() -> Path:
+    return config.data_dir() / PLAN_FILE
+
+
+def load_plan(path: Path | None = None) -> list[PlanEntry]:
+    """Ordered targets, one `YYYY-MM-DD type` per line ('#' comments and blank lines ignored). Append more lines (a
+    later phase) at the end and they are fetched before the day-by-day walk. Unknown types / dates raise ValueError."""
+    path = path or plan_path()
+    out: list[PlanEntry] = []
+    for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) != 2 or parts[1] not in TYPES:
+            raise ValueError(f"{path}:{n}: expected 'YYYY-MM-DD <{'|'.join(TYPES)}>', got {raw!r}")
+        d = date.fromisoformat(parts[0])
+        out.append(PlanEntry(d, parts[1], d))
+    return out
 
 
 def parse_window(s: str) -> tuple[dtime, dtime]:
@@ -85,7 +133,7 @@ def run(client: ekap.EkapClient, *, begin: date | None = None, earliest: date = 
         window: tuple[dtime, dtime] | None = None,
         now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
         sleep: Callable[[float], None] = time.sleep, rng: random.Random | None = None,
-        bulletins: Path | None = None) -> int:
+        bulletins: Path | None = None, plan: list | None = None) -> int:
     rng = rng or random.Random()
     window = window or parse_window(DEFAULT_WINDOW_UTC)
     data = config.data_dir()
@@ -125,41 +173,77 @@ def run(client: ekap.EkapClient, *, begin: date | None = None, earliest: date = 
             raise _WindowClosed()
         return fn()
 
+    class _Stop(Exception):
+        def __init__(self, code: int, reason: str, day):
+            self.code, self.reason, self.day = code, reason, day
+
+    def handle(day: date, t: str) -> str:
+        """One (day, type) target. Returns cached | empty | fetched | no_bulletin; raises _Stop when the run must end.
+        The cache is looked at right before every request, so a file that appeared meanwhile (another process, an
+        earlier plan entry) is never fetched twice."""
+        if ekap.bulletin_paths(root, day, t)[1].exists():
+            prog.state["skipped_cached"] += 1
+            return "cached"
+        if f"{day.isoformat()} {t}" in known:
+            prog.state["skipped_empty"] += 1
+            return "empty"
+        if client.requests_made >= max_requests:
+            raise _Stop(0, f"request budget of this run used ({client.requests_made}/{max_requests})", day)
+        if used() >= client.budget.limit:
+            raise _Stop(pipeline.EXIT_CAP, f"shared daily cap reached ({used()}/{client.budget.limit})", day)
+        if client._form is None:
+            paced(client.load_form)   # the one form GET counts as a request (and gets its own gap)
+            if client.requests_made >= max_requests or used() >= client.budget.limit:
+                raise _Stop(0 if client.requests_made >= max_requests else pipeline.EXIT_CAP,
+                            "budget used by the form request", day)
+        try:
+            paced(lambda: client.fetch(day, t, root=root))
+            result = "fetched"
+            prog.state["fetched"] += 1
+        except ekap.NoBulletinError:
+            result = "no_bulletin"
+            pipeline._remember_no_bulletin(day, t)
+            known.add(f"{day.isoformat()} {t}")
+            prog.state["no_bulletin"] += 1
+        prog.line(day, t, result, used())
+        prog.write_state(last_day=day, last_type=t, requests_this_run=client.requests_made, requests_today=used())
+        return result
+
     day = begin
     try:
+        # ---- phase A: the planned (date, type) list, in file order; a day whose types all came back empty is retried
+        # on the next business day at the END of the list (the "second pass"), at most MAX_HOPS times
+        if plan:
+            queue = deque(plan)
+            per_origin = {}
+            for e in plan:
+                per_origin.setdefault(e.origin, set()).add(e.type)
+            empties: dict[date, set] = {}
+            prog.write_state(plan_total=len(plan), plan_done=0)
+            n_done = 0
+            while queue:
+                e = queue.popleft()
+                day = e.day
+                if handle(e.day, e.type) in ("empty", "no_bulletin"):
+                    empties.setdefault((e.origin, e.day), set()).add(e.type)
+                    if empties[(e.origin, e.day)] >= per_origin[e.origin] and e.hop < MAX_HOPS:
+                        nxt = _next_business_day(e.day)
+                        queue.extend(PlanEntry(nxt, t2, e.origin, e.hop + 1) for t2 in sorted(per_origin[e.origin], key=TYPES.index))
+                n_done += 1
+                prog.write_state(plan_done=n_done, plan_left=len(queue))
+            prog.write_state(plan_exhausted=True)
+            day = begin
+        # ---- phase B: the day-by-day walk backwards
         while day >= earliest:
             if day.weekday() >= 5:
                 day -= timedelta(days=1)
                 continue
             for t in types:
-                if ekap.bulletin_paths(root, day, t)[1].exists():
-                    prog.state["skipped_cached"] += 1
-                    continue
-                if f"{day.isoformat()} {t}" in known:
-                    prog.state["skipped_empty"] += 1
-                    continue
-                if client.requests_made >= max_requests:
-                    return done(0, f"request budget of this run used ({client.requests_made}/{max_requests})", day)
-                if used() >= client.budget.limit:
-                    return done(pipeline.EXIT_CAP, f"shared daily cap reached ({used()}/{client.budget.limit})", day)
-                try:
-                    if client._form is None:
-                        paced(client.load_form)   # the one form GET counts as a request (and gets its own gap)
-                        if client.requests_made >= max_requests or used() >= client.budget.limit:
-                            return done(0 if client.requests_made >= max_requests else pipeline.EXIT_CAP,
-                                        "budget used by the form request", day)
-                    paced(lambda: client.fetch(day, t, root=root))
-                    result = "fetched"
-                    prog.state["fetched"] += 1
-                except ekap.NoBulletinError:
-                    result = "no_bulletin"
-                    pipeline._remember_no_bulletin(day, t)
-                    known.add(f"{day.isoformat()} {t}")
-                    prog.state["no_bulletin"] += 1
-                prog.line(day, t, result, used())
-                prog.write_state(last_day=day, last_type=t, requests_this_run=client.requests_made, requests_today=used())
+                handle(day, t)
             prog.write_state(oldest_reached=day)
             day -= timedelta(days=1)
+    except _Stop as e:
+        return done(e.code, e.reason, e.day)
     except _WindowClosed:
         return done(0, "window closed while waiting", day)
     except ekap.BlockedError as e:
