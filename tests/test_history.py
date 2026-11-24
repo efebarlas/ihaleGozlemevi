@@ -41,3 +41,9 @@ def test_report_splits_sample_and_walk_and_computes_base_rates(monkeypatch, data
     assert old["records"] == 2 and old["tek_teklif_share"] == 0.5 and old["diger_elendi_share"] == 1.0
     assert old["bedel_ym_median"] == round((0.9 + 0.5) / 2, 3)
     assert (2026, "walk", "mal") in rows and (2026, "walk", "hizmet") in rows
+
+
+def test_time_cap_leaves_the_rest_pending(monkeypatch):
+    calls = setup(monkeypatch)
+    assert history.sync(max_seconds=-1)["pending"] == 3 and calls == []
+    assert history.sync()["parsed"] == 3

@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import statistics
+import time
 from datetime import date
 from pathlib import Path
 
@@ -49,8 +50,10 @@ def sample_days() -> set[date]:
     return {e.day for e in backfill_history.load_plan(p)}
 
 
-def sync(reflag: bool = False, limit: int | None = None) -> dict:
-    """Parse what is not parsed yet, then (re)flag. Returns counts."""
+def sync(reflag: bool = False, limit: int | None = None, max_seconds: float | None = None) -> dict:
+    """Parse what is not parsed yet, then (re)flag. Returns counts. `max_seconds`: stop STARTING new bulletins after
+    that long (the rest stays pending for the next call); every bulletin is one atomic transaction, so a kill is safe."""
+    t0 = time.monotonic()
     main_days = set(Store().dates())
     hs = Store(db_path())
     done = {(r["bulletin_date"], r["bulletin_type"]) for r in hs.runs()}
@@ -59,6 +62,8 @@ def sync(reflag: bool = False, limit: int | None = None) -> dict:
         todo = todo[:limit]
     parsed = failed = 0
     for d, t in todo:
+        if max_seconds is not None and time.monotonic() - t0 > max_seconds:
+            break
         try:
             pipeline.parse_and_store(d, t, hs)
             parsed += 1

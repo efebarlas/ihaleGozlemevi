@@ -175,7 +175,7 @@ def cmd_backfill_history(args) -> int:
         if code != pipeline.EXIT_BLOCKED and not args.no_history_parse:
             try:        # research only (<data>/research/history.db): offline, after the fetching; never changes the exit code
                 from . import history
-                history.sync()
+                history.sync(max_seconds=args.history_parse_minutes * 60)   # ~44 s per bulletin: stay clear of the 21:30 daily run
                 history.write_report()
             except Exception as e:  # noqa: BLE001
                 pipeline._log_exc("history-parse after backfill failed (ignored)", e)
@@ -186,7 +186,8 @@ def cmd_history_parse(args) -> int:
     from . import history
     with pipeline.file_logging():
         if not args.report_only:
-            print("history-parse:", history.sync(reflag=args.reflag, limit=args.limit))
+            print("history-parse:", history.sync(reflag=args.reflag, limit=args.limit,
+                                          max_seconds=args.max_minutes * 60 if args.max_minutes else None))
         out = history.write_report()
     print(f"report -> {out}")
     return 0
@@ -273,11 +274,14 @@ def build_parser() -> argparse.ArgumentParser:
     bh.add_argument("--no-plan", action="store_true", help="ignore the plan file: day-by-day walk only")
     bh.add_argument("--no-history-parse", action="store_true",
                     help="skip the offline parse into research/history.db after the run")
+    bh.add_argument("--history-parse-minutes", type=float, default=40.0,
+                    help="time cap for the after-run parse; the rest stays pending (default 40)")
     bh.add_argument("--dry-run", action="store_true", help="print the first 10 uncached plan targets and exit (no EKAP)")
     bh.set_defaults(func=cmd_backfill_history)
 
     hp = sub.add_parser("history-parse", help="parse the backfilled bulletins into <data>/research/history.db (research only)")
     hp.add_argument("--reflag", action="store_true", help="recompute flags even if nothing new was parsed")
+    hp.add_argument("--max-minutes", type=float, default=None, help="stop starting new bulletins after N minutes")
     hp.add_argument("--limit", type=int, default=None, help="parse at most N bulletins this run")
     hp.add_argument("--report-only", action="store_true", help="skip parsing; just rewrite history-report.json")
     hp.set_defaults(func=cmd_history_parse)
