@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from datetime import date, datetime
 from pathlib import Path
 
 from . import config, ekap, pipeline
 from .keepawake import keep_awake
+
+log = logging.getLogger("ihale")
 
 # exit codes: 0 ok, 1 error, 2 usage, 3 BLOCKED (EKAP hard stop / marker present), 4 no bulletin (fetch only),
 # 5 backfill stopped at the request cap (also backfill-history: shared daily cap)
@@ -172,11 +175,13 @@ def cmd_backfill_history(args) -> int:
         code = bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
                       max_requests=args.max_requests, min_gap=args.min_gap_seconds,
                       max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window, plan=plan)
-        if code != pipeline.EXIT_BLOCKED and not args.no_history_parse:
+        if code != pipeline.EXIT_BLOCKED and args.history_parse:
             try:        # research only (<data>/research/history.db): offline, after the fetching; never changes the exit code
                 from . import history
-                history.sync(max_seconds=args.history_parse_minutes * 60)   # ~44 s per bulletin: stay clear of the 21:30 daily run
-                history.write_report()
+                with history.WriterLock() as got:
+                    if got:
+                        history.sync(max_seconds=args.history_parse_minutes * 60)
+                        history.write_report()
             except Exception as e:  # noqa: BLE001
                 pipeline._log_exc("history-parse after backfill failed (ignored)", e)
         return code
@@ -184,10 +189,14 @@ def cmd_backfill_history(args) -> int:
 
 def cmd_history_parse(args) -> int:
     from . import history
-    with pipeline.file_logging():
+    with keep_awake(), pipeline.file_logging(), history.WriterLock() as got:
+        if not got:
+            log.info("history-parse: another run holds the lock; nothing done")
+            print("history-parse: another run is active; exiting")
+            return 0
         if not args.report_only:
             print("history-parse:", history.sync(reflag=args.reflag, limit=args.limit,
-                                          max_seconds=args.max_minutes * 60 if args.max_minutes else None))
+                                                  max_seconds=args.max_minutes * 60 if args.max_minutes else None))
         out = history.write_report()
     print(f"report -> {out}")
     return 0
@@ -272,8 +281,9 @@ def build_parser() -> argparse.ArgumentParser:
     bh.add_argument("--plan", type=Path, default=None,
                     help="ordered `YYYY-MM-DD type` targets fetched before the walk (default: <data>/backfill-plan.txt if present)")
     bh.add_argument("--no-plan", action="store_true", help="ignore the plan file: day-by-day walk only")
-    bh.add_argument("--no-history-parse", action="store_true",
-                    help="skip the offline parse into research/history.db after the run")
+    bh.add_argument("--history-parse", action="store_true",
+                    help="manual use: also parse into research/history.db after the run (off by default: the daily "
+                         "ihaleGozlemevi-history-ai task does that)")
     bh.add_argument("--history-parse-minutes", type=float, default=40.0,
                     help="time cap for the after-run parse; the rest stays pending (default 40)")
     bh.add_argument("--dry-run", action="store_true", help="print the first 10 uncached plan targets and exit (no EKAP)")

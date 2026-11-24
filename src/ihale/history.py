@@ -29,6 +29,44 @@ def db_path() -> Path:
     return config.data_dir() / "research" / "history.db"
 
 
+class WriterLock:
+    """Non-blocking exclusive lock `<data>/research/history-parse.lock`: one history.db writer at a time (the scheduled
+    task and a manual run). `with WriterLock() as ok:` -> ok False when another run holds it (the caller exits 0)."""
+
+    def __init__(self, path: Path | None = None):
+        self.path = path or db_path().with_name("history-parse.lock")
+        self.fh = None
+
+    def __enter__(self) -> bool:
+        import sys
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.fh = open(self.path, "a+b")
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                self.fh.seek(0)
+                msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            self.fh.close()
+            self.fh = None
+            return False
+        return True
+
+    def __exit__(self, *exc):
+        if self.fh is not None:
+            import sys
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+                    self.fh.seek(0)
+                    msvcrt.locking(self.fh.fileno(), msvcrt.LK_UNLCK, 1)
+            finally:
+                self.fh.close()
+
+
 def _cached_days() -> list[tuple[date, str]]:
     root = config.bulletins_dir()
     out = []

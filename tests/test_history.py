@@ -47,3 +47,22 @@ def test_time_cap_leaves_the_rest_pending(monkeypatch):
     calls = setup(monkeypatch)
     assert history.sync(max_seconds=-1)["pending"] == 3 and calls == []
     assert history.sync()["parsed"] == 3
+
+
+def test_writer_lock_second_holder_is_refused_then_released():
+    with history.WriterLock() as a:
+        assert a is True
+        with history.WriterLock() as b:
+            assert b is False
+    with history.WriterLock() as c:
+        assert c is True
+
+
+def test_cli_second_run_exits_zero_while_locked(monkeypatch, capsys):
+    from ihale import cli
+    setup(monkeypatch)
+    with history.WriterLock() as held:
+        assert held
+        assert cli.main(["history-parse"]) == 0
+    assert "another run is active" in capsys.readouterr().out
+    assert Store(history.db_path()).runs() == []          # the refused run wrote nothing
