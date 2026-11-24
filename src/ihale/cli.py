@@ -174,6 +174,19 @@ def cmd_backfill_history(args) -> int:
                       max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window, plan=plan)
 
 
+def cmd_history_parse(args) -> int:
+    from . import history
+    with pipeline.file_logging():
+        if not args.report_only:
+            print("history-parse:", history.sync(reflag=args.reflag, limit=args.limit))
+        rows = history.report()
+    import json as _json
+    out = history.db_path().with_name("history-report.json")
+    out.write_text(_json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{len(rows)} report rows -> {out}")
+    return 0
+
+
 def cmd_backfill_plan(args) -> int:
     from . import backfill_plan as bp
     text = bp.render(args.seed)
@@ -255,6 +268,12 @@ def build_parser() -> argparse.ArgumentParser:
     bh.add_argument("--no-plan", action="store_true", help="ignore the plan file: day-by-day walk only")
     bh.add_argument("--dry-run", action="store_true", help="print the first 10 uncached plan targets and exit (no EKAP)")
     bh.set_defaults(func=cmd_backfill_history)
+
+    hp = sub.add_parser("history-parse", help="parse the backfilled bulletins into <data>/research/history.db (research only)")
+    hp.add_argument("--reflag", action="store_true", help="recompute flags even if nothing new was parsed")
+    hp.add_argument("--limit", type=int, default=None, help="parse at most N bulletins this run")
+    hp.add_argument("--report-only", action="store_true", help="skip parsing; just rewrite history-report.json")
+    hp.set_defaults(func=cmd_history_parse)
 
     bp = sub.add_parser("backfill-plan", help="print (or --write into the data dir) the seeded phase-1 target list")
     bp.add_argument("--seed", type=int, default=20261123)
