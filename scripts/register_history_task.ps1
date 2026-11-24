@@ -1,6 +1,6 @@
 ﻿# Register the ihaleGozlemevi-history-ai scheduled task for the CURRENT user. Idempotent (replaces the task):
-#   powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<repo>\scriptsegister_history_task.ps1"
-# Daily 10:07 local, scriptsun_history.ps1 (history-parse into research\history.db: offline, no EKAP client), limit 3 h,
+#   powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<repo>/scripts/register_history_task.ps1"
+# Daily 10:07 local, scripts/run_history.ps1 (history-parse into research/history.db: offline, no EKAP client), limit 3 h,
 # StartWhenAvailable + WakeToRun, Interactive logon (S4U is denied without admin), RunLevel Limited, battery allowed.
 # Does not start the task. Saved as UTF-8 with BOM for Windows PowerShell 5.1.
 

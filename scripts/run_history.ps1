@@ -1,6 +1,6 @@
 ﻿# Daytime history parse (offline, research only) of İhale Gözlemevi. Run by Task Scheduler (see register_history_task.ps1).
 # Runs `python -m ihale history-parse --max-minutes 150` (or the arguments given to this script instead; no EKAP client) with the repo's venv python,
-# appends everything to <data dir>\logs\scheduler-backfill-YYYY-MM-DD.log and exits with the command's exit code.
+# appends everything to <data dir>\logs\scheduler-history-YYYY-MM-DD.log and exits with the command's exit code.
 # Exit codes: 0 done / run budget used / outside the night window, 1 error, 3 BLOCKED by EKAP (or BLOCKED marker present),
 # 5 shared daily request cap, 7 data dir missing. The command itself refuses to run outside --window-utc.
 # Saved as UTF-8 with BOM so Windows PowerShell 5.1 reads the non-ASCII repo path correctly.
