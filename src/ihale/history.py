@@ -121,3 +121,9 @@ def report(path: Path | None = None) -> list[dict]:
                     "diger_elendi_share": round(x["elendi"] / x["n2"], 3) if x["n2"] else None,
                     "bedel_ym_median": _median(x["ratio"]), "ratio_n": len(x["ratio"])})
     return out
+
+
+def write_report() -> Path:
+    out = db_path().with_name("history-report.json")
+    out.write_text(json.dumps(report(), ensure_ascii=False, indent=1), encoding="utf-8")
+    return out

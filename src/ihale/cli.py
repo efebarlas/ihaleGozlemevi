@@ -169,9 +169,17 @@ def cmd_backfill_history(args) -> int:
         return 0
     with keep_awake(), pipeline.file_logging():
         client = ekap.EkapClient(max_requests=args.max_requests + 5)   # run() enforces --max-requests itself
-        return bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
+        code = bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
                       max_requests=args.max_requests, min_gap=args.min_gap_seconds,
                       max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window, plan=plan)
+        if code != pipeline.EXIT_BLOCKED and not args.no_history_parse:
+            try:        # research only (<data>/research/history.db): offline, after the fetching; never changes the exit code
+                from . import history
+                history.sync()
+                history.write_report()
+            except Exception as e:  # noqa: BLE001
+                pipeline._log_exc("history-parse after backfill failed (ignored)", e)
+        return code
 
 
 def cmd_history_parse(args) -> int:
@@ -179,11 +187,8 @@ def cmd_history_parse(args) -> int:
     with pipeline.file_logging():
         if not args.report_only:
             print("history-parse:", history.sync(reflag=args.reflag, limit=args.limit))
-        rows = history.report()
-    import json as _json
-    out = history.db_path().with_name("history-report.json")
-    out.write_text(_json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"{len(rows)} report rows -> {out}")
+        out = history.write_report()
+    print(f"report -> {out}")
     return 0
 
 
@@ -266,6 +271,8 @@ def build_parser() -> argparse.ArgumentParser:
     bh.add_argument("--plan", type=Path, default=None,
                     help="ordered `YYYY-MM-DD type` targets fetched before the walk (default: <data>/backfill-plan.txt if present)")
     bh.add_argument("--no-plan", action="store_true", help="ignore the plan file: day-by-day walk only")
+    bh.add_argument("--no-history-parse", action="store_true",
+                    help="skip the offline parse into research/history.db after the run")
     bh.add_argument("--dry-run", action="store_true", help="print the first 10 uncached plan targets and exit (no EKAP)")
     bh.set_defaults(func=cmd_backfill_history)
 
