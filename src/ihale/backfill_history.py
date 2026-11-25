@@ -33,6 +33,14 @@ log = logging.getLogger("ihale")
 DEFAULT_MAX_REQUESTS = 150
 DEFAULT_MIN_GAP = 150.0
 DEFAULT_MAX_GAP = 240.0
+# Spec-owner ramp (after 3 clean nights): gaps 120-200 s for runs STARTING on or after 2026-11-26 (UTC); a run that
+# starts earlier keeps 150-240 s for its whole length. Any block puts it back to 150-240 s (change RAMP_FROM / the pair).
+RAMP_FROM = datetime(2026, 11, 26, 12, 0, tzinfo=timezone.utc)   # before the 14:00 PST (22:00 UTC) run of that day
+RAMP_GAPS = (120.0, 200.0)
+
+
+def default_gaps(started_utc: datetime) -> tuple[float, float]:
+    return RAMP_GAPS if started_utc >= RAMP_FROM else (DEFAULT_MIN_GAP, DEFAULT_MAX_GAP)
 DEFAULT_WINDOW_UTC = "22:00-04:30"       # 01:00-07:30 Europe/Istanbul
 DEFAULT_EARLIEST = date(2010, 1, 1)
 TYPES = ("mal", "hizmet", "yapim")

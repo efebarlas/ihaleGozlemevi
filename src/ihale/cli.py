@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from . import config, ekap, pipeline
@@ -170,11 +170,14 @@ def cmd_backfill_history(args) -> int:
         for e in todo[:10]:
             print(f"  {e.day.isoformat()} {e.type}")
         return 0
+    dmin, dmax = bh.default_gaps(datetime.now(timezone.utc))
+    min_gap = args.min_gap_seconds if args.min_gap_seconds is not None else dmin
+    max_gap = args.max_gap_seconds if args.max_gap_seconds is not None else dmax
     with keep_awake(), pipeline.file_logging():
         client = ekap.EkapClient(max_requests=args.max_requests + 5)   # run() enforces --max-requests itself
         code = bh.run(client, begin=args.start, earliest=args.earliest, types=args.types,
-                      max_requests=args.max_requests, min_gap=args.min_gap_seconds,
-                      max_gap=max(args.min_gap_seconds, args.max_gap_seconds), window=window, plan=plan)
+                      max_requests=args.max_requests, min_gap=min_gap,
+                      max_gap=max(min_gap, max_gap), window=window, plan=plan)
         if code != pipeline.EXIT_BLOCKED and args.history_parse:
             try:        # research only (<data>/research/history.db): offline, after the fetching; never changes the exit code
                 from . import history
@@ -271,8 +274,10 @@ def build_parser() -> argparse.ArgumentParser:
     bh = sub.add_parser("backfill-history", help="fetch ONLY: old bulletins into the cache, walking back from the oldest "
                         "stored day, slowly, inside a night window (no parse, no DB, no site)")
     bh.add_argument("--max-requests", type=int, default=150, help="EKAP requests this run may use (default 150)")
-    bh.add_argument("--min-gap-seconds", type=float, default=150.0, help="min gap between requests (default 150)")
-    bh.add_argument("--max-gap-seconds", type=float, default=240.0, help="max gap; the gap is random in between (default 240)")
+    bh.add_argument("--min-gap-seconds", type=float, default=None,
+                    help="min gap between requests (default 150, 120 for runs starting on/after 2026-11-26)")
+    bh.add_argument("--max-gap-seconds", type=float, default=None,
+                    help="max gap; the gap is random in between (default 240, 200 for runs starting on/after 2026-11-26)")
     bh.add_argument("--window-utc", default="22:00-04:30",
                     help="only run inside this UTC window HH:MM-HH:MM (default 22:00-04:30 = 01:00-07:30 TRT)")
     bh.add_argument("--types", nargs="+", default=None, type=str, help="default: mal hizmet yapim, in that order")

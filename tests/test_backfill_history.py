@@ -149,7 +149,7 @@ def test_start_day_derived_from_store_and_cli(form_html, monkeypatch):
     assert cli.main(["backfill-history", "--window-utc", "12:00-12:01"]) in (0,)
     assert cli.main(["backfill-history", "--window-utc", "bogus"]) == 2
     p = cli.build_parser().parse_args(["backfill-history"])
-    assert (p.max_requests, p.min_gap_seconds, p.max_gap_seconds, p.window_utc) == (150, 150.0, 240.0, "22:00-04:30")
+    assert (p.max_requests, p.min_gap_seconds, p.max_gap_seconds, p.window_utc) == (150, None, None, "22:00-04:30")
 
 
 # ---------------------------------------------------------------- planned dates, cap, mid-run cache
@@ -275,3 +275,10 @@ def test_dry_run_prints_first_ten_without_ekap(form_html, data_dir, capsys, monk
     assert cli.main(["backfill-history", "--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "315 targets" in out and out.count("\n  20") == 10
+
+
+def test_gap_defaults_ramp_from_the_2026_11_26_run():
+    assert bh.default_gaps(datetime(2026, 11, 25, 22, 0, tzinfo=timezone.utc)) == (150.0, 240.0)
+    assert bh.default_gaps(datetime(2026, 11, 26, 3, 0, tzinfo=timezone.utc)) == (150.0, 240.0)    # a restart of the 11-25 night
+    assert bh.default_gaps(datetime(2026, 11, 26, 22, 0, tzinfo=timezone.utc)) == (120.0, 200.0)
+    assert bh.default_gaps(datetime(2027, 1, 5, 22, 0, tzinfo=timezone.utc)) == (120.0, 200.0)
