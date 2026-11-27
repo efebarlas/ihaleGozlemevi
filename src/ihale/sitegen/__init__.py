@@ -190,7 +190,11 @@ def own_lot_estimate(t: dict) -> bool:
 
 
 def ikn_sum_ratio(t: dict) -> bool:
-    """bedel_orani is computed over the İKN's records (more than one, and not an own-lot estimate)."""
+    """bedel_orani is computed over the İKN's records (more than one, and not a per-notice estimate). The export's
+    `bedel_orani_ikn_sum` indicator says it; older exports without it fall back to the own-esas test."""
+    ind = t.get("indicators") or {}
+    if "bedel_orani_ikn_sum" in ind:
+        return bool(ind["bedel_orani_ikn_sum"])
     return (t.get("kisim") or {}).get("records_in_ikn", 1) > 1 and not own_lot_estimate(t)
 
 
@@ -206,7 +210,7 @@ def bedel_line(t: dict) -> str | None:
     if ikn_sum_ratio(t):
         out += f" (İKN'deki {k} kısmın toplam bedeline göre)"
     elif k > 1:
-        out += " (bu sözleşmenin bedeli, kendi kısımlarının yaklaşık maliyetine göre)"
+        out += " (bu sözleşmenin bedeli, kendi ilanındaki yaklaşık maliyete göre)"
     if ind.get("bedel_orani_peer_median") is not None and ind.get("bedel_orani_peer_n"):
         out += f" · benzer idarelerde ortanca {_pct_floor(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})"
     return out

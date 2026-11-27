@@ -4,8 +4,7 @@
    doubtful/other-currency money, odd bid counts, a year of dates) are flagged by the real pipeline, then
    scripts/audit_flags.py re-derives every shown number independently. Any disagreement fails.
 2. Named invariants, each on a minimal case.
-Known open bugs (reported to the spec owner, fix not yet approved) are strict xfails: they fail CI once fixed, so the
-marker gets removed together with the fix.
+The audit's findings (rule B, zero bedel, doubtful ratios scoring) were fixed 2026-11-27; their tests are below.
 """
 import random
 import sys
@@ -26,7 +25,7 @@ import audit_flags  # noqa: E402
 MISMATCH_KEYS = ("tek_teklif", "diger_teklifler_elendi", "diger_teklifler_elendi_number", "bedel_orani_value",
                  "bedel_orani_flag", "bedel_orani_text", "bedel_orani_text_scope", "tekrarlayan_flag",
                  "tekrarlayan_number", "repeat_suffix_ikn", "ratio_from_zero_or_missing", "currency_scored",
-                 "gecerli_gt_toplam")
+                 "gecerli_gt_toplam", "doubtful_ratio_scored")
 IDARES = ["ANTALYA İL SAĞLIK MÜDÜRLÜĞÜ", "KONYA BÜYÜKŞEHİR BELEDİYESİ", "DEVLET MALZEME OFİSİ"]
 FIRMS = [f"Firma {c} Limited Şirketi" for c in "ABCDE"]
 
@@ -42,7 +41,7 @@ def random_records(seed: int) -> dict:
         t = rnd.choice(["mal", "hizmet"])
         idare = rnd.choice(IDARES)
         ym = rnd.choice([1000.0, 5000.0, 20_000.0, 0.0, None])
-        shape = rnd.choice(["single", "lots_own_esas", "kalem", "ikn_sum"])
+        shape = rnd.choice(["single", "lots_own_esas", "lots_own_ym", "kalem", "ikn_sum"])
         notices = 1 if shape == "single" else rnd.randint(2, 5)
         toplam = rnd.choice([5, 9, 12]) if shape == "kalem" else rnd.choice([1, 1, 2, 3, 5, 9, None])
         for k in range(notices):
@@ -51,12 +50,16 @@ def random_records(seed: int) -> dict:
                 esas = ym / notices
             elif shape == "kalem":
                 esas = ym
-            est = esas or ym or 1000.0
-            bedel = rnd.choice([est * rnd.uniform(0.02, 1.3), est * 0.98, est, None])   # zero bedel: strict xfail below
+            if shape == "lots_own_ym" and ym:
+                ym_k = ym * rnd.choice([0.3, 0.5, 1.0, 2.0])      # each notice prints its own YM (rule B)
+            else:
+                ym_k = ym
+            est = esas or ym_k or 1000.0
+            bedel = rnd.choice([est * rnd.uniform(0.02, 1.3), est * 0.98, est, est * rnd.uniform(1.6, 30), 0.0, None])
             if shape == "kalem" and rnd.random() < 0.7:
                 bedel = est * rnd.uniform(0.01, 0.05)        # per-supplier share of a whole-tender YM
             r = rec(0, day=d, type_=t, ikn=ikn, idare=idare, yuklenici=rnd.choice(FIRMS),
-                    bedel=None if bedel is None else round(bedel, 2), maliyet=ym, esas=esas, toplam=toplam,
+                    bedel=None if bedel is None else round(bedel, 2), maliyet=ym_k, esas=esas, toplam=toplam,
                     gecerli=None if toplam is None else rnd.randint(1, toplam))
             if esas is not None:
                 r.confidence["esas_kisim_yaklasik_maliyet"] = 1.0
@@ -141,9 +144,7 @@ def test_shown_percent_is_the_floored_ratio():
     assert "(%100,06)" in b.flags[0]["text"]
 
 
-# ---------------------------------------------------------------- known open bugs (strict xfail)
-@pytest.mark.xfail(strict=True, reason="M5-audit finding: notices of one İKN printing different YMs (no esas) are "
-                                       "summed against one notice's YM; fix (rule B) awaits the spec owner")
+# ---------------------------------------------------------------- M5-audit fixes (2026-11-27)
 def test_differing_yms_in_one_ikn_compare_own_bedel_with_own_ym():
     lots = [rec(i, ikn="2026/70", bedel=b, maliyet=m, yuklenici=f"F{i}") for i, (b, m) in
             enumerate([(17_500.0, 20_764.5), (17_500.0, 17_816.1), (16_300.0, 17_816.1)], 1)]
@@ -152,8 +153,42 @@ def test_differing_yms_in_one_ikn_compare_own_bedel_with_own_ym():
     assert ["bedel_orani" in codes(a) for a in res] == [False, True, False]
 
 
-@pytest.mark.xfail(strict=True, reason="M5-audit finding: a zero sözleşme bedeli still yields a ratio (%0, and a 0 "
-                                       "share inside an İKN sum); 0 live cases; rule change awaits the spec owner")
+
+def test_differing_yms_are_never_read_as_kalem():
+    # own ratio .243 with 7 bids and no esas would look kalem-shaped, but each notice prints its own YM
+    lots = [rec(i, ikn="2026/71", bedel=b, maliyet=m, yuklenici=f"F{i}", toplam=7, gecerli=7) for i, (b, m) in
+            enumerate([(15_800.0, 65_060.0), (56_256.0, 59_052.0)], 1)]
+    a, b = run(*lots)
+    assert a.indicators["bedel_orani_not_comparable"] is False and round(a.indicators["bedel_orani"], 3) == 0.243
+    assert b.indicators["bedel_orani_ikn_sum"] is False and "bedel_orani" not in codes(a)
+
+
 def test_zero_bedel_gives_no_ratio():
     (a,) = run(rec(1, bedel=0.0, maliyet=100.0))
-    assert a.indicators["bedel_orani"] is None
+    assert a.indicators["bedel_orani"] is None and "bedel_orani" not in codes(a)
+    assert {"field": "sozlesme_bedeli", "reason": "sözleşme bedeli 0 yazılmış; oran hesaplanamaz"} in a.unreadable
+
+
+def test_zero_inside_an_ikn_sum_makes_the_ikn_not_computable():
+    res = run(rec(1, ikn="2026/72", bedel=0.0, maliyet=100.0, yuklenici="A"),
+              rec(2, ikn="2026/72", bedel=99.0, maliyet=100.0, yuklenici="B"))
+    assert all(a.indicators["bedel_orani"] is None and "bedel_orani" not in codes(a) for a in res)
+
+
+@pytest.mark.parametrize("bedel", [151.0, 2700.0, 999.0])      # large, large, typo (x10 within 1%)
+def test_doubtful_ratios_are_shown_but_not_scored(bedel):
+    from ihale.flags import compute_flags_full
+    others = [rec(i, ikn=f"2026/8{i}", bedel=98.0, maliyet=100.0, idare=f"İDARE {i}") for i in range(2, 8)]
+    recs = [rec(1, ikn="2026/80", bedel=bedel, maliyet=100.0, toplam=1, gecerli=1)] + others
+    res, rates = compute_flags_full([StoredRecord(id=i + 1, record=r) for i, r in enumerate(recs)])
+    a = res[1]
+    flag = next(f for f in a.flags if f["code"] == "bedel_orani")
+    note = {"large": "kaynağı kontrol edin", "typo": "10'un katı"}[flag["source_check"]]
+    assert note in flag["text"]
+    assert "bedel_orani" not in [p["code"] for p in a.score_parts]
+    assert "bedel_orani" not in a.computable                              # out of the p denominator
+    assert a.indicators["bedel_orani"] == bedel / 100                     # the printed figures still shown
+    # out of the peer pools: the pool value of the doubtful record is None, a normal one keeps its ratio
+    from ihale import flags as F
+    s1, s2 = StoredRecord(id=1, record=recs[0]), StoredRecord(id=2, record=recs[1])
+    assert F._ratio(recs[0], [s1]) is None and F._ratio(recs[1], [s2]) == 0.98

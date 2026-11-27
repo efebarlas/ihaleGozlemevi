@@ -61,16 +61,17 @@ def test_typo_is_not_a_partner_for_the_repeat_pair():
     assert "tekrarlayan_yuklenici" in [f["code"] for f in last.flags] and last.score_parts == []
 
 
-def test_4_83x_is_large_scored_normally_and_counted_in_p():
+def test_4_83x_is_large_shown_but_not_scored_and_not_in_p():
+    # spec owner 2026-11-27: ratios above 1.5 are usually a data-entry difference at the source -> like typo
     recs = [target(4.83, toplam=3, gecerli=3)] + background(300, bad=30)
     res, rates = full(recs)
     a = res[0]
     f = bedel_flag(a)
     assert f["source_check"] == "large" and f["text"].endswith(LARGE_NOTE)
-    assert [p["code"] for p in a.score_parts] == ["bedel_orani"] and a.score_raw > 0
+    assert a.score_parts == [] and a.score_raw == 0
     assert a.indicators["source_check"] == "large"
-    assert rates["mal/acik"]["n_computable"]["bedel_orani"] == 301
-    assert rates["mal/acik"]["bedel_orani"] == round(31 / 301, 4)
+    assert rates["mal/acik"]["n_computable"]["bedel_orani"] == 300
+    assert rates["mal/acik"]["bedel_orani"] == round(30 / 300, 4)
 
 
 def test_0_1001x_has_no_flag_but_a_typo_indicator():

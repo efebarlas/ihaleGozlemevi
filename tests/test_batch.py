@@ -381,6 +381,6 @@ def test_own_lot_estimate_ratio_is_not_described_as_ikn_sum():
            "esas_kisim_yaklasik_maliyet": {"amount": 100.0, "currency": "TRY"}}
     assert sitegen.own_lot_estimate(own) and not sitegen.ikn_sum_ratio(own)
     line = sitegen.bedel_line(own)
-    assert "toplam bedeline" not in line and "kendi kısımlarının" in line
+    assert "toplam bedeline" not in line and "kendi ilanındaki" in line
     same = dict(own, esas_kisim_yaklasik_maliyet={"amount": 1000.0, "currency": "TRY"})   # kalem shape: İKN sum
     assert sitegen.ikn_sum_ratio(same) and "(İKN'deki 4 kısmın toplam bedeline göre)" in sitegen.bedel_line(same)

@@ -40,7 +40,7 @@
 {% endif %}
 
 {% if c.n_ikn > 1 %}
-<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. {% if c.ikn_sum %}Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.{% else %}Bu kayıt kendi kısımlarının yaklaşık maliyetini verdiği için bedel oranı yalnız bu sözleşmenin bedeliyle hesaplanır.{% endif %}
+<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. {% if c.ikn_sum %}Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.{% else %}Bu ilan kendi yaklaşık maliyetini verdiği için bedel oranı yalnız bu sözleşmenin bedeliyle hesaplanır.{% endif %}
 {% if compact %}{% set lp = c.siblings | selectattr('_page') | list %}{% if lp %} Tüm kayıtlar: <a href="{{ lp[0]._href }}">{{ lp[0].id }} sayfası</a>.{% endif %}{% endif %}</p>
 {% if not compact and c.siblings %}
 <details class="sibs"><summary>Bu İKN'nin tüm {{ c.n_ikn }} kaydı</summary>

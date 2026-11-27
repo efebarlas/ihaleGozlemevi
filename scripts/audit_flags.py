@@ -24,6 +24,7 @@ from ihale.keys import normalize_key            # noqa: E402  identity, not a ru
 from ihale.model import CONFIDENT                # noqa: E402
 
 RATIO_CUT = 0.97          # bedel_orani fires at total/estimate >= 0.97
+LARGE = 1.5               # above: shown with a check-the-source note, no points (spec owner 2026-11-27)
 KALEM_MAX, KALEM_BIDS = 0.30, 4
 REPEAT_MIN, REPEAT_DAYS = 3, 365
 
@@ -76,7 +77,9 @@ def expected_ratio(r: Rec, by_ikn: dict) -> tuple[float | None, str, int]:
     if r.ok("esas_kisim_yaklasik_maliyet"):
         est, own = r.esas, not (r.ok("yaklasik_maliyet") and r.ym == r.esas)
     elif r.ok("yaklasik_maliyet"):
-        est, own = r.ym, False
+        # rule B: notices of one İKN printing different YMs -> each YM is that notice's own
+        yms = {m.ym for m in by_ikn[r.ikn] if m.ok("yaklasik_maliyet")} if r.ok("ikn") else set()
+        est, own = r.ym, len(yms) >= 2
     else:
         return None, "no estimate", 0
     if est[0] <= 0:
@@ -93,6 +96,8 @@ def expected_ratio(r: Rec, by_ikn: dict) -> tuple[float | None, str, int]:
         return None, "bedel unread", len(members)
     if any(m.bedel[1] != est[1] for m in members):
         return None, "currency", len(members)
+    if any(m.bedel[0] <= 0 for m in members):
+        return None, "zero bedel", len(members)
     v = sum(m.bedel[0] for m in members) / est[0]
     if (not own and v < KALEM_MAX and r.ok("toplam_teklif") and r.toplam >= KALEM_BIDS and r.ok("yaklasik_maliyet")
             and (r.esas is None or r.esas == r.ym)):
@@ -150,6 +155,10 @@ def audit(recs: list[Rec]) -> dict:
             want = int(v * 100 * 10 ** dec + 1e-9) / 10 ** dec if v > 1 else int(round(v * 100, 6))
             if p is None or abs(p - want) > 1e-9:
                 out["bedel_orani_text"].append((r.id, f"text {fl['text']!r}, ratio {v:.4f}"))
+            # typo (power of ten) or large (> 1.5): shown with a note, but no points
+            doubtful = v > LARGE or any(abs(v / 10 ** k - 1) <= 0.01 + 1e-9 for k in range(-6, 7) if k)
+            if doubtful and "bedel_orani" in r.part_codes():
+                out["doubtful_ratio_scored"].append((r.id, f"ratio {v:.3f} earns points"))
             if (n > 1) != fl["text"].startswith("Bu ihalenin"):
                 out["bedel_orani_text_scope"].append((r.id, f"{n} contracts summed, text {fl['text'][:40]!r}"))
         # ---- outliers that still reach flags/points (task 2)
@@ -159,7 +168,7 @@ def audit(recs: list[Rec]) -> dict:
             out[f"outlier_flagged_check={sc}_points={pts}"].append((r.id, f"ratio {v:.3f}, n {n}, score {r.score}"))
         if v is not None and (v > 1.5 or v < 0.1):
             stats["ratio_outlier_any"] += 1
-        if stored is not None and ((r.ym and r.ym[0] == 0) or (r.bedel and r.bedel[0] == 0) or r.bedel is None):
+        if stored is not None and ((r.ym and r.ym[0] == 0) or (r.bedel and r.bedel[0] <= 0) or r.bedel is None):
             out["ratio_from_zero_or_missing"].append((r.id, f"ym {r.ym} bedel {r.bedel} ratio {stored}"))
         if why == "currency" and ("bedel_orani" in shown):
             out["currency_scored"].append((r.id, f"est {r.esas or r.ym} bedel {r.bedel}"))
@@ -223,7 +232,7 @@ def main() -> int:
         print(f"{k}: {len(v)} (Bugün {on_bugun}, score>0 {on_pages})")
         for i, msg in v[:3]:
             print(f"    id {i} {byid[i].ikn} {byid[i].day}: {msg}")
-        if not k.startswith(("outlier", "uniform_toplam", "tek_teklif_with")):
+        if not k.startswith(("outlier", "uniform_toplam", "tek_teklif_with")):     # informational lists
             bad += len(v)
     if a.json:
         a.json.write_text(json.dumps(res, ensure_ascii=False, indent=1, default=str), encoding="utf-8")

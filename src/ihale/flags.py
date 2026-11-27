@@ -21,6 +21,7 @@ from .model import CONFIDENT, Money, Record
 from .store import StoredRecord
 
 CURRENCY_MISMATCH = "para birimi farklı"
+ZERO_BEDEL = "sözleşme bedeli 0 yazılmış; oran hesaplanamaz"
 # Item-based (kalem / kısmi teklif) result notices, published per supplier since ~Oct 2025: the notice prints the WHOLE
 # tender's yaklaşık maliyet (also as esas-kısım YM) while bedel is only this supplier's items, so bedel/YM cannot be
 # measured. Rule: esas-kısım YM absent or equal to YM, >= 4 bids, İKN-sum bedel/YM < 0.30 -> bedel_orani is not
@@ -171,18 +172,29 @@ def _estimate(r: Record) -> tuple[str, Money] | None:
     return None
 
 
-def _bedel_members(r: Record, s: StoredRecord, members: list[StoredRecord]) -> list[StoredRecord]:
-    """The notices whose bedel is set against r's estimate. A multi-lot (kısmi) notice prints "Sözleşmeye Esas
-    Kısımlarının Yaklaşık Maliyeti": the estimate of the lots THIS contract covers. When that estimate is used and it
-    differs from the tender's YM, the matching bedel is this notice's own (no kısım number is printed, so lots are
-    never grouped; grouping by estimate value would be ambiguous). Otherwise (single-lot, or kalem bazlı notices that
-    repeat the tender YM as esas) the İKN sum against the tender estimate, as before. Correctness fix 2026-11-27."""
+def per_notice_estimate(r: Record, members: list[StoredRecord]) -> bool:
+    """True when r's estimate belongs to r's notice alone, so its own bedel is the matching figure:
+    (A) a multi-lot notice prints "Sözleşmeye Esas Kısımlarının Yaklaşık Maliyeti" different from the tender YM: the
+        estimate of the lots THIS contract covers;
+    (B) the İKN's notices print two or more different YMs (no esas used): each YM is that notice's own.
+    No kısım number is printed, so lots are never grouped (grouping by estimate value would be ambiguous). A kalem
+    split repeats the whole tender's YM on every notice, so neither case is a kalem notice. Otherwise (single-lot, or
+    kalem bazlı notices repeating the tender YM) the İKN sum against the tender estimate. Correctness fixes 2026-11-27."""
     e = _estimate(r)
+    if e is None:
+        return False
     ym = r.yaklasik_maliyet
-    if e is not None and e[0] == "esas_kisim_yaklasik_maliyet" and not (
-            r.confident("yaklasik_maliyet") and ym is not None and (ym.kurus, ym.currency) == (e[1].kurus, e[1].currency)):
-        return [s]
-    return members
+    if e[0] == "esas_kisim_yaklasik_maliyet":
+        return not (r.confident("yaklasik_maliyet") and ym is not None
+                    and (ym.kurus, ym.currency) == (e[1].kurus, e[1].currency))
+    yms = {(m.record.yaklasik_maliyet.kurus, m.record.yaklasik_maliyet.currency) for m in members
+           if m.record.confident("yaklasik_maliyet")}
+    return len(yms) >= 2
+
+
+def _bedel_members(r: Record, s: StoredRecord, members: list[StoredRecord]) -> list[StoredRecord]:
+    """The notices whose bedel is set against r's estimate (see per_notice_estimate)."""
+    return [s] if per_notice_estimate(r, members) else members
 
 
 def _dedupe_key(s: StoredRecord) -> tuple:
@@ -228,16 +240,19 @@ def kalem_bazli(r: Record, ratio: float | None) -> bool:
     return es is None or (es.kurus == ym.kurus and es.currency == ym.currency)
 
 
-def _ratio(r: Record, members: list[StoredRecord]) -> float | None:
-    """bedel_orani value: sum of the ikn's deduped bedels / estimate; None when not computable (same rules as the flag)."""
+def _ratio(r: Record, members: list[StoredRecord], per_notice: bool = False) -> float | None:
+    """bedel_orani value for the peer pools: the matching bedels / estimate; None when not computable (same rules as
+    the flag) and None for doubtful values (source_check typo/large), which stay out of the pools."""
     est = _estimate(r)
     if est is None or est[1].kurus <= 0:
         return None
     if any(not m.record.confident("sozlesme_bedeli") or m.record.sozlesme_bedeli.currency != est[1].currency
-           for m in members):
+           or m.record.sozlesme_bedeli.kurus <= 0 for m in members):
         return None
     v = sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus
-    return None if kalem_bazli(r, v) else v
+    if not per_notice and kalem_bazli(r, v):
+        return None
+    return None if source_check(v) in ("typo", "large") else v
 
 
 def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender]]:
@@ -259,7 +274,8 @@ def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
         usul = ind.usul_group(r.idare, ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None, f"{r.title or ''} {r.konu or ''}")
-        ratio = _ratio(r, _bedel_members(r, s, list(groups[r.ikn].values()) if r.confident("ikn") else [s]))
+        mem = list(groups[r.ikn].values()) if r.confident("ikn") else [s]
+        ratio = _ratio(r, _bedel_members(r, s, mem), per_notice_estimate(r, mem))
         t = by_id.get(tid)
         if t is None:
             by_id[tid] = _Tender(r.bulletin_date, ik, peers.idare_turu(r.idare), peers.il_of(r.idare),
@@ -528,7 +544,8 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         reasons: list[dict] = []
         members = list(groups[r.ikn].values()) if r.confident("ikn") else [s]
         res.kisim_n = len(members)
-        bm = _bedel_members(r, s, members)      # whose bedel is set against the estimate
+        per_notice = per_notice_estimate(r, members)
+        bm = [s] if per_notice else members     # whose bedel is set against the estimate
 
         # --- tek_teklif / diger_teklifler_elendi (both need toplam_teklif and gecerli_teklif)
         counts_ok = True
@@ -562,10 +579,13 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
             elif any(m.record.sozlesme_bedeli.currency != est[1].currency for m in bm):
                 reasons.append({"field": "sozlesme_bedeli", "reason": CURRENCY_MISMATCH})
                 ok = False
+            elif any(m.record.sozlesme_bedeli.kurus <= 0 for m in bm):
+                reasons.append({"field": "sozlesme_bedeli", "reason": ZERO_BEDEL})
+                ok = False
         elif not r.confident("sozlesme_bedeli"):
             unread.add("sozlesme_bedeli")
         kalem = False
-        if ok and kalem_bazli(r, sum(m.record.sozlesme_bedeli.kurus for m in bm) / est[1].kurus):
+        if ok and not per_notice and kalem_bazli(r, sum(m.record.sozlesme_bedeli.kurus for m in bm) / est[1].kurus):
             reasons.append({"field": "sozlesme_bedeli", "reason": KALEM_BAZLI})
             ok, kalem = False, True
         if ok:
@@ -649,8 +669,8 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                 elif ratio_val is not None:     # per-procedure peer chain, like idare_stats
                     bedel_peer = windows[ukey].peer_ratio_median(ik, peers.idare_turu(r.idare), peers.il_of(r.idare))
         have = {f["code"] for f in res.flags}
-        if check == "typo":
-            have.discard("bedel_orani")      # probable source typo: shown, but no points, no partner, not in p
+        if check in ("typo", "large"):
+            have.discard("bedel_orani")      # doubtful source value: shown with its note, no points, no partner, not in p
         # conditions and computability, ignoring structural exclusions (the base rates must not lose them)
         cond = {c for c in ("tek_teklif", "diger_teklifler_elendi", "bedel_orani") if c in have}
         if idare_raw:
@@ -660,7 +680,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         comp = set()
         if counts_ok:
             comp |= {"tek_teklif", "diger_teklifler_elendi"}
-        if ratio_val is not None and check != "typo":
+        if ratio_val is not None and check not in ("typo", "large"):
             comp.add("bedel_orani")
         if idare_computable:
             comp.add("idare_orani")
@@ -687,6 +707,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         res.usul_group = group_key(r.bulletin_type, usul)
         res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer, check)
         res.indicators["bedel_orani_not_comparable"] = kalem
+        res.indicators["bedel_orani_ikn_sum"] = ratio_val is not None and len(bm) > 1
         results[s.id] = res
     return results, _score_all(results)
 
