@@ -127,7 +127,9 @@ def report(path: Path | None = None) -> list[dict]:
     """One row per (year, kind[sample|walk], type). `records` / `warnings` count parsed records; the base rates are per
     AWARD (distinct ikn, a record without a confident ikn is its own award), using the pipeline's own flags/indicators:
     tek_teklif share of awards with both bid counts readable; diger_teklifler_elendi share of the awards with >= 2 bids
-    and both counts readable; median of the bedel_orani indicator (sum of lots / estimate) over awards where it exists."""
+    and both counts readable; median of the bedel_orani indicator (sum of lots / estimate) over awards where it exists, leaving out kalem bazlı
+    awards (bedel_orani_not_comparable), as scoring does. The bid-count shares keep all awards: the kalem mark only
+    makes the price ratio meaningless, not the counts."""
     hs = Store(path or db_path())
     samp = sample_days()
     rows: dict[tuple, dict] = {}
@@ -151,8 +153,9 @@ def report(path: Path | None = None) -> list[dict]:
             if r.toplam_teklif and r.toplam_teklif >= 2:
                 x["n2"] += 1
                 x["elendi"] += "diger_teklifler_elendi" in codes
-        v = (s.indicators or {}).get("bedel_orani")
-        if v is not None:
+        ind = s.indicators or {}
+        v = ind.get("bedel_orani")
+        if v is not None and not ind.get("bedel_orani_not_comparable"):     # kalem bazlı: same rule as scoring
             x["ratio"].append(v)
     out = []
     for k in sorted(rows):

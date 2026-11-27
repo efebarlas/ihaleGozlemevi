@@ -43,6 +43,21 @@ def test_report_splits_sample_and_walk_and_computes_base_rates(monkeypatch, data
     assert (2026, "walk", "mal") in rows and (2026, "walk", "hizmet") in rows
 
 
+def test_report_median_leaves_out_kalem_bazli_but_counts_keep_them(monkeypatch, data_dir):
+    setup(monkeypatch)
+    (data_dir / "backfill-plan.txt").write_text("2019-03-05 mal\n", encoding="utf-8")
+    history.sync()
+    hs = Store(history.db_path())
+    recs = hs.all_records()
+    for s in recs:                                   # mark the 2019 award ikn 2019/2 (ratio .5) as kalem bazlı
+        if s.record.ikn == "2019/2":
+            s.indicators = {**(s.indicators or {}), "bedel_orani_not_comparable": True}
+    monkeypatch.setattr(Store, "all_records", lambda self: recs)
+    old = {(r["year"], r["kind"], r["type"]): r for r in history.report()}[(2019, "sample", "mal")]
+    assert old["bedel_ym_median"] == 0.9 and old["ratio_n"] == 1
+    assert old["tek_teklif_share"] == 0.5 and old["diger_elendi_share"] == 1.0 and old["awards_with_counts"] == 2
+
+
 def test_time_cap_leaves_the_rest_pending(monkeypatch):
     calls = setup(monkeypatch)
     assert history.sync(max_seconds=-1)["pending"] == 3 and calls == []
