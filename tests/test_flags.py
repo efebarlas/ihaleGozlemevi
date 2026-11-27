@@ -195,6 +195,42 @@ def test_kismi_dedupe_same_ikn_yuklenici_bedel():
     assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %97'si"
 
 
+def _lot(seq, bedel, esas, maliyet=1000.0, yuklenici=None, ikn="2026/77"):
+    r = rec(seq, ikn=ikn, bedel=bedel, maliyet=maliyet, esas=esas, yuklenici=yuklenici or f"Firma {seq}")
+    r.confidence["esas_kisim_yaklasik_maliyet"] = 1.0
+    return r
+
+
+def test_multi_lot_compares_each_contract_with_its_own_lot_estimate():
+    # 4 lots of a 1000 tender, each its own esas-kısım YM; the old İKN sum / one lot's estimate gave 2.4 -> false flag
+    res = run(_lot(1, 73.0, 100.0), _lot(2, 90.0, 400.0), _lot(3, 72.0, 100.0), _lot(4, 5.0, 400.0))
+    assert [round(a.indicators["bedel_orani"], 4) for a in res] == [0.73, 0.225, 0.72, 0.0125]
+    assert all("bedel_orani" not in codes(a) for a in res)
+    assert res[0].kisim_n == 4                                     # the tender still has 4 records
+
+
+def test_multi_lot_equal_lot_estimates_are_not_summed():
+    # 10 lots with the same estimate, each bid at ~99%: flagged per lot at 99%, not "%990"
+    res = run(*[_lot(i, 99.0, 100.0) for i in range(1, 11)])
+    for a in res:
+        assert a.flags[0]["code"] == "bedel_orani" and a.flags[0]["value"] == 0.99
+        assert a.flags[0]["text"] == "Sözleşme bedeli yaklaşık maliyetin %99'u"
+
+
+def test_two_suppliers_on_lots_without_kisim_number_use_own_bedel():
+    # notices print no kısım number; two contracts carrying the same esas value are NOT grouped by that value
+    res = run(_lot(1, 60.0, 100.0, yuklenici="A"), _lot(2, 50.0, 100.0, yuklenici="B"))
+    assert [a.indicators["bedel_orani"] for a in res] == [0.6, 0.5]
+    assert all("bedel_orani" not in codes(a) for a in res)
+
+
+def test_kalem_shaped_esas_equal_to_ym_keeps_ikn_sum():
+    # esas-kısım YM repeated as the tender YM (kalem bazlı shape): İKN sum against YM, as before
+    res = run(_lot(1, 500.0, 1000.0), _lot(2, 480.0, 1000.0))
+    assert all(a.flags[0]["code"] == "bedel_orani" for a in res)
+    assert res[0].flags[0]["text"] == "Bu ihalenin 2 kısmının toplam bedeli yaklaşık maliyetin %98'i"
+
+
 def test_kismi_over_estimate_text():
     res = run(rec(1, ikn="2026/9", bedel=60.0, maliyet=100.0, yuklenici="A"),
               rec(2, ikn="2026/9", bedel=50.0, maliyet=100.0, yuklenici="B"))

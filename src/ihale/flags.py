@@ -171,6 +171,20 @@ def _estimate(r: Record) -> tuple[str, Money] | None:
     return None
 
 
+def _bedel_members(r: Record, s: StoredRecord, members: list[StoredRecord]) -> list[StoredRecord]:
+    """The notices whose bedel is set against r's estimate. A multi-lot (kısmi) notice prints "Sözleşmeye Esas
+    Kısımlarının Yaklaşık Maliyeti": the estimate of the lots THIS contract covers. When that estimate is used and it
+    differs from the tender's YM, the matching bedel is this notice's own (no kısım number is printed, so lots are
+    never grouped; grouping by estimate value would be ambiguous). Otherwise (single-lot, or kalem bazlı notices that
+    repeat the tender YM as esas) the İKN sum against the tender estimate, as before. Correctness fix 2026-11-27."""
+    e = _estimate(r)
+    ym = r.yaklasik_maliyet
+    if e is not None and e[0] == "esas_kisim_yaklasik_maliyet" and not (
+            r.confident("yaklasik_maliyet") and ym is not None and (ym.kurus, ym.currency) == (e[1].kurus, e[1].currency)):
+        return [s]
+    return members
+
+
 def _dedupe_key(s: StoredRecord) -> tuple:
     r = s.record
     b = r.sozlesme_bedeli
@@ -245,7 +259,7 @@ def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender
         tek = (r.gecerli_teklif == 1) if counts_ok else None
         elen = ind.elenen_orani(r.toplam_teklif, r.gecerli_teklif) if counts_ok else None
         usul = ind.usul_group(r.idare, ind.usul_turu(r.ihale_usulu) if r.confident("ihale_usulu") else None, f"{r.title or ''} {r.konu or ''}")
-        ratio = _ratio(r, list(groups[r.ikn].values()) if r.confident("ikn") else [s])
+        ratio = _ratio(r, _bedel_members(r, s, list(groups[r.ikn].values()) if r.confident("ikn") else [s]))
         t = by_id.get(tid)
         if t is None:
             by_id[tid] = _Tender(r.bulletin_date, ik, peers.idare_turu(r.idare), peers.il_of(r.idare),
@@ -514,6 +528,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         reasons: list[dict] = []
         members = list(groups[r.ikn].values()) if r.confident("ikn") else [s]
         res.kisim_n = len(members)
+        bm = _bedel_members(r, s, members)      # whose bedel is set against the estimate
 
         # --- tek_teklif / diger_teklifler_elendi (both need toplam_teklif and gecerli_teklif)
         counts_ok = True
@@ -541,29 +556,29 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
             unread.add(est[0])
             ok = False
         if ok:
-            if any(not m.record.confident("sozlesme_bedeli") for m in members):
+            if any(not m.record.confident("sozlesme_bedeli") for m in bm):
                 unread.add("sozlesme_bedeli")
                 ok = False
-            elif any(m.record.sozlesme_bedeli.currency != est[1].currency for m in members):
+            elif any(m.record.sozlesme_bedeli.currency != est[1].currency for m in bm):
                 reasons.append({"field": "sozlesme_bedeli", "reason": CURRENCY_MISMATCH})
                 ok = False
         elif not r.confident("sozlesme_bedeli"):
             unread.add("sozlesme_bedeli")
         kalem = False
-        if ok and kalem_bazli(r, sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus):
+        if ok and kalem_bazli(r, sum(m.record.sozlesme_bedeli.kurus for m in bm) / est[1].kurus):
             reasons.append({"field": "sozlesme_bedeli", "reason": KALEM_BAZLI})
             ok, kalem = False, True
         if ok:
-            total = sum(m.record.sozlesme_bedeli.kurus for m in members)
+            total = sum(m.record.sozlesme_bedeli.kurus for m in bm)
             est_k = est[1].kurus
             ratio_val = total / est_k
             check = source_check(ratio_val)
             if total * 100 >= est_k * RATIO_THRESHOLD_PCT:
                 pct = total * 100 // est_k          # floor: 0.999 → 99
-                if len(members) == 1:
+                if len(bm) == 1:
                     lead = "Sözleşme bedeli"
                 else:
-                    lead = f"Bu ihalenin {len(members)} kısmının toplam bedeli"
+                    lead = f"Bu ihalenin {len(bm)} kısmının toplam bedeli"
                 if total > est_k:
                     text = (f"{lead} yaklaşık maliyetin {money_tr(total - est_k, est[1].currency)} üzerinde "
                             f"(%{percent_tr(total, est_k)})")
