@@ -21,6 +21,14 @@ from .model import CONFIDENT, Money, Record
 from .store import StoredRecord
 
 CURRENCY_MISMATCH = "para birimi farklı"
+# Item-based (kalem / kısmi teklif) result notices, published per supplier since ~Oct 2025: the notice prints the WHOLE
+# tender's yaklaşık maliyet (also as esas-kısım YM) while bedel is only this supplier's items, so bedel/YM cannot be
+# measured. Rule: esas-kısım YM absent or equal to YM, >= 4 bids, İKN-sum bedel/YM < 0.30 -> bedel_orani is not
+# computable (same path as a currency mismatch). The 0.30 cut is a judgment: before autumn 2025 ratios < 0.30 occurred
+# 0-4 times a year in the sampled single-lot >= 4-bid açık mal tenders (history.db), vs about half of them after.
+KALEM_BAZLI = "kalem bazlı ilan: yaklaşık maliyet tüm ihalenin, bedel yalnız bu yüklenicinin; oran karşılaştırılamaz"
+KALEM_MIN_BIDS = 4
+KALEM_MAX_RATIO = 0.30
 PART_CODES = ("tek_teklif", "diger_teklifler_elendi", "bedel_orani", "tekrarlayan_eslesik", "idare_orani")
 MIN_GROUP_N = 100                 # bedel medians: a group needs >= 100 TRY bedels, else the type-wide median is used
 MIN_K = 5                         # fewer than 5 events in the group: use the type-wide rate itself
@@ -194,6 +202,18 @@ class _Tender:
     ratio: float | None = None  # bedel_orani value (sum of lots / estimate), None = not computable
 
 
+def kalem_bazli(r: Record, ratio: float | None) -> bool:
+    """Item-based per-supplier notice (see KALEM_BAZLI): the ratio is not comparable."""
+    if ratio is None or ratio >= KALEM_MAX_RATIO:
+        return False
+    if not (r.confident("toplam_teklif") and r.toplam_teklif is not None and r.toplam_teklif >= KALEM_MIN_BIDS):
+        return False
+    ym, es = r.yaklasik_maliyet, r.esas_kisim_yaklasik_maliyet
+    if not r.confident("yaklasik_maliyet") or ym is None:
+        return False
+    return es is None or (es.kurus == ym.kurus and es.currency == ym.currency)
+
+
 def _ratio(r: Record, members: list[StoredRecord]) -> float | None:
     """bedel_orani value: sum of the ikn's deduped bedels / estimate; None when not computable (same rules as the flag)."""
     est = _estimate(r)
@@ -202,7 +222,8 @@ def _ratio(r: Record, members: list[StoredRecord]) -> float | None:
     if any(not m.record.confident("sozlesme_bedeli") or m.record.sozlesme_bedeli.currency != est[1].currency
            for m in members):
         return None
-    return sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus
+    v = sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus
+    return None if kalem_bazli(r, v) else v
 
 
 def _tenders(stored: list[StoredRecord], groups: dict) -> dict[str, list[_Tender]]:
@@ -528,6 +549,10 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
                 ok = False
         elif not r.confident("sozlesme_bedeli"):
             unread.add("sozlesme_bedeli")
+        kalem = False
+        if ok and kalem_bazli(r, sum(m.record.sozlesme_bedeli.kurus for m in members) / est[1].kurus):
+            reasons.append({"field": "sozlesme_bedeli", "reason": KALEM_BAZLI})
+            ok, kalem = False, True
         if ok:
             total = sum(m.record.sozlesme_bedeli.kurus for m in members)
             est_k = est[1].kurus
@@ -646,6 +671,7 @@ def compute_flags_full(stored: list[StoredRecord]) -> tuple[dict[int, FlagResult
         res.btype = r.bulletin_type
         res.usul_group = group_key(r.bulletin_type, usul)
         res.indicators = _indicators(r, ik, counts_ok, elen_peer, payi_idx, ratio_val, bedel_peer, check)
+        res.indicators["bedel_orani_not_comparable"] = kalem
         results[s.id] = res
     return results, _score_all(results)
 

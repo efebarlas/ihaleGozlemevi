@@ -73,3 +73,39 @@ def test_dmo_arac_group_is_the_i_nolu_unit():
     assert structural.peer_category("DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ III NOLU SATIN ALMA", "X") is None
     assert structural.peer_category(i_nolu, "VAN İLİ J0952 DİNOPROSTON") == "saglik_market"        # health wins
     assert ind.usul_label("dmo_arac") == "DMO araç ve iş makinesi siparişleri"
+
+
+# ---------------------------------------------------------------- kalem bazlı (item-based per-supplier notices)
+
+def test_kalem_bazli_ratio_not_computable_like_currency_mismatch():
+    from datetime import date
+    from ihale import flags as F
+    from ihale.store import StoredRecord
+    from rec_helpers import rec, money
+    d = date(2026, 11, 18)
+    split = rec(1, day=d, ikn="2026/900", bedel=20_000.0, maliyet=9_000_000.0, toplam=30, gecerli=29)
+    split.esas_kisim_yaklasik_maliyet = money(9_000_000.0)
+    split.confidence["esas_kisim_yaklasik_maliyet"] = 1.0
+    real_low = rec(1, day=d, ikn="2026/901", bedel=20_000.0, maliyet=9_000_000.0, toplam=30, gecerli=29)
+    real_low.esas_kisim_yaklasik_maliyet = money(50_000.0)            # own share printed: measurable
+    real_low.confidence["esas_kisim_yaklasik_maliyet"] = 1.0
+    few_bids = rec(1, day=d, ikn="2026/902", bedel=20_000.0, maliyet=9_000_000.0, toplam=3, gecerli=3)
+    near = rec(1, day=d, ikn="2026/903", bedel=99.0, maliyet=100.0, toplam=6, gecerli=6)    # fires bedel_orani
+    stored = [StoredRecord(id=i, record=r) for i, r in enumerate([split, real_low, few_bids, near], 1)]
+    res, rates = F.compute_flags_full(stored)
+    s = res[1]
+    assert s.indicators["bedel_orani"] is None and s.indicators["bedel_orani_not_comparable"] is True
+    assert "bedel_orani" not in s.computable and s.indicators["bedel_orani_peer_median"] is None
+    assert {"field": "sozlesme_bedeli", "reason": F.KALEM_BAZLI} in s.unreadable
+    assert res[2].indicators["bedel_orani_not_comparable"] is False and res[2].indicators["bedel_orani"] == 0.4
+    assert res[3].indicators["bedel_orani_not_comparable"] is False and "bedel_orani" in res[3].computable
+    assert "bedel_orani" in res[4].score_parts or any(f["code"] == "bedel_orani" for f in res[4].flags)
+    assert rates["mal/hepsi"]["n_computable"]["bedel_orani"] == 3           # the split record left the denominator
+    assert F.kalem_bazli(split, 0.29) and not F.kalem_bazli(split, 0.30)
+
+
+def test_bedel_line_says_not_comparable():
+    from ihale import sitegen
+    t = {"indicators": {"bedel_orani": None, "bedel_orani_not_comparable": True}}
+    assert sitegen.bedel_line(t).startswith("karşılaştırılamaz (kalem bazlı ilan")
+    assert sitegen.bedel_peer_line(t) is None

@@ -183,6 +183,8 @@ def _pct_floor(x) -> str:
 def bedel_line(t: dict) -> str | None:
     """Actual bedel/yaklaşık maliyet ratio with its peer context (no cut-off is shown)."""
     ind = t.get("indicators") or {}
+    if ind.get("bedel_orani_not_comparable"):
+        return "karşılaştırılamaz (kalem bazlı ilan: yaklaşık maliyet tüm ihalenin, bedel yalnız bu yüklenicinin)"
     if ind.get("bedel_orani") is None:
         return None
     out = f"{_pct1(ind['bedel_orani'])}"
