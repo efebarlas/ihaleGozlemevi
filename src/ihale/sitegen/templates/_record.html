@@ -9,7 +9,7 @@
   {% for f in t.flags %}
     <li class="flag flag-{{ f.code }}">{{ f.text }}
       <span class="num">({{ flag_titles.get(f.code, f.code) }})</span>
-      {% if f.code == 'bedel_orani' and c.n_ikn > 1 %}<span class="why">Bu oran İKN'deki {{ c.n_ikn }} kısmın toplam bedeline göre hesaplanmıştır.</span>{% endif %}
+      {% if f.code == 'bedel_orani' and c.n_ikn > 1 and c.ikn_sum %}<span class="why">Bu oran İKN'deki {{ c.n_ikn }} kısmın toplam bedeline göre hesaplanmıştır.</span>{% endif %}
       {% if not compact and innocent.get(f.code) %}<span class="why">{% if f.code == 'bedel_orani' and f.value is number and f.value > 1 %}{{ innocent_bedel_over }}{% else %}{{ innocent[f.code] }}{% endif %}</span>{% endif %}{% if not compact and f.code == 'tek_teklif' and t._brand %}<span class="why">{{ innocent_brand }}</span>{% endif %}</li>
   {% endfor %}
   {% if t._idare_orani %}<li class="flag flag-idare_orani">{{ t._idare_orani_text }}{% if not compact %}<span class="why">{{ innocent.idare_orani }}</span>{% endif %}</li>{% endif %}
@@ -40,7 +40,7 @@
 {% endif %}
 
 {% if c.n_ikn > 1 %}
-<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.
+<p class="note">Kısmi (kısımlı) ihale: İKN {{ t.ikn }} için bu gün {{ c.n_ikn }} kayıt var. {% if c.ikn_sum %}Bedel oranı, bu kayıtların toplam bedeli üzerinden hesaplanır.{% else %}Bu kayıt kendi kısımlarının yaklaşık maliyetini verdiği için bedel oranı yalnız bu sözleşmenin bedeliyle hesaplanır.{% endif %}
 {% if compact %}{% set lp = c.siblings | selectattr('_page') | list %}{% if lp %} Tüm kayıtlar: <a href="{{ lp[0]._href }}">{{ lp[0].id }} sayfası</a>.{% endif %}{% endif %}</p>
 {% if not compact and c.siblings %}
 <details class="sibs"><summary>Bu İKN'nin tüm {{ c.n_ikn }} kaydı</summary>

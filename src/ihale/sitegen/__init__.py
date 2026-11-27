@@ -180,6 +180,20 @@ def _pct_floor(x) -> str:
     return f"%{math.floor(round(float(x) * 100, 6))}"
 
 
+def own_lot_estimate(t: dict) -> bool:
+    """The record prints its own esas-kısım estimate (differs from the tender YM): its bedel_orani is this
+    contract's bedel against that estimate, not the İKN sum (flags._bedel_members)."""
+    es, ym = t.get("esas_kisim_yaklasik_maliyet"), t.get("yaklasik_maliyet")
+    if not es:
+        return False
+    return not (ym and es.get("amount") == ym.get("amount") and es.get("currency") == ym.get("currency"))
+
+
+def ikn_sum_ratio(t: dict) -> bool:
+    """bedel_orani is computed over the İKN's records (more than one, and not an own-lot estimate)."""
+    return (t.get("kisim") or {}).get("records_in_ikn", 1) > 1 and not own_lot_estimate(t)
+
+
 def bedel_line(t: dict) -> str | None:
     """Actual bedel/yaklaşık maliyet ratio with its peer context (no cut-off is shown)."""
     ind = t.get("indicators") or {}
@@ -189,8 +203,10 @@ def bedel_line(t: dict) -> str | None:
         return None
     out = f"{_pct1(ind['bedel_orani'])}"
     k = (t.get("kisim") or {}).get("records_in_ikn", 1)
-    if k > 1:
+    if ikn_sum_ratio(t):
         out += f" (İKN'deki {k} kısmın toplam bedeline göre)"
+    elif k > 1:
+        out += " (bu sözleşmenin bedeli, kendi kısımlarının yaklaşık maliyetine göre)"
     if ind.get("bedel_orani_peer_median") is not None and ind.get("bedel_orani_peer_n"):
         out += f" · benzer idarelerde ortanca {_pct_floor(ind['bedel_orani_peer_median'])} (n={ind['bedel_orani_peer_n']})"
     return out
@@ -633,7 +649,7 @@ def build(export_dir: Path, out_dir: Path, split_bulk: bool = True) -> None:
                 src_text = f"Kamu İhale Bülteni, {tr_date_short(src['date'])}, {type_label} – Sonuç İlanları"
                 if src.get("page"):
                     src_text += f", s. {src['page']}"
-            t["_c"] = dict(rows=rows, n_ikn=(t.get("kisim") or {}).get("records_in_ikn", 1),
+            t["_c"] = dict(rows=rows, n_ikn=(t.get("kisim") or {}).get("records_in_ikn", 1), ikn_sum=ikn_sum_ratio(t),
                            siblings=[x for x in by_ikn.get(t.get("ikn") or "", []) if x["id"] != t["id"]],
                            src=src, src_text=src_text, section_label=SECTION_LABELS.get(t.get("section"), ""),
                            src_date_short=tr_date_short(src["date"]) if src.get("date") else "",

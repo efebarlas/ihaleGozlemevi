@@ -232,10 +232,7 @@
     "amount": 900000.0,
     "currency": "TRY"
    },
-   "esas_kisim_yaklasik_maliyet": {
-    "amount": 500000.0,
-    "currency": "TRY"
-   },
+   "esas_kisim_yaklasik_maliyet": null,
    "sozlesme_bedeli": {
     "amount": 485000.0,
     "currency": "TRY"
@@ -317,10 +314,7 @@
     "amount": 900000.0,
     "currency": "TRY"
    },
-   "esas_kisim_yaklasik_maliyet": {
-    "amount": 400000.0,
-    "currency": "TRY"
-   },
+   "esas_kisim_yaklasik_maliyet": null,
    "sozlesme_bedeli": {
     "amount": 398000.0,
     "currency": "TRY"

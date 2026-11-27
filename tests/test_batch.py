@@ -373,3 +373,14 @@ def test_usul_tables_stay_neutral_and_small(dist):
 
 def test_tr_pct_handles_missing_shares():
     assert sitegen.tr_pct(None) == "—" and sitegen.tr_pct(0.5) == "%50" and sitegen.tr_pct(0.045) == "%4,5"
+
+
+def test_own_lot_estimate_ratio_is_not_described_as_ikn_sum():
+    own = {"indicators": {"bedel_orani": 0.73}, "kisim": {"records_in_ikn": 4},
+           "yaklasik_maliyet": {"amount": 1000.0, "currency": "TRY"},
+           "esas_kisim_yaklasik_maliyet": {"amount": 100.0, "currency": "TRY"}}
+    assert sitegen.own_lot_estimate(own) and not sitegen.ikn_sum_ratio(own)
+    line = sitegen.bedel_line(own)
+    assert "toplam bedeline" not in line and "kendi kısımlarının" in line
+    same = dict(own, esas_kisim_yaklasik_maliyet={"amount": 1000.0, "currency": "TRY"})   # kalem shape: İKN sum
+    assert sitegen.ikn_sum_ratio(same) and "(İKN'deki 4 kısmın toplam bedeline göre)" in sitegen.bedel_line(same)
