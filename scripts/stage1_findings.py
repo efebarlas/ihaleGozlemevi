@@ -42,6 +42,7 @@ CORE = ("ikn", "idare", "yuklenici", "yaklasik_maliyet", "sozlesme_bedeli", "top
 OKABE_ITO = ("#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#999999")
 MARKERS = ("o", "s", "^", "D", "v", "P")
 LINESTYLES = ("-", "--", "-.", ":", (0, (5, 1)), (0, (3, 1, 1, 1)))
+MIN_N = 15                # a point (median or share) needs >= 15 contracts/tenders, else it is not shown
 VERDICT_WORDS = ("şüpheli", "yolsuzluk", "usulsüz", "skandal", "hırsız", "rüşvet", "kayırma", "milyarlarca", "kayıp")
 
 
@@ -120,14 +121,14 @@ def median_of(f):
     def s(rows):
         v = [f(r) for r in rows]
         v = [x for x in v if x is not None]
-        return float(np.median(v)) if len(v) >= 10 else None
+        return float(np.median(v)) if len(v) >= MIN_N else None
     return s
 
 
 def share_of(pred, base):
     def s(rows):
         b = [r for r in rows if base(r)]
-        return sum(1 for r in b if pred(r)) / len(b) if len(b) >= 10 else None
+        return sum(1 for r in b if pred(r)) / len(b) if len(b) >= MIN_N else None
     return s
 
 
@@ -160,7 +161,12 @@ def bid_group(n):
 
 def finding1(main, reps, rng):
     rows = f1_rows(main)
-    res = {"n_records": len(rows), "pooled": {}, "by_year": {}}
+    loose = [r for r in main if r["usul"] == "acik" and r["kisim_n"] == 1 and r["ikn"] and r["toplam"] and r["ym"]
+             and r["bedel"] and r["ym"][1] == "TRY" and r["bedel"][1] == "TRY" and r["ratio"] is not None
+             and (r["esas"] is None or r["esas"] == r["ym"])]
+    res = {"n_records": len(rows), "excluded_doubtful": dict(Counter(r["check"] for r in loose if r["check"])),
+           "excluded_rule": "bedel > 1.5 x YM (large), or bedel/YM within 1% of a power of ten other than 1 (typo)",
+           "pooled": {}, "by_year": {}}
     for t in TYPES + ("hepsi",):
         sub = [r for r in rows if t == "hepsi" or r["type"] == t]
         res["pooled"][t] = {}
@@ -178,7 +184,25 @@ def finding1(main, reps, rng):
 def finding2(main, reps, rng):
     aw = [r for r in awards(main) if r["usul"] == "acik" and r["toplam"] is not None and r["gecerli"] is not None]
     stat = share_of(lambda r: r["toplam"] == 1, lambda r: True)
-    res = {"n_awards": len(aw), "pooled": {}, "by_year": {}}
+    res = {"n_awards": len(aw), "pooled": {}, "by_year": {},
+           "multi_lot_rule": "one row per İKN; a multi-lot İKN counts as tek teklif when its first published notice "
+                             "prints toplam teklif sayısı = 1"}
+    single = [r for r in aw if r["kisim_n"] == 1]
+    res["single_lot"] = {"pooled": {"share": rnd(boot(single, stat, reps, rng)), "n": len(single)},
+                         "by_year": {y: {"share": rnd(boot([r for r in single if r["day"].year == y], stat, reps, rng)),
+                                         "n": sum(1 for r in single if r["day"].year == y)}
+                                     for y in sorted({r["day"].year for r in single})}}
+    # did printing one tender-level count on every lot become more common before the change? (açık, 2+ winners)
+    g = defaultdict(list)
+    for r in main:
+        if r["ikn"] and r["usul"] == "acik":
+            g[(r["type"], r["ikn"])].append(r)
+    uy = defaultdict(list)
+    for ms in g.values():
+        if len(ms) >= 2 and all(m["toplam"] is not None for m in ms) and len({m["yk"] for m in ms if m["yk"]}) >= 2:
+            uy[ms[0]["day"].year].append(len({(m["toplam"], m["gecerli"]) for m in ms}) == 1)
+    res["uniform_count_share_multiwinner_by_year"] = {y: {"share": round(sum(v) / len(v), 3), "n": len(v)}
+                                                      for y, v in sorted(uy.items())}
     for t in TYPES + ("hepsi",):
         sub = [r for r in aw if t == "hepsi" or r["type"] == t]
         res["pooled"][t] = {"share": rnd(boot(sub, stat, reps, rng)), "n": len(sub)}
@@ -199,6 +223,10 @@ def finding3(main, reps, rng):
         res["per_day_istisna"].append({"day": d.isoformat(), "n": len(rs),
                                        "istisna": round(sum(usul_cat(r["usul"], r["usul_text"]) == "istisna" for r in rs) / len(rs), 4),
                                        "pazarlik_21b": round(sum(usul_cat(r["usul"], r["usul_text"]) == "pazarlik_21b" for r in rs) / len(rs), 4)})
+    sept = [x["pazarlik_21b"] for x in res["per_day_istisna"] if x["day"][5:7] == "09" and x["day"] >= "2018"]
+    other = [x["pazarlik_21b"] for x in res["per_day_istisna"] if x["day"][5:7] != "09" and x["day"] >= "2018"]
+    res["pazarlik_21b_september"] = {"september_days": len(sept), "september_median": round(float(np.median(sept)), 3),
+                                     "other_days": len(other), "other_median": round(float(np.median(other)), 3)}
     for c in ("istisna", "pazarlik_21b"):
         v = [x[c] for x in res["per_day_istisna"]]
         res[f"day_spread_{c}"] = {"min": round(min(v), 3), "p10": round(float(np.percentile(v, 10)), 3),
@@ -231,6 +259,14 @@ def uniform_count_ikns(rows):
 def finding4(all_rows, reps, rng):
     rows = [r for r in all_rows if M4_START <= r["day"] <= M4_END]
     res = {"quarters": {}, "pre": {}, "post": {}}
+    res["months_after_change"] = {}
+    for mth in sorted({r["day"].strftime("%Y-%m") for r in rows if r["day"] >= CHANGE}):
+        ms = [r for r in rows if r["day"].strftime("%Y-%m") == mth and r["type"] == "mal"]
+        dd = len({r["day"] for r in ms})
+        res["months_after_change"][mth] = {
+            "days": dd, "mal_per_day": round(len(ms) / dd) if dd else None,
+            "kalem_share_mal": round(sum(r["kalem"] for r in ms) / len(ms), 4) if ms else None,
+            "unreadable_pct": round(100 * sum(r["ikn"] is None for r in ms) / len(ms), 2) if ms else None}
     for q in sorted({quarter(r["day"]) for r in rows}, key=lambda s: (int(s[:4]), s[-1])):
         qs = [r for r in rows if quarter(r["day"]) == q]
         mal = [r for r in qs if r["type"] == "mal"]
@@ -248,6 +284,14 @@ def finding4(all_rows, reps, rng):
         naive = lambda r: (r["bedel"][0] / r["ym"][0] if r["ym"] and r["bedel"] and r["ym"][1] == r["bedel"][1] == "TRY"   # noqa: E731
                            and r["ym"][0] > 0 else None)
         res[label]["naive_per_notice_median_mal"] = rnd(boot(mal, median_of(naive), reps, rng))
+        n_ikn = Counter(r["ikn"] for r in mal if r["ikn"])
+        multi = [r for r in mal if r["ikn"] and n_ikn[r["ikn"]] >= 2]
+        single = [r for r in mal if r["ikn"] and n_ikn[r["ikn"]] == 1]
+        res[label]["naive_median_mal_multi_notice_ikns"] = rnd(boot(multi, median_of(naive), reps, rng))
+        res[label]["naive_median_mal_single_notice_ikns"] = rnd(boot(single, median_of(naive), reps, rng))
+        res[label]["share_of_mal_notices_in_multi_notice_ikns"] = rnd(boot(
+            [r for r in mal if r["ikn"]], share_of(lambda r: n_ikn[r["ikn"]] >= 2, lambda r: True), reps, rng), 4)
+        res[label]["naive_covers"] = "every mal notice with YM and bedel in TRY (all procedures, single and multi notice)"
         res[label]["rule_based_median_mal"] = rnd(boot(
             [r for r in mal if r["check"] is None], median_of(lambda r: r["ratio"]), reps, rng))
 
@@ -318,6 +362,7 @@ def chart1(plt, f1, out):
     fig.legend(h, l_, loc="lower center", bbox_to_anchor=(0.5, -0.16), ncol=3, frameon=False)
     fig.suptitle("Tek kısımlı açık ihalelerde fiyat ve teklif sayısı (2016 – 2025 Eylül)", y=1.02)
     fig.text(0, -0.22, "Gölgeli alanlar: örnek günler yeniden örneklenerek hesaplanan %90 aralığı. "
+                       "15'ten az sözleşme olan noktalar gösterilmedi (ör. yapım, 1 teklif, 2025). "
                        "* 2025: Ocak–Eylül. Kaynak: EKAP sonuç ilanları bültenleri, örnek günler.", fontsize=8)
     save(fig, out, "sekil1-fiyat-teklif")
     plt.close(fig)
@@ -342,7 +387,8 @@ def chart2(plt, f2, out):
     ax.set_ylim(bottom=0)
     ax.legend(frameon=False)
     ax.set_title("Açık ihalelerde tek teklif payı (2016 – 2025 Eylül)")
-    fig.text(0, -0.08, "Birim: ihale (İKN). Gölgeli alanlar: %90 aralığı. * 2025: Ocak–Eylül. "
+    fig.text(0, -0.08, "Birim: ihale (İKN). Gölgeli alanlar: %90 aralığı. 15'ten az ihale olan noktalar gösterilmedi. "
+                       "* 2025: Ocak–Eylül. "
                        "Kaynak: EKAP sonuç ilanları bültenleri, örnek günler.", fontsize=8)
     save(fig, out, "sekil2-tek-teklif")
     plt.close(fig)
@@ -367,9 +413,12 @@ def chart3(plt, f3, out):
     pts = f3["per_day_istisna"]
     xs = [date.fromisoformat(p["day"]) for p in pts]
     a2.scatter(xs, [p["istisna"] for p in pts], s=14, color=OKABE_ITO[5], marker="o", label="İstisna")
-    a2.scatter(xs, [p["pazarlik_21b"] for p in pts], s=14, color=OKABE_ITO[2], marker="^", label="Pazarlık (21/b)")
+    p21 = [(x, p["pazarlik_21b"]) for x, p in zip(xs, pts) if x.year >= 2018]   # 2016-17: article letter not printed
+    a2.scatter([x for x, _ in p21], [v for _, v in p21], s=14, color=OKABE_ITO[2], marker="^",
+               label="Pazarlık (21/b, 2018'den)")
     a2.yaxis.set_major_formatter(FuncFormatter(pct))
     a2.set_ylabel("O günün kayıtları içindeki pay")
+    a2.set_ylim(bottom=0)
     a2.set_title("Günden güne değişim (her nokta bir örnek gün)")
     a2.legend(frameon=False)
     fig.text(0, -0.36, "* 2025: Ocak–Eylül. 2016–2017 ilanlarında pazarlık çoğu kez bent yazılmadan geçer.  Kaynak: EKAP sonuç ilanları bültenleri, örnek günler; mal, hizmet ve yapım birlikte.",
@@ -394,7 +443,9 @@ def chart4(plt, f4, out):
     ax.tick_params(axis="x", rotation=60)
     ax.legend(frameon=False, fontsize=8, loc="upper left")
     ax.set_title("2025 sonbaharındaki yayım değişikliği (çeyrek bazında)")
-    fig.text(0, -0.12, "Kaynak: EKAP sonuç ilanları bültenleri; 2024–2025 Eylül örnek günler, sonrası tüm yüklenen günler.",
+    fig.text(0, -0.12, "Kaynak: EKAP sonuç ilanları bültenleri; 2024–2025 Eylül örnek günler, sonrası tüm yüklenen günler.\n"
+                       "2026Ç2'nin 22 günü Haziran'dır: Haziran–Temmuz'da hem mal ilanı sayısı hem kalem bazlı ilan "
+                       "payı düşük, Ağustos–Eylül'de yüksek; ayrıştırma hatası değil (okunamayan ilan %0,3'ün altında).",
              fontsize=8)
     save(fig, out, "sekil4-yayim-degisikligi")
     plt.close(fig)
