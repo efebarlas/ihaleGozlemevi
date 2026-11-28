@@ -2,7 +2,7 @@
 
 1. Property-style cross-check: seeded random tenders (multi-notice İKNs, own-lot esas, kalem shape, zero/missing/
    doubtful/other-currency money, odd bid counts, a year of dates) are flagged by the real pipeline, then
-   scripts/audit_flags.py re-derives every shown number independently. Any disagreement fails.
+   ihale.audit (scripts/audit_flags.py) re-derives every shown number independently. Any disagreement fails.
 2. Named invariants, each on a minimal case.
 The audit's findings (rule B, zero bedel, doubtful ratios scoring) were fixed 2026-11-27; their tests are below.
 """
@@ -17,10 +17,8 @@ from ihale import config, pipeline
 from ihale.flags import compute_flags
 from ihale.model import Money
 from ihale.store import Store, StoredRecord
+from ihale import audit as audit_flags
 from rec_helpers import money, rec
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-import audit_flags  # noqa: E402
 
 MISMATCH_KEYS = ("tek_teklif", "diger_teklifler_elendi", "diger_teklifler_elendi_number", "bedel_orani_value",
                  "bedel_orani_flag", "bedel_orani_text", "bedel_orani_text_scope", "tekrarlayan_flag",

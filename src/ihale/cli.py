@@ -138,6 +138,16 @@ def cmd_deploy(args) -> int:
     return 0
 
 
+def cmd_audit(args) -> int:
+    from . import audit
+    n, text, res = audit.check(args.db or config.db_path())
+    print(text)
+    if args.json:
+        import json
+        args.json.write_text(json.dumps(res, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    return pipeline.EXIT_AUDIT if n else pipeline.EXIT_OK
+
+
 def cmd_run(args) -> int:
     with keep_awake(), pipeline.file_logging():
         return pipeline.run_daily(args.date, args.types, deploy=not args.no_deploy)
@@ -246,6 +256,11 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--date", type=parse_day, help=day_help + " (default: the latest stored day)")
     g.add_argument("--all", action="store_true", help="every stored day")
     eo.set_defaults(func=cmd_export_open)
+
+    au = sub.add_parser("audit", help="independent flag checker on ihale.db (exit 8 on mismatches; read only)")
+    au.add_argument("--db", type=Path, default=None, help="database to check (default: the data dir's ihale.db)")
+    au.add_argument("--json", type=Path, default=None, help="also write the full result as JSON")
+    au.set_defaults(func=cmd_audit)
 
     dr = sub.add_parser("drift", help="weekly drift summary (idare procedure mix vs own history) into the logs")
     dr.add_argument("--force", action="store_true", help="rewrite this ISO week's file")

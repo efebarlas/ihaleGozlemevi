@@ -2,7 +2,9 @@
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<repo>\scripts\run_daily.ps1")
 # Runs `python -m ihale run` (or the arguments given to this script instead) with the repo's venv python,
 # appends everything to <data dir>\logs\scheduler-YYYY-MM-DD.log and exits with the run's exit code.
-# Exit codes: 0 ok, 1 error, 3 BLOCKED by EKAP (or BLOCKED marker present), 5 backfill hit the request cap.
+# Exit codes: 0 ok, 1 error, 3 BLOCKED by EKAP (or BLOCKED marker present), 5 backfill hit the request cap,
+# 6 D1 write budget (not deployed, try tomorrow), 7 data dir missing (this wrapper), 8 flag audit found mismatches
+# (nothing exported or deployed, <data>\AUDIT-FAILED-<date>.txt; no marker, the next run tries again).
 # Saved as UTF-8 with BOM so Windows PowerShell 5.1 reads the non-ASCII repo path correctly.
 
 $ErrorActionPreference = 'Stop'

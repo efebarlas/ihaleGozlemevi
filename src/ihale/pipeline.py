@@ -25,6 +25,9 @@ EXIT_BLOCKED = 3          # EKAP hard stop, or the BLOCKED marker is present (sa
 EXIT_NO_BULLETIN = 4      # `fetch` only; `run` treats it as a normal day
 EXIT_CAP = 5              # backfill stopped at the request cap; re-run to continue
 EXIT_BUDGET = 6           # `run`/`deploy`: D1 daily write budget would be exceeded; nothing deployed, try tomorrow
+# (7 is the scheduler wrapper's own code: data dir or ihale.db missing, nothing run)
+EXIT_AUDIT = 8            # `run`/`audit`: the independent flag checker found mismatches; nothing exported or deployed,
+                          # AUDIT-FAILED-<date>.txt written; no marker to clear, the next run tries again
 
 
 def today_istanbul() -> date:
@@ -160,6 +163,23 @@ def export_step(store: Store | None = None) -> Path:
     return out
 
 
+def audit_step(day: date) -> int:
+    """Independent flag checker (ihale.audit) on the fresh ihale.db, between flag and export. Returns the number of
+    mismatches; on any, writes <data>/AUDIT-FAILED-<day>.txt. The informational lists never count."""
+    import time
+    from . import audit
+    t0 = time.monotonic()
+    n, text, _ = audit.check(config.db_path())
+    secs = time.monotonic() - t0
+    log.info("audit: %d mismatches in %.1f s", n, secs)
+    if n:
+        out = config.data_dir() / f"AUDIT-FAILED-{day.isoformat()}.txt"
+        out.write_text(f"run day {day.isoformat()}: flag audit found {n} mismatches; not exported, not deployed "
+                       f"(the site keeps the last good build; the next run tries again).\n\n{text}\n", encoding="utf-8")
+        log.error("AUDIT FAILED: %d mismatches, wrote %s; not exporting or deploying", n, out)
+    return n
+
+
 def drift_step(store: Store | None = None) -> None:
     """Weekly drift summary into the logs (once per ISO week). A failure here never stops the run."""
     try:
@@ -276,6 +296,8 @@ def run_daily(day: date | None = None, types=("mal",), deploy: bool = True) -> i
                 continue
             parse_and_store(day, t, store)
         flag_all(store)
+        if audit_step(day):
+            return EXIT_AUDIT
         export_step(store)
         drift_step(store)
         build_site()
