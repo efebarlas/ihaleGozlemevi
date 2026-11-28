@@ -11,6 +11,7 @@ dependencies = ["ihalent[bulletin]==0.5.1", "pdfplumber", "pypdf", "jinja2"]
 
 [project.optional-dependencies]
 dev = ["pytest", "jsonschema"]
+analysis = ["matplotlib==3.9.2", "numpy"]   # scripts/stage1_findings.py only
 
 [tool.setuptools.packages.find]
 where = ["src"]
