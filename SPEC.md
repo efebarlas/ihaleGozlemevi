@@ -195,9 +195,28 @@ Where the data shows a known innocent cause, such as the procedure type or a dec
 
 **Corrections.** Any figure found wrong is fixed and marked as corrected, with the date. Before G-Public there must be a working correction and reply channel.
 
+**Staged sharing (Efe, 2026-11-27).** A watchdog nobody reads serves no purpose. So we share in stages, starting with what is already defensible, instead of waiting for everything:
+- **Stage 1: aggregate findings note.**
+  - Content: base rates from the backfilled history, such as the price gap between single-bid and competitive tenders, the procedure mix over time, and the 2025 publication change.
+  - It names no idare, company or person.
+  - It is written in Turkish, measured and not sensational ("don't provoke data closure" above).
+  - It is published under the project name.
+  - Efe approves the final text before it goes out. It is not G-Public.
+- **Stage 2: private preview.**
+  - 3–5 reviewers who know procurement (data journalists, transparency NGOs) get the unlisted site link.
+  - Efe picks them and contacts them himself.
+  - They act as the first correction channel and as the hand check of whether flags hold up.
+- **Stage 3: public site, facts only.**
+  - Pages show printed facts with peer context (single valid bid, bedel as % of YM next to the peer median, procedure mix), with no score and no ranking.
+  - Gate 4 below applies to scores and rankings, not to facts. Scores join after the scoring review validates them.
+  - Stage 3 is G-Public and needs every other gate below.
+
 **G-Public gate.** All of these must be true before Efe can say yes:
 1. A Turkish media or press lawyer has reviewed the site, the wording and the method. This costs money, so it's Efe's call.
-2. Efe has decided who publishes: him personally or an entity. Today the public repo is under his own name.
+2. **Decided (2026-11-27): the project publishes under its own name, "İhale Gözlemevi", not under a person.** Before Stage 3:
+   - the public repo moves off Efe's personal GitHub name;
+   - a project contact address exists.
+   - Efe creates both.
 3. The correction and reply channel works.
 4. The M5 weights are validated against outcomes. Unvalidated hand-set rankings don't go public.
 5. A plan exists in case Turkey blocks access to the site.
